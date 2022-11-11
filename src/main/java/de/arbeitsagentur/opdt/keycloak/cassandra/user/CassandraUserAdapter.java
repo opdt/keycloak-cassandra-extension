@@ -51,9 +51,7 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public String getUsername() {
-    return KeycloakModelUtils.isUsernameCaseSensitive(realm)
-        ? getAttribute(USERNAME).stream().findFirst().orElse(null)
-        : getAttribute(USERNAME_CASE_INSENSITIVE).stream().findFirst().orElse(null);
+    return getAttribute(USERNAME).stream().findFirst().orElse(null);
   }
 
   @Override
@@ -66,8 +64,12 @@ public abstract class CassandraUserAdapter implements UserModel {
         ? username
         : KeycloakModelUtils.toLowerCaseSafe(username);
 
+    String currentUsername = KeycloakModelUtils.isUsernameCaseSensitive(realm)
+        ? getAttribute(USERNAME).stream().findFirst().orElse(null)
+        : getAttribute(USERNAME_CASE_INSENSITIVE).stream().findFirst().orElse(null);
+
     // Do not continue if current username of entity is the requested username
-    if (usernameToCompare.equals(getUsername())) return;
+    if (usernameToCompare.equals(currentUsername)) return;
 
     if (checkUsernameUniqueness(realm, username)) {
       throw new ModelDuplicateException("A user with username " + username + " already exists");

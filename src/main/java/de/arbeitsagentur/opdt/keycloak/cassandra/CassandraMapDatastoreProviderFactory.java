@@ -161,10 +161,9 @@ public class CassandraMapDatastoreProviderFactory extends MapDatastoreProviderFa
         SchemaBuilder.createTable("users")
             .ifNotExists()
             .withPartitionKey("realm_id", DataTypes.TEXT)
-            .withPartitionKey("id", DataTypes.TEXT)// TODO: ggf UUID-type nutzen?
+            .withPartitionKey("id", DataTypes.TEXT)
             .withColumn("enabled", DataTypes.BOOLEAN)
             .withColumn("email_verified", DataTypes.BOOLEAN)
-            .withColumn("email_constraint", DataTypes.TEXT)
             .withColumn("service_account", DataTypes.BOOLEAN)
             .withColumn("created_timestamp", DataTypes.TIMESTAMP)
             .build();

@@ -44,11 +44,16 @@ public class CassandraUserRepository implements UserRepository {
   }
 
   @Override
-  public User findUserByAttribute(String realmId, String name, String value) {
-    List<User> users = userDao.findByAttribute(name, value).all().stream()
+  public List<User> findUsersByAttribute(String realmId, String name, String value) {
+    return userDao.findByAttribute(name, value).all().stream()
         .map(AttributeToUserMapping::getUserId)
         .flatMap(id -> Optional.ofNullable(findUserById(realmId, id)).stream())
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public User findUserByAttribute(String realmId, String name, String value) {
+    List<User> users = findUsersByAttribute(realmId, name, value);
 
     if (users.size() > 1) {
       throw new IllegalStateException("Found more than one user with attributeName " + name + " and value " + value);

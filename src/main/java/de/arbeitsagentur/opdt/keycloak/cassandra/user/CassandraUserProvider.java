@@ -87,7 +87,6 @@ public class CassandraUserProvider implements UserProvider {
     User user = User.builder()
         .id(id == null ? KeycloakModelUtils.generateId() : id)
         .realmId(realm.getId())
-        .emailConstraint(KeycloakModelUtils.generateId())
         .createdTimestamp(Instant.now())
         .build();
 
@@ -261,7 +260,7 @@ public class CassandraUserProvider implements UserProvider {
     log.debugv("getUserByUsername realm={0} username={1}", realm, username);
     User userByUsername = isUsernameCaseSensitive(realm)
         ? userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.USERNAME, username)
-        : userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.USERNAME_CASE_INSENSITIVE, username);
+        : userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.USERNAME_CASE_INSENSITIVE, KeycloakModelUtils.toLowerCaseSafe(username));
     return entityToAdapterFunc(realm).apply(userByUsername);
   }
 
@@ -273,15 +272,6 @@ public class CassandraUserProvider implements UserProvider {
 
     if (userModel == null) {
       return null;
-    }
-
-    if (!realm.isDuplicateEmailsAllowed()) {
-      if (userModel.getEmail() != null && !userModel.getEmail().equals(userByEmail.getEmailConstraint())) {
-        // Realm settings have been changed from allowing duplicate emails to not allowing them.
-        // We need to update the email constraint to reflect this change in the user entities.
-        userByEmail.setEmailConstraint(userModel.getEmail());
-        userRepository.createOrUpdateUser(realm.getId(), userByEmail);
-      }
     }
 
     return entityToAdapterFunc(realm).apply(userByEmail);

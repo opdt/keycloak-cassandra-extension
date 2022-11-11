@@ -27,6 +27,8 @@ public interface UserRepository {
   Set<String> findUserIdsByAttribute(
       String name, String value, int firstResult, int maxResult);
 
+  List<User> findUsersByAttribute(String realmId, String name, String value);
+
   User findUserByAttribute(String realmId, String name, String value);
 
   MultivaluedHashMap<String, String> findAllUserAttributes(String userId);

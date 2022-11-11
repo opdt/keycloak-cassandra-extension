@@ -37,7 +37,6 @@ public class User {
 
   @Builder.Default private Boolean enabled = true;
   @Builder.Default private Boolean emailVerified = false;
-  private String emailConstraint; // TODO: enforcen (wird in JPA per unique constraint gemacht) // username muss auch unique sein
 
   @Builder.Default private boolean serviceAccount = false;
 

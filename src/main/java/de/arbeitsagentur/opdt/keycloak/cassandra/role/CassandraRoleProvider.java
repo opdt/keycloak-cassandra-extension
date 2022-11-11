@@ -42,10 +42,8 @@ public class CassandraRoleProvider implements RoleProvider {
 
   @Override
   public RoleModel addRealmRole(RealmModel realm, String id, String name) {
-    RoleModel existingRole = getRealmRole(realm, name);
-    if (existingRole != null) {
-      log.warnf("Role with the same name exists: %s for realm %s", name, realm.getName());
-      return existingRole;
+    if (getRealmRole(realm, name) != null) {
+      throw new ModelDuplicateException("Role with the same name exists: " + name + " for realm " + realm.getName());
     }
 
     log.debugf("addRealmRole(%s, %s, %s)%s", realm, id, name, getShortStackTrace());
