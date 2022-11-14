@@ -21,6 +21,9 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.CassandraRealmRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
@@ -49,6 +52,8 @@ public class CassandraMapDatastoreProviderFactory extends MapDatastoreProviderFa
 
   private CassandraUserRepository userRepository;
   private CassandraRoleRepository roleRepository;
+
+  private CassandraRealmRepository realmRepository;
   private CqlSession cqlSession;
 
   @Override
@@ -66,6 +71,7 @@ public class CassandraMapDatastoreProviderFactory extends MapDatastoreProviderFa
     ManagedCompositeCassandraRepository cassandraRepository = Arc.container().instance(ManagedCompositeCassandraRepository.class).get();
     cassandraRepository.setRoleRepository(roleRepository);
     cassandraRepository.setUserRepository(userRepository);
+    cassandraRepository.setRealmRepository(realmRepository);
 
     return new CassandraMapDatastoreProvider(session, cassandraRepository);
   }
@@ -123,11 +129,19 @@ public class CassandraMapDatastoreProviderFactory extends MapDatastoreProviderFa
     createRolesToAttributesMappingTable(cqlSession);
     createRealmToUserMappingTable(cqlSession);
 
+    // Realm-Tables
+    createRealmTable(cqlSession);
+    createRealmsToAttributesMappingTable(cqlSession);
+    createAttributesToRealmsMappingTable(cqlSession);
+    createClientInitialAccessesTable(cqlSession);
+
     UserMapper userMapper = new UserMapperBuilder(cqlSession).build();
     RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).build();
+    RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).build();
 
     userRepository = new CassandraUserRepository(userMapper.userDao());
     roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
+    realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
   }
 
   @Override
@@ -166,6 +180,55 @@ public class CassandraMapDatastoreProviderFactory extends MapDatastoreProviderFa
             .withColumn("email_verified", DataTypes.BOOLEAN)
             .withColumn("service_account", DataTypes.BOOLEAN)
             .withColumn("created_timestamp", DataTypes.TIMESTAMP)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createRealmTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("realms")
+            .ifNotExists()
+            .withPartitionKey("id", DataTypes.TEXT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createRealmsToAttributesMappingTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("realms_to_attributes")
+            .ifNotExists()
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withClusteringColumn("attribute_name", DataTypes.TEXT)
+            .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createAttributesToRealmsMappingTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("attributes_to_realms")
+            .ifNotExists()
+            .withPartitionKey("attribute_name", DataTypes.TEXT)
+            .withClusteringColumn("attribute_value", DataTypes.TEXT)
+            .withClusteringColumn("realm_id", DataTypes.TEXT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createClientInitialAccessesTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("client_initial_accesses")
+            .ifNotExists()
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withClusteringColumn("id", DataTypes.TEXT)
+            .withColumn("timestamp", DataTypes.BIGINT)
+            .withColumn("expiration", DataTypes.BIGINT)
+            .withColumn("count", DataTypes.INT)
+            .withColumn("remaining_count", DataTypes.INT)
             .build();
 
     session.execute(statement);

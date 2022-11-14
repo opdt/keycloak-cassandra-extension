@@ -15,9 +15,11 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmProvider;
 import org.keycloak.models.RoleProvider;
 import org.keycloak.models.UserProvider;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
@@ -33,6 +35,11 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
   }
 
   @Override
+  public RealmProvider realms() {
+    return new CassandraRealmsProvider(session, cassandraRepository);
+  }
+
+  @Override
   public UserProvider users() {
     return new CassandraUserProvider(session, cassandraRepository);
   }
@@ -41,5 +48,7 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
   public RoleProvider roles() {
     return new CassandraRoleProvider(cassandraRepository);
   }
+
+
 
 }
