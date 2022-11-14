@@ -128,7 +128,7 @@ public class CassandraRoleAdapter implements RoleModel {
 
   @Override
   public String getContainerId() {
-    return role.isClientRole() ? role.getClientId() : null;
+    return role.isClientRole() ? role.getClientId() : realm.getId();
   }
 
   @Override
