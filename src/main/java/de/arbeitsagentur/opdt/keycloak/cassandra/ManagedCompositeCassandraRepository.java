@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.L1Cached;
@@ -33,10 +34,13 @@ import javax.enterprise.context.ApplicationScoped;
 @Timed(unit = MetricUnits.MILLISECONDS)
 @Unremovable
 @ApplicationScoped
-public class ManagedCompositeCassandraRepository implements RoleRepository, UserRepository {
+public class ManagedCompositeCassandraRepository implements RoleRepository, UserRepository, RealmRepository {
   @Delegate
   private CassandraUserRepository userRepository;
 
   @Delegate
   private CassandraRoleRepository roleRepository;
+
+  @Delegate
+  private RealmRepository realmRepository;
 }

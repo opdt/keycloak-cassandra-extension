@@ -122,7 +122,7 @@ public class CassandraUserRepository implements UserRepository {
         .getAttributeValues()
         .forEach(value -> userDao.deleteAttributeToUserMapping(attributeName, value, userId));
   }
-
+// +
   @Override
   public void addRequiredAction(UserRequiredAction requiredAction) {
     userDao.insert(requiredAction);
