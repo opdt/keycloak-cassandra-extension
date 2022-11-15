@@ -16,18 +16,21 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.UserSessionProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
 
+// Remove as soon as DatastoreProvider covers user sessions
 @JBossLog
-@AutoService(DatastoreProviderFactory.class)
-public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, EnvironmentDependentProviderFactory {
-  private static final String PROVIDER_ID = "cassandra-map";
+@AutoService(UserSessionProviderFactory.class)
+public class CassandraMapUserSessionProviderFactory extends AbstractCassandraProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
+  private static final String PROVIDER_ID = "map";
 
   @Override
   public String getId() {
@@ -35,8 +38,8 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
   }
 
   @Override
-  public DatastoreProvider create(KeycloakSession session) {
-    return new CassandraMapDatastoreProvider(session, createRepository());
+  public CassandraUserSessionProvider create(KeycloakSession session) {
+    return new CassandraUserSessionProvider(session, createRepository());
   }
 
   @Override
@@ -56,5 +59,10 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
   @Override
   public boolean isSupported() {
     return true;
+  }
+
+  @Override
+  public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
+
   }
 }

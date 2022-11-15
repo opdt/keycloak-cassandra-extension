@@ -1476,6 +1476,7 @@ public class CassandraRealmAdapter implements RealmModel {
   public ClientInitialAccessModel createClientInitialAccessModel(int expiration, int count) {
     ClientInitialAccess clientInitialAccess = ClientInitialAccess.builder()
         .id(KeycloakModelUtils.generateId())
+        .realmId(realmEntity.getId())
         .timestamp(Time.currentTimeMillis())
         .expiration(expiration == 0 ? null : Time.currentTimeMillis() + TimeAdapter.fromSecondsToMilliseconds(expiration))
         .count(count)
