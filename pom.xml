@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension</artifactId>
-    <version>0.0.3</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
 
     <name>keycloak-extension-cassandra</name>
@@ -97,7 +97,7 @@
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-model-map</artifactId>
             <version>${keycloak.version}</version>
-            <scope>provided</scope>
+            <!-- <scope>provided</scope> -->
         </dependency>
 
         <dependency>
@@ -186,6 +186,27 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.keycloak:keycloak-model-map</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

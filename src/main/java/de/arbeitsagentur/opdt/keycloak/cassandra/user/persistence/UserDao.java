@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,10 +45,12 @@ public interface UserDao {
   @Update
   void update(Credential credential);
 
-  @Insert // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
+  @Insert
+    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
   void insert(AttributeToUserMapping UserAttributeMapping);
 
-  @Insert // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
+  @Insert
+    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
   void insert(UserRequiredAction UserRequiredAction);
 
   @Insert
@@ -61,7 +63,7 @@ public interface UserDao {
   PagingIterable<User> findAll();
 
   @Select(customWhereClause = "realm_id = :realmId AND id = :id")
- User findById(String realmId, String id);
+  User findById(String realmId, String id);
 
   @Select(
       customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
@@ -75,7 +77,7 @@ public interface UserDao {
   PagingIterable<UserToAttributeMapping> findAllAttributes(String userId);
 
   @Select(customWhereClause = "user_id = :userId AND attribute_name = :attributeName")
- UserToAttributeMapping findAttribute(String userId, String attributeName);
+  UserToAttributeMapping findAttribute(String userId, String attributeName);
 
   @Select
   PagingIterable<UserToAttributeMapping> findAllAttributes();
@@ -89,7 +91,7 @@ public interface UserDao {
   @Select(
       customWhereClause =
           "broker_user_id = :brokerUserId AND identity_provider = :identityProvider")
- FederatedIdentityToUserMapping findFederatedIdentityByBrokerUserId(
+  FederatedIdentityToUserMapping findFederatedIdentityByBrokerUserId(
       String brokerUserId, String identityProvider);
 
   @Select(customWhereClause = "user_id = :userId")
@@ -123,10 +125,10 @@ public interface UserDao {
   @Delete
   void delete(User User);
 
-  @Delete(entityClass =UserToAttributeMapping.class)
+  @Delete(entityClass = UserToAttributeMapping.class)
   void deleteUserAttributes(String userId);
 
-  @Delete(entityClass =UserRequiredAction.class)
+  @Delete(entityClass = UserRequiredAction.class)
   void deleteAllRequiredActions(String userId);
 
   @Delete(entityClass = AttributeToUserMapping.class)
@@ -147,13 +149,13 @@ public interface UserDao {
   @Delete
   boolean delete(UserRequiredAction UserRequiredAction);
 
-  @Delete(entityClass =UserToAttributeMapping.class)
+  @Delete(entityClass = UserToAttributeMapping.class)
   boolean deleteAttribute(String userId, String attributeName);
 
-  @Delete(entityClass =UserRequiredAction.class)
+  @Delete(entityClass = UserRequiredAction.class)
   boolean deleteRequiredAction(String userId, String requiredAction);
 
-  @Delete(entityClass =RealmToUserMapping.class)
+  @Delete(entityClass = RealmToUserMapping.class)
   boolean deleteRealmToUserMapping(String realmId, boolean serviceAccount, String userId);
 
   @Query("SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId")
