@@ -47,6 +47,9 @@ public interface RealmDao {
   @Update
   void insertOrUpdate(ClientInitialAccess model);
 
+  @Update(ttl = ":ttl")
+  void insertOrUpdate(ClientInitialAccess model, int ttl);
+
   @Delete(entityClass = ClientInitialAccess.class)
   void deleteClientInitialAccessModel(String realmId, String id);
 

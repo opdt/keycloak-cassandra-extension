@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.arbeitsagentur.opdt.keycloak.cassandra;
+package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
@@ -26,7 +27,7 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
 
-// Remove as soon as DatastoreProvider covers user sessions
+// TODO: Remove as soon as DatastoreProvider covers user sessions
 @JBossLog
 @AutoService(UserSessionProviderFactory.class)
 public class CassandraMapUserSessionProviderFactory extends AbstractCassandraProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {

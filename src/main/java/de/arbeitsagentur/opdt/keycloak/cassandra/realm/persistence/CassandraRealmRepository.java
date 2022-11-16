@@ -19,6 +19,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.common.util.Time;
+import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,7 +66,12 @@ public class CassandraRealmRepository implements RealmRepository {
   // ClientInitialAccessModel
   @Override
   public void insertOrUpdate(ClientInitialAccess model) {
-    realmDao.insertOrUpdate(model);
+    if (model.getExpiration() == null) {
+      realmDao.insertOrUpdate(model);
+    } else {
+      int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(model.getExpiration() - Time.currentTimeMillis()));
+      realmDao.insertOrUpdate(model, ttl);
+    }
   }
 
   @Override
@@ -175,6 +182,31 @@ public class CassandraRealmRepository implements RealmRepository {
     attribute
         .getAttributeValues()
         .forEach(value -> realmDao.deleteAttributeToRealmMapping(attributeName, value, realmId));
+    return true;
+  }
+
+  @Override
+  public boolean deleteRealmAttribute(String realmId, String attributeName, String attributeValue) {
+    AttributeToRealmMapping attribute = realmDao.findByAttribute(attributeName, attributeValue).all().stream()
+        .filter(a -> a.getRealmId().equals(realmId))
+        .findFirst()
+        .orElse(null);
+
+    if (attribute == null) {
+      return false;
+    }
+
+    // Beide Mapping-Tabellen beachten!
+    realmDao.deleteAttributeToRealmMapping(attributeName, attributeValue, realmId);
+    RealmToAttributeMapping realmToAttributeMapping = findRealmAttribute(realmId, attributeName);
+    realmToAttributeMapping.getAttributeValues().remove(attributeValue);
+
+    if(realmToAttributeMapping.getAttributeValues().isEmpty()) {
+      realmDao.deleteAttribute(realmId, attributeName);
+    } else {
+      insertOrUpdate(realmToAttributeMapping);
+    }
+
     return true;
   }
 }

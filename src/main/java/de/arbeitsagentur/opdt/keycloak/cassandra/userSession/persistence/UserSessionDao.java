@@ -49,7 +49,7 @@ public interface UserSessionDao {
   @Select(customWhereClause = "client_id = :clientId AND user_session_id = :userSessionId")
   AuthenticatedClientSession findClientSession(String clientId, String userSessionId);
 
-  @Delete(entityClass = AuthenticatedClientSession.class)
+  @Delete(entityClass = AuthenticatedClientSession.class, customWhereClause = "client_id = :clientId")
   void deleteClientSessions(String clientId);
 
   @Delete

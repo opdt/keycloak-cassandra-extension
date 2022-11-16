@@ -38,9 +38,9 @@ public interface RoleRepository {
 
   ClientRole getClientRoleByName(String clientId, String name);
 
-  Stream<RealmRole> getAllRealmRoles(String realmId, Integer firstResult, Integer maxResult);
+  List<RealmRole> getAllRealmRoles(String realmId, Integer firstResult, Integer maxResult);
 
-  Stream<ClientRole> getAllClientRoles(String clientId, Integer firstResult, Integer maxResult);
+  List<ClientRole> getAllClientRoles(String clientId, Integer firstResult, Integer maxResult);
 
   void updateAttribute(RoleToAttributeMapping attributeMapping);
 
@@ -52,5 +52,5 @@ public interface RoleRepository {
 
   Role getRoleById(String id);
 
-  Stream<Role> getRolesByIds(List<String> ids, Integer firstResult, Integer maxResult);
+  List<Role> getRolesByIds(List<String> ids, Integer firstResult, Integer maxResult);
 }

@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,22 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.CassandraAuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.CassandraRealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.CassandraSingleUseObjectRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserMapperBuilder;
@@ -42,6 +51,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.map.datastore.MapDatastoreProviderFactory;
+import org.keycloak.sessions.CommonClientSessionModel;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
 
@@ -57,7 +67,11 @@ public abstract class AbstractCassandraProviderFactory {
   private CassandraRoleRepository roleRepository;
   private CassandraRealmRepository realmRepository;
   private CassandraUserSessionRepository userSessionRepository;
-  private CqlSession cqlSession;
+  private CassandraAuthSessionRepository authSessionRepository;
+  private CassandraLoginFailureRepository loginFailureRepository;
+  private CassandraSingleUseObjectRepository singleUseObjectRepository;
+
+  private static CqlSession cqlSession;
 
   protected ManagedCompositeCassandraRepository createRepository() {
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
@@ -68,6 +82,9 @@ public abstract class AbstractCassandraProviderFactory {
     cassandraRepository.setUserRepository(userRepository);
     cassandraRepository.setRealmRepository(realmRepository);
     cassandraRepository.setUserSessionRepository(userSessionRepository);
+    cassandraRepository.setAuthSessionRepository(authSessionRepository);
+    cassandraRepository.setLoginFailureRepository(loginFailureRepository);
+    cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
 
     return cassandraRepository;
   }
@@ -86,74 +103,95 @@ public abstract class AbstractCassandraProviderFactory {
     String password = scope.get("password");
     int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
 
-    List<InetSocketAddress> contactPointsList =
-        Arrays.stream(contactPoints.split(","))
-            .map(cp -> new InetSocketAddress(cp, port))
-            .collect(Collectors.toList());
+    if (cqlSession == null) {
+      log.info("Create schema...");
+      List<InetSocketAddress> contactPointsList =
+          Arrays.stream(contactPoints.split(","))
+              .map(cp -> new InetSocketAddress(cp, port))
+              .collect(Collectors.toList());
 
-    try (CqlSession createKeyspaceSession =
-             CqlSession.builder()
-                 .addContactPoints(contactPointsList)
-                 .withAuthCredentials(username, password)
-                 .withLocalDatacenter(localDatacenter)
-                 .build()) {
-      createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
+      try (CqlSession createKeyspaceSession =
+               CqlSession.builder()
+                   .addContactPoints(contactPointsList)
+                   .withAuthCredentials(username, password)
+                   .withLocalDatacenter(localDatacenter)
+                   .build()) {
+        createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
+      }
+
+      cqlSession = CqlSession.builder()
+          .addContactPoints(contactPointsList)
+          .withAuthCredentials(username, password)
+          .withLocalDatacenter(localDatacenter)
+          .withKeyspace(keyspace)
+          .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
+          .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
+          .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
+          .build();
+
+      createUserTable(cqlSession);
+      createFederatedIdentityTable(cqlSession);
+      createFederatedIdentityToUserMappingTable(cqlSession);
+      createUsersToAttributesMappingTable(cqlSession);
+      createAttributesToUsersMappingTable(cqlSession);
+      createUserRoleMappingTable(cqlSession);
+      createUserClientRoleMappingTable(cqlSession);
+      createUserRequiredActionTable(cqlSession);
+      createCredentialsTable(cqlSession);
+      createRoleTable(cqlSession);
+      createClientRoleTable(cqlSession);
+      createRealmRoleTable(cqlSession);
+      createAttributesToRolesMappingTable(cqlSession);
+      createRolesToAttributesMappingTable(cqlSession);
+      createRealmToUserMappingTable(cqlSession);
+
+      // Realm-Tables
+      createRealmTable(cqlSession);
+      createRealmsToAttributesMappingTable(cqlSession);
+      createAttributesToRealmsMappingTable(cqlSession);
+      createClientInitialAccessesTable(cqlSession);
+
+      // UserSession-Tables
+      createUserSessionTable(cqlSession);
+      createAuthenticatedClientSessionTable(cqlSession);
+      createUserSessionsToAttributesMappingTable(cqlSession);
+      createAttributesToUserSessionsMappingTable(cqlSession);
+
+      // AuthSession-Tables
+      createRootAuthSessionTable(cqlSession);
+      createAuthSessionTable(cqlSession);
+
+      // LoginFailure-Tables
+      createLoginFailuresTable(cqlSession);
+
+      // SingleUseObjects-Tables
+      createSingleUseObjectsTable(cqlSession);
+
+      log.info("Schema created.");
     }
-
-    cqlSession = CqlSession.builder()
-        .addContactPoints(contactPointsList)
-        .withAuthCredentials(username, password)
-        .withLocalDatacenter(localDatacenter)
-        .withKeyspace(keyspace)
-        .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
-        .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
-        .build();
-
-    createUserTable(cqlSession);
-    createFederatedIdentityTable(cqlSession);
-    createFederatedIdentityToUserMappingTable(cqlSession);
-    createUsersToAttributesMappingTable(cqlSession);
-    createAttributesToUsersMappingTable(cqlSession);
-    createUserRoleMappingTable(cqlSession);
-    createUserClientRoleMappingTable(cqlSession);
-    createUserRequiredActionTable(cqlSession);
-    createCredentialsTable(cqlSession);
-    createRoleTable(cqlSession);
-    createClientRoleTable(cqlSession);
-    createRealmRoleTable(cqlSession);
-    createAttributesToRolesMappingTable(cqlSession);
-    createRolesToAttributesMappingTable(cqlSession);
-    createRealmToUserMappingTable(cqlSession);
-
-    // Realm-Tables
-    createRealmTable(cqlSession);
-    createRealmsToAttributesMappingTable(cqlSession);
-    createAttributesToRealmsMappingTable(cqlSession);
-    createClientInitialAccessesTable(cqlSession);
-
-    // UserSession-Tables
-    createUserSessionTable(cqlSession);
-    createAuthenticatedClientSessionTable(cqlSession);
-    createUserSessionsToAttributesMappingTable(cqlSession);
-    createAttributesToUserSessionsMappingTable(cqlSession);
 
     UserMapper userMapper = new UserMapperBuilder(cqlSession).build();
     RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).build();
     RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).build();
     UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).build();
+    AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).build();
+    LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).build();
+    SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).build();
 
     userRepository = new CassandraUserRepository(userMapper.userDao());
     roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
     realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
     userSessionRepository = new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
+    authSessionRepository = new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
+    loginFailureRepository = new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
+    singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
   }
 
   protected void close() {
     cqlSession.close();
   }
 
-  private void createKeyspaceIfNotExists(
-      CqlSession cqlSession, String keyspaceName, int replicationFactor) {
+  private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, int replicationFactor) {
     CreateKeyspace createKeyspace =
         SchemaBuilder.createKeyspace(keyspaceName)
             .ifNotExists()
@@ -207,6 +245,42 @@ public abstract class AbstractCassandraProviderFactory {
             .withColumn("state", DataTypes.TEXT)
             .withColumn("notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .withColumn("persistence_state", DataTypes.TEXT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createRootAuthSessionTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("root_authentication_sessions")
+            .ifNotExists()
+            .withPartitionKey("id", DataTypes.TEXT)
+            .withColumn("realm_id", DataTypes.TEXT)
+            .withColumn("timestamp", DataTypes.BIGINT)
+            .withColumn("expiration", DataTypes.BIGINT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createAuthSessionTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("authentication_sessions")
+            .ifNotExists()
+            .withPartitionKey("parent_session_id", DataTypes.TEXT)
+            .withClusteringColumn("tab_id", DataTypes.TEXT)
+            .withColumn("execution_status", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn("timestamp", DataTypes.BIGINT)
+            .withColumn("user_id", DataTypes.TEXT)
+            .withColumn("client_id", DataTypes.TEXT)
+            .withColumn("redirect_uri", DataTypes.TEXT)
+            .withColumn("action", DataTypes.TEXT)
+            .withColumn("protocol", DataTypes.TEXT)
+            .withColumn("required_actions", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("client_scopes", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("user_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn("auth_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn("client_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .build();
 
     session.execute(statement);
@@ -478,6 +552,33 @@ public abstract class AbstractCassandraProviderFactory {
             .withPartitionKey("realm_id", DataTypes.TEXT)
             .withClusteringColumn("service_account", DataTypes.BOOLEAN)
             .withClusteringColumn("user_id", DataTypes.TEXT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createLoginFailuresTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("login_failures")
+            .ifNotExists()
+            .withPartitionKey("user_id", DataTypes.TEXT)
+            .withClusteringColumn("id", DataTypes.TEXT)
+            .withColumn("realm_id", DataTypes.TEXT)
+            .withColumn("failed_login_not_before", DataTypes.BIGINT)
+            .withColumn("num_failures", DataTypes.INT)
+            .withColumn("last_failure", DataTypes.BIGINT)
+            .withColumn("last_ip_failure", DataTypes.TEXT)
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createSingleUseObjectsTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("single_use_objects")
+            .ifNotExists()
+            .withPartitionKey("key", DataTypes.TEXT)
+            .withColumn("notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .build();
 
     session.execute(statement);

@@ -146,6 +146,11 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
   @Override
   public void setNote(String name, String value) {
+    if(value == null) {
+      removeNote(name);
+      return;
+    }
+
     userSessionEntity.getNotes().put(name, value);
     userSessionRepository.insertOrUpdate(userSessionEntity);
   }

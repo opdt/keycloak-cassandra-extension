@@ -52,7 +52,8 @@ public class AuthenticatedClientSession implements ExpirableEntity {
   private Integer currentRefreshTokenUseCount;
   private boolean offline;
 
-  private Map<String ,String> notes;
+  @Builder.Default
+  private Map<String ,String> notes = new ConcurrentHashMap<>();
 
   public Map<String, String> getNotes() {
     if(notes == null) {

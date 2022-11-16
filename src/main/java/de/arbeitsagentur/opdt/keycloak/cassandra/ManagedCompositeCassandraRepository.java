@@ -15,10 +15,13 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.L1Cached;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
@@ -35,7 +38,8 @@ import javax.enterprise.context.ApplicationScoped;
 @Timed(unit = MetricUnits.MILLISECONDS)
 @Unremovable
 @ApplicationScoped
-public class ManagedCompositeCassandraRepository implements RoleRepository, UserRepository, RealmRepository, UserSessionRepository {
+public class ManagedCompositeCassandraRepository implements RoleRepository, UserRepository, RealmRepository,
+    UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository {
   @Delegate
   private CassandraUserRepository userRepository;
 
@@ -47,4 +51,13 @@ public class ManagedCompositeCassandraRepository implements RoleRepository, User
 
   @Delegate
   private UserSessionRepository userSessionRepository;
+
+  @Delegate
+  private AuthSessionRepository authSessionRepository;
+
+  @Delegate
+  private LoginFailureRepository loginFailureRepository;
+
+  @Delegate
+  private SingleUseObjectRepository singleUseObjectRepository;
 }

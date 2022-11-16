@@ -57,4 +57,6 @@ public interface RealmRepository {
   void insertOrUpdate(RealmToAttributeMapping mapping);
 
   boolean deleteRealmAttribute(String realmId, String attributeName);
+
+  boolean deleteRealmAttribute(String realmId, String attributeName, String attributeValue);
 }

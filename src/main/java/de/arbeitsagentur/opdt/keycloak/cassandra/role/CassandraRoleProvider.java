@@ -74,7 +74,7 @@ public class CassandraRoleProvider implements RoleProvider {
     log.debugv("get all realm roles: realmId={0} first={1} max={2}", realm.getId(), first, max);
 
     return roleRepository
-        .getAllRealmRoles(realm.getId(), first, max)
+        .getAllRealmRoles(realm.getId(), first, max).stream()
         .map(r -> entityToAdapterFunc(realm).apply(r.toRole()));
   }
 
@@ -148,7 +148,7 @@ public class CassandraRoleProvider implements RoleProvider {
     log.debugv("get all client roles: clientId={0} first={1} max={2}", client.getId(), first, max);
 
     return roleRepository
-        .getAllClientRoles(client.getId(), first, max)
+        .getAllClientRoles(client.getId(), first, max).stream()
         .map(r -> entityToAdapterFunc(client.getRealm()).apply(r.toRole()));
   }
 
@@ -156,7 +156,7 @@ public class CassandraRoleProvider implements RoleProvider {
   public Stream<RoleModel> searchForClientRolesStream(ClientModel client, String search, Integer first, Integer max) {
     log.debugf("get all client roles: clientId=%s search=%s first=%s max=%s", client.getId(), search, first, max);
 
-    return roleRepository.getAllClientRoles(client.getId(), first, max)
+    return roleRepository.getAllClientRoles(client.getId(), first, max).stream()
         .filter(role -> search == null
             || search.isEmpty()
             || role.getName().toLowerCase().contains(search.toLowerCase())
@@ -199,7 +199,7 @@ public class CassandraRoleProvider implements RoleProvider {
   public Stream<RoleModel> searchForRolesStream(RealmModel realm, String search, Integer first, Integer max) {
     log.debugf("get all roles: realmId=%s search=%s first=%s max=%s", realm.getId(), search, first, max);
 
-    return roleRepository.getAllRealmRoles(realm.getId(), first, max)
+    return roleRepository.getAllRealmRoles(realm.getId(), first, max).stream()
         .filter(role -> search == null
             || search.isEmpty()
             || role.getName().toLowerCase().contains(search.toLowerCase())

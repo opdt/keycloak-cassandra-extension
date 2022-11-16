@@ -19,6 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions.paginated;
@@ -99,13 +100,13 @@ public class CassandraRoleRepository implements RoleRepository {
   }
 
   @Override
-  public Stream<RealmRole> getAllRealmRoles(String realmId, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.findAllRealmRoles(realmId), firstResult, maxResult);
+  public List<RealmRole> getAllRealmRoles(String realmId, Integer firstResult, Integer maxResult) {
+    return paginated(roleDao.findAllRealmRoles(realmId), firstResult, maxResult).collect(Collectors.toList());
   }
 
   @Override
-  public Stream<ClientRole> getAllClientRoles(String clientId, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.findAllClientRoles(clientId), firstResult, maxResult);
+  public List<ClientRole> getAllClientRoles(String clientId, Integer firstResult, Integer maxResult) {
+    return paginated(roleDao.findAllClientRoles(clientId), firstResult, maxResult).collect(Collectors.toList());
   }
 
   @Override
@@ -160,7 +161,7 @@ public class CassandraRoleRepository implements RoleRepository {
   }
 
   @Override
-  public Stream<Role> getRolesByIds(List<String> ids, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.getRolesByIds(ids), firstResult, maxResult);
+  public List<Role> getRolesByIds(List<String> ids, Integer firstResult, Integer maxResult) {
+    return paginated(roleDao.getRolesByIds(ids), firstResult, maxResult).collect(Collectors.toList());
   }
 }

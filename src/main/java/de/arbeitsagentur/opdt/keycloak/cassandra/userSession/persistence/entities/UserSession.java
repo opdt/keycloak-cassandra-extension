@@ -53,7 +53,8 @@ public class UserSession implements ExpirableEntity {
 
   private UserSessionModel.State state;
 
-  private Map<String,String> notes;
+  @Builder.Default
+  private Map<String,String> notes = new ConcurrentHashMap<>();
 
   private UserSessionModel.SessionPersistenceState persistenceState;
 

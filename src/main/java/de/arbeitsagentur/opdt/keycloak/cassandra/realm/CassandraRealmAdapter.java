@@ -1696,18 +1696,21 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public void addDefaultClientScope(ClientScopeModel clientScope, boolean defaultScope) {
-    if (defaultScope) {
-      realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), DEFAULT_CLIENT_SCOPE_ID, Arrays.asList(clientScope.getId())));
-    } else {
-      realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), OPTIONAL_CLIENT_SCOPE_ID, Arrays.asList(clientScope.getId())));
+    String attrName = defaultScope ? DEFAULT_CLIENT_SCOPE_ID : OPTIONAL_CLIENT_SCOPE_ID;
+    RealmToAttributeMapping attr = realmRepository.findRealmAttribute(realmEntity.getId(), attrName);
+    if(attr == null) {
+      attr = new RealmToAttributeMapping(realmEntity.getId(), attrName, Arrays.asList(clientScope.getId()));
+    } else if (!attr.getAttributeValues().contains(clientScope.getId())) {
+      attr.getAttributeValues().add(clientScope.getId());
     }
+    realmRepository.insertOrUpdate(attr);
   }
 
   @Override
   public void removeDefaultClientScope(ClientScopeModel clientScope) {
-    boolean removedDefault = realmRepository.deleteRealmAttribute(realmEntity.getId(), DEFAULT_CLIENT_SCOPE_ID);
+    boolean removedDefault = realmRepository.deleteRealmAttribute(realmEntity.getId(), DEFAULT_CLIENT_SCOPE_ID, clientScope.getId());
     if (!removedDefault) {
-      realmRepository.deleteRealmAttribute(realmEntity.getId(), OPTIONAL_CLIENT_SCOPE_ID);
+      realmRepository.deleteRealmAttribute(realmEntity.getId(), OPTIONAL_CLIENT_SCOPE_ID, clientScope.getId());
     }
   }
 

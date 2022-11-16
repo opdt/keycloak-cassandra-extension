@@ -90,6 +90,11 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
 
   @Override
   public void setNote(String name, String value) {
+    if(value == null) {
+      removeNote(name);
+      return;
+    }
+
     clientSessionEntity.getNotes().put(name, value);
     userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
   }
