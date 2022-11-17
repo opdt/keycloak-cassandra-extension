@@ -21,11 +21,14 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
-import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.CassandraAuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.CassandraClientRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
@@ -49,12 +52,8 @@ import io.quarkus.arc.Arc;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.UserSessionModel;
-import org.keycloak.models.map.datastore.MapDatastoreProviderFactory;
 import org.keycloak.sessions.CommonClientSessionModel;
-import org.keycloak.storage.DatastoreProvider;
-import org.keycloak.storage.DatastoreProviderFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -71,6 +70,8 @@ public abstract class AbstractCassandraProviderFactory {
   CassandraAuthSessionRepository authSessionRepository;
   CassandraLoginFailureRepository loginFailureRepository;
   CassandraSingleUseObjectRepository singleUseObjectRepository;
+  CassandraClientRepository clientRepository;
+
 
   protected ManagedCompositeCassandraRepository createRepository(KeycloakSession session) {
     CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
@@ -111,6 +112,11 @@ public abstract class AbstractCassandraProviderFactory {
       singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
     }
 
+    if (clientRepository == null) {
+      ClientMapper clientMapper = new ClientMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+      clientRepository = new CassandraClientRepository(clientMapper.clientDao());
+    }
+
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
     threadLocalCache.reset();
 
@@ -122,6 +128,7 @@ public abstract class AbstractCassandraProviderFactory {
     cassandraRepository.setAuthSessionRepository(authSessionRepository);
     cassandraRepository.setLoginFailureRepository(loginFailureRepository);
     cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
+    cassandraRepository.setClientRepository(clientRepository);
 
     return cassandraRepository;
   }
