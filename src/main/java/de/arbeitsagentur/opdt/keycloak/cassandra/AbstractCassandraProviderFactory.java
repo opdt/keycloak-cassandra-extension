@@ -16,11 +16,6 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
-import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.CassandraAuthSessionRepository;
@@ -28,12 +23,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.CassandraClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
-import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.CassandraDeploymentStateRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateMapper;
-import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateMapperBuilder;
-import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapperBuilder;
@@ -54,15 +44,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionMapperBuilder;
 import io.quarkus.arc.Arc;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.UserSessionModel;
-import org.keycloak.sessions.CommonClientSessionModel;
-
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @JBossLog
 public abstract class AbstractCassandraProviderFactory {
@@ -75,9 +57,6 @@ public abstract class AbstractCassandraProviderFactory {
   CassandraLoginFailureRepository loginFailureRepository;
   CassandraSingleUseObjectRepository singleUseObjectRepository;
   CassandraClientRepository clientRepository;
-
-
-  DeploymentStateRepository deploymentStateRepository;
 
   protected ManagedCompositeCassandraRepository createRepository(KeycloakSession session) {
     CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
@@ -123,11 +102,6 @@ public abstract class AbstractCassandraProviderFactory {
       clientRepository = new CassandraClientRepository(clientMapper.clientDao());
     }
 
-    if (deploymentStateRepository == null) {
-      DeploymentStateMapper deploymentStateMapper = new DeploymentStateMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      deploymentStateRepository = new CassandraDeploymentStateRepository(deploymentStateMapper.deploymentStateDao());
-    }
-
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
     threadLocalCache.reset();
 
@@ -140,7 +114,6 @@ public abstract class AbstractCassandraProviderFactory {
     cassandraRepository.setLoginFailureRepository(loginFailureRepository);
     cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
     cassandraRepository.setClientRepository(clientRepository);
-    cassandraRepository.setDeploymentStateRepository(deploymentStateRepository);
 
     return cassandraRepository;
   }

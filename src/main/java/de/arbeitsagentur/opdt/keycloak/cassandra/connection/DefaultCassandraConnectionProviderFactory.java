@@ -3,6 +3,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
@@ -574,6 +575,4 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     session.execute(statement);
   }
-
-
 }
