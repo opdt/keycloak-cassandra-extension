@@ -118,6 +118,11 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     // SingleUseObjects-Tables
     createSingleUseObjectsTable(cqlSession);
 
+    // Client-Tables
+    createClientTables(cqlSession);
+    createAttributesToClientsMappingTable(cqlSession);
+    createClientsToAttributesMappingTable(cqlSession);
+
     log.info("Schema created.");
   }
 
@@ -533,4 +538,42 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     session.execute(statement);
   }
+
+
+  private void createClientTables(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("clients")
+                    .ifNotExists()
+                    .withPartitionKey("realm_id", DataTypes.TEXT)
+                    .withClusteringColumn("id", DataTypes.TEXT)
+                    .build();
+
+    session.execute(statement);
+  }
+
+  private void createAttributesToClientsMappingTable(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("attributes_to_clients")
+                    .ifNotExists()
+                    .withPartitionKey("attribute_name", DataTypes.TEXT)
+                    .withPartitionKey("attribute_value", DataTypes.TEXT)
+                    .withClusteringColumn("client_id", DataTypes.TEXT)
+                    .build();
+
+    session.execute(statement);
+  }
+
+  private void createClientsToAttributesMappingTable(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("clients_to_attributes")
+                    .ifNotExists()
+                    .withPartitionKey("client_id", DataTypes.TEXT)
+                    .withClusteringColumn("attribute_name", DataTypes.TEXT)
+                    .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
+                    .build();
+
+    session.execute(statement);
+  }
+
+
 }
