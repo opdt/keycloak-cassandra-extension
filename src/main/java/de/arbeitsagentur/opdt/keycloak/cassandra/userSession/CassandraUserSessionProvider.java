@@ -186,8 +186,8 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     return getUserSessionsStream(realm, client)
         .filter(s -> s.getRealm().equals(realm))
         .filter(s -> !s.isOffline())
-        .skip(firstResult)
-        .limit(maxResults);
+        .skip(firstResult != null && firstResult > 0 ? firstResult : 0)
+        .limit(maxResults  != null && maxResults > 0 ? maxResults : Long.MAX_VALUE);
   }
 
   @Override
@@ -424,8 +424,8 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     return userSessionRepository.findAll().stream()
         .filter(s -> s.getRealmId().equals(realm.getId()))
         .filter(UserSession::isOffline)
-        .skip(firstResult)
-        .limit(maxResults)
+        .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+        .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
         .sorted(Comparator.comparing(UserSession::getLastSessionRefresh))
         .map(entityToAdapterFunc(realm));
   }

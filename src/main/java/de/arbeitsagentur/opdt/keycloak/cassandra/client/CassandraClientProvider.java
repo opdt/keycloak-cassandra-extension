@@ -36,8 +36,8 @@ public class CassandraClientProvider implements ClientProvider {
     @Override
     public Stream<ClientModel> getClientsStream(RealmModel realm, Integer firstResult, Integer maxResults) {
         return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-                .skip(firstResult == null ? 0 : firstResult)
-                .limit(maxResults == null ? Long.MAX_VALUE : maxResults)
+                .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+                .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
                 .map(this::entityToAdapter)
                 .sorted(Comparator.comparing(ClientModel::getName));
     }
@@ -165,8 +165,8 @@ public class CassandraClientProvider implements ClientProvider {
         return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
                 .map(this::entityToAdapter)
                 .filter(e -> Objects.equals(e.getClientId(), clientId))
-                .skip(firstResult == null ? 0 : firstResult)
-                .limit(maxResults == null ? Long.MAX_VALUE : maxResults);
+                .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+                .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }
 
     @Override
@@ -174,8 +174,8 @@ public class CassandraClientProvider implements ClientProvider {
         return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
                 .map(this::entityToAdapter)
                 .filter(c -> c.getAttributes().entrySet().containsAll(attributes.entrySet()))
-                .skip(firstResult == null ? 0 : firstResult)
-                .limit(maxResults == null ? Long.MAX_VALUE : maxResults);
+                .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+                .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }
 
     @Override
