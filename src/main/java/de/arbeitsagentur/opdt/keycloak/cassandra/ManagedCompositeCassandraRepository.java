@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
@@ -40,7 +41,7 @@ import javax.enterprise.context.ApplicationScoped;
 @Unremovable
 @ApplicationScoped
 public class ManagedCompositeCassandraRepository implements RoleRepository, UserRepository, RealmRepository,
-    UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository, ClientRepository {
+    UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository, ClientRepository, DeploymentStateRepository {
   @Delegate
   private CassandraUserRepository userRepository;
 
@@ -64,4 +65,7 @@ public class ManagedCompositeCassandraRepository implements RoleRepository, User
 
   @Delegate
   private ClientRepository clientRepository;
+
+  @Delegate
+  private DeploymentStateRepository deploymentStateRepository;
 }

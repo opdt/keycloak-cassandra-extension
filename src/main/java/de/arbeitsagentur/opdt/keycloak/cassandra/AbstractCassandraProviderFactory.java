@@ -30,6 +30,10 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.CassandraDeploymentStateRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.deploymentState.persistence.DeploymentStateRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapperBuilder;
@@ -72,6 +76,8 @@ public abstract class AbstractCassandraProviderFactory {
   CassandraSingleUseObjectRepository singleUseObjectRepository;
   CassandraClientRepository clientRepository;
 
+
+  DeploymentStateRepository deploymentStateRepository;
 
   protected ManagedCompositeCassandraRepository createRepository(KeycloakSession session) {
     CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
@@ -117,6 +123,11 @@ public abstract class AbstractCassandraProviderFactory {
       clientRepository = new CassandraClientRepository(clientMapper.clientDao());
     }
 
+    if (deploymentStateRepository == null) {
+      DeploymentStateMapper deploymentStateMapper = new DeploymentStateMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+      deploymentStateRepository = new CassandraDeploymentStateRepository(deploymentStateMapper.deploymentStateDao());
+    }
+
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
     threadLocalCache.reset();
 
@@ -129,6 +140,7 @@ public abstract class AbstractCassandraProviderFactory {
     cassandraRepository.setLoginFailureRepository(loginFailureRepository);
     cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
     cassandraRepository.setClientRepository(clientRepository);
+    cassandraRepository.setDeploymentStateRepository(deploymentStateRepository);
 
     return cassandraRepository;
   }
