@@ -22,12 +22,12 @@ public class CassandraMapSingleUseObjectProviderFactory extends AbstractCassandr
 
   @Override
   public CassandraSingleUseObjectProvider create(KeycloakSession session) {
-    return new CassandraSingleUseObjectProvider(session, createRepository());
+    return new CassandraSingleUseObjectProvider(session, createRepository(session));
   }
 
   @Override
   public void init(Config.Scope scope) {
-    super.init(scope);
+
   }
 
   @Override
@@ -36,7 +36,7 @@ public class CassandraMapSingleUseObjectProviderFactory extends AbstractCassandr
 
   @Override
   public void close() {
-    super.close();
+
   }
 
   @Override

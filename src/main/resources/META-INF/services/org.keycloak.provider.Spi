@@ -1,0 +1,2 @@
+org.keycloak.models.map.storage.MapStorageSpi
+de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionSpi

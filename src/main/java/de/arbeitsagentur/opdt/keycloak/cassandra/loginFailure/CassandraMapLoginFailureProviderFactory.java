@@ -22,12 +22,12 @@ public class CassandraMapLoginFailureProviderFactory extends AbstractCassandraPr
 
   @Override
   public CassandraLoginFailureProvider create(KeycloakSession session) {
-    return new CassandraLoginFailureProvider(session, createRepository());
+    return new CassandraLoginFailureProvider(session, createRepository(session));
   }
 
   @Override
   public void init(Config.Scope scope) {
-    super.init(scope);
+
   }
 
   @Override
@@ -36,7 +36,7 @@ public class CassandraMapLoginFailureProviderFactory extends AbstractCassandraPr
 
   @Override
   public void close() {
-    super.close();
+
   }
 
   @Override

@@ -46,13 +46,11 @@ public class CassandraMapAuthSessionProviderFactory extends AbstractCassandraPro
 
   @Override
   public CassandraAuthSessionProvider create(KeycloakSession session) {
-    return new CassandraAuthSessionProvider(session, createRepository(), authSessionsLimit);
+    return new CassandraAuthSessionProvider(session, createRepository(session), authSessionsLimit);
   }
 
   @Override
   public void init(Config.Scope scope) {
-    super.init(scope);
-
     // get auth sessions limit from config or use default if not provided
     int configInt = scope.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
     // use default if provided value is not a positive number
@@ -66,7 +64,7 @@ public class CassandraMapAuthSessionProviderFactory extends AbstractCassandraPro
 
   @Override
   public void close() {
-    super.close();
+
   }
 
   @Override

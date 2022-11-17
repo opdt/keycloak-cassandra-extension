@@ -40,12 +40,12 @@ public class CassandraMapUserSessionProviderFactory extends AbstractCassandraPro
 
   @Override
   public CassandraUserSessionProvider create(KeycloakSession session) {
-    return new CassandraUserSessionProvider(session, createRepository());
+    return new CassandraUserSessionProvider(session, createRepository(session));
   }
 
   @Override
   public void init(Config.Scope scope) {
-    super.init(scope);
+
   }
 
   @Override
@@ -54,7 +54,7 @@ public class CassandraMapUserSessionProviderFactory extends AbstractCassandraPro
 
   @Override
   public void close() {
-    super.close();
+
   }
 
   @Override

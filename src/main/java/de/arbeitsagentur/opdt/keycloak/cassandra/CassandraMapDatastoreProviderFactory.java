@@ -36,12 +36,12 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
 
   @Override
   public DatastoreProvider create(KeycloakSession session) {
-    return new CassandraMapDatastoreProvider(session, createRepository());
+    return new CassandraMapDatastoreProvider(session, createRepository(session));
   }
 
   @Override
   public void init(Config.Scope scope) {
-    super.init(scope);
+
   }
 
   @Override
@@ -50,7 +50,7 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
 
   @Override
   public void close() {
-    super.close();
+
   }
 
   @Override
