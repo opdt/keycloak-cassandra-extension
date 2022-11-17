@@ -77,37 +77,37 @@ public abstract class AbstractCassandraProviderFactory {
     CqlSession cqlSession = connectionProvider.getCqlSession();
 
     if (userRepository == null) {
-      UserMapper userMapper = new UserMapperBuilder(cqlSession).build();
+      UserMapper userMapper = new UserMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       userRepository = new CassandraUserRepository(userMapper.userDao());
     }
 
     if (roleRepository == null) {
-      RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).build();
+      RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
     }
 
     if (realmRepository == null) {
-      RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).build();
+      RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
     }
 
     if (userSessionRepository == null) {
-      UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).build();
+      UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       userSessionRepository = new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
     }
 
     if (authSessionRepository == null) {
-      AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).build();
+      AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       authSessionRepository = new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
     }
 
     if (loginFailureRepository == null) {
-      LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).build();
+      LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       loginFailureRepository = new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
     }
 
     if (singleUseObjectRepository == null) {
-      SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).build();
+      SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
       singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
     }
 
