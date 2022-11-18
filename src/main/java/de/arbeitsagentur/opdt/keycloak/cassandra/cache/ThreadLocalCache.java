@@ -24,7 +24,7 @@ import java.util.WeakHashMap;
 public class ThreadLocalCache {
   static final Object NONE = new Object();
 
-  private final ThreadLocal<Map<CacheInvocationContext, Object>> threadLocalCacheContainer = new ThreadLocal<>();
+  private static final ThreadLocal<Map<CacheInvocationContext, Object>> threadLocalCacheContainer = new ThreadLocal<>();
 
   public Object get(CacheInvocationContext invocationContext) {
     Map<CacheInvocationContext, Object> cache = getCache();

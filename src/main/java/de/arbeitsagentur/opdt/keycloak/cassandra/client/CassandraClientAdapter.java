@@ -19,7 +19,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
-import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.ClientToAttributeMapping;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -368,34 +367,6 @@ public class CassandraClientAdapter implements ClientModel {
     }
 
     @Override
-    public void setAttribute(String name, String value) {
-        if(value == null) {
-            return;
-        }
-
-        clientRepository.insertOrUpdate(new ClientToAttributeMapping(clientEntity.getId(), name, List.of(value)));
-    }
-
-    @Override
-    public void removeAttribute(String name) {
-        clientRepository.deleteClientAttribute(clientEntity.getId(), name);
-    }
-
-    @Override
-    public String getAttribute(String name) {
-        ClientToAttributeMapping attribute = clientRepository.findClientAttribute(clientEntity.getId(), name);
-        return attribute == null || attribute.getAttributeValues().isEmpty() || attribute.getAttributeValues().get(0).isEmpty() ? null : attribute.getAttributeValues().get(0);
-    }
-
-    @Override
-    public Map<String, String> getAttributes() {
-        return clientRepository.findAllClientAttributes(clientEntity.getId()).stream()
-                .filter(e -> !e.getAttributeName().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
-                .filter(e -> e.getAttributeValues() != null && !e.getAttributeValues().isEmpty() && !e.getAttributeValues().get(0).isEmpty())
-                .collect(Collectors.toMap(ClientToAttributeMapping::getAttributeName, e -> e.getAttributeValues().get(0)));
-    }
-
-    @Override
     public String getAuthenticationFlowBindingOverride(String binding) {
         Map<String, String> authenticationFlowBindingOverride = getDeserializedAttribute(AUTHENTICATION_FLOW_BINDING_OVERRIDE, new TypeReference<>() {
         });
@@ -738,6 +709,114 @@ public class CassandraClientAdapter implements ClientModel {
         return getRolesStream().anyMatch(r -> (Objects.equals(r, role) || r.hasRole(role)));
     }
 
+    @Override
+    public void setAttribute(String name, String value) {
+        if(name == null || value == null) {
+            return;
+        }
+
+        clientEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
+        clientRepository.insertOrUpdate(clientEntity);
+    }
+
+    @Override
+    public void removeAttribute(String name) {
+        if(name == null) {
+            return;
+        }
+
+        clientEntity.getAttributes().remove(name);
+        clientRepository.insertOrUpdate(clientEntity);
+    }
+
+    @Override
+    public String getAttribute(String name) {
+        Set<String> values = clientEntity.getAttribute(name);
+        return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        return clientEntity.getAttributes().entrySet().stream()
+            .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
+            .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
+    }
+
+    public void setAttributeValues(String name, List<String> values) {
+        if(name == null || values == null) {
+            return;
+        }
+
+        clientEntity.getAttributes().put(name, new HashSet<>(values));
+        clientRepository.insertOrUpdate(clientEntity);
+    }
+
+    private List<String> getAttributeValues(String name) {
+        Set<String> values = clientEntity.getAttribute(name);
+        return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
+    }
+
+    private <T> void setSerializedAttributeValue(String name, T value) {
+        setSerializedAttributeValues(name, value instanceof List ? (List<Object>) value : Arrays.asList(value));
+    }
+
+    private void setSerializedAttributeValues(String name, List<?> values) {
+        Set<String> attributeValues = values.stream()
+            .map(value -> {
+                try {
+                    return CassandraJsonSerialization.writeValueAsString(value);
+                } catch (IOException e) {
+                    log.errorf("Cannot serialize %s (realm: %s, name: %s)", value, clientEntity.getId(), name);
+                    throw new RuntimeException(e);
+                }
+            })
+            .collect(Collectors.toCollection(HashSet::new));
+
+        clientEntity.getAttributes().put(name, attributeValues);
+        clientRepository.insertOrUpdate(clientEntity);
+    }
+
+    private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
+        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
+    }
+
+    private <T> T getDeserializedAttribute(String name, Class<T> type) {
+        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
+    }
+
+    private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
+        Set<String> values = clientEntity.getAttribute(name);
+        if (values == null) {
+            return new ArrayList<>();
+        }
+
+        return values.stream()
+            .map(value -> {
+                try {
+                    return CassandraJsonSerialization.readValue(value, type);
+                } catch (IOException e) {
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, clientEntity.getId(), name);
+                    throw new RuntimeException(e);
+                }
+            })
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
+        Set<String> values = clientEntity.getAttribute(name);
+
+        return values.stream()
+            .map(value -> {
+                try {
+                    return CassandraJsonSerialization.readValue(value, type);
+                } catch (IOException e) {
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s, type: %s)", value, clientEntity.getId(), name, type.getName());
+                    throw new RuntimeException(e);
+                }
+            })
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
     private void setAttribute(String name, boolean value) {
         setAttribute(name, Boolean.toString(value));
     }
@@ -752,77 +831,5 @@ public class CassandraClientAdapter implements ClientModel {
     private int getAttribute(String name, int defaultValue) {
         String v = getAttribute(name);
         return v != null && !v.isEmpty() ? Integer.valueOf(v) : defaultValue;
-    }
-
-    public void setAttributeValues(String name, List<String> values) {
-        clientRepository.insertOrUpdate(new ClientToAttributeMapping(clientEntity.getId(), name, values));
-    }
-
-    private List<String> getAttributeValues(String name) {
-        ClientToAttributeMapping attribute = clientRepository.findClientAttribute(clientEntity.getId(), name);
-        return attribute == null ? new ArrayList<>() : attribute.getAttributeValues().stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
-    }
-
-    private <T> void setSerializedAttributeValue(String name, T value) {
-        setSerializedAttributeValues(name, value instanceof List ? (List<Object>) value : Arrays.asList(value));
-    }
-
-    private void setSerializedAttributeValues(String name, List<?> values) {
-        List<String> attributeValues = values.stream()
-                .map(value -> {
-                    try {
-                        return CassandraJsonSerialization.writeValueAsString(value);
-                    } catch (IOException e) {
-                        log.errorf("Cannot serialize %s (client: %s, name: %s)", value, clientEntity.getId(), name);
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        clientRepository.insertOrUpdate(new ClientToAttributeMapping(clientEntity.getId(), name, attributeValues));
-    }
-
-    private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
-        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
-    }
-
-    private <T> T getDeserializedAttribute(String name, Class<T> type) {
-        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
-    }
-
-    private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
-        ClientToAttributeMapping attribute = clientRepository.findClientAttribute(clientEntity.getId(), name);
-        if (attribute == null) {
-            return new ArrayList<>();
-        }
-
-        return attribute.getAttributeValues().stream()
-                .map(value -> {
-                    try {
-                        return CassandraJsonSerialization.readValue(value, type);
-                    } catch (IOException e) {
-                        log.errorf("Cannot deserialize %s (client: %s, name: %s)", value, clientEntity.getId(), name);
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-        ClientToAttributeMapping attribute = clientRepository.findClientAttribute(clientEntity.getId(), name);
-        if (attribute == null) {
-            return new ArrayList<>();
-        }
-
-        return attribute.getAttributeValues().stream()
-                .map(value -> {
-                    try {
-                        return CassandraJsonSerialization.readValue(value, type);
-                    } catch (IOException e) {
-                        log.errorf("Cannot deserialize %s (client: %s, name: %s, type: %s)", value, clientEntity.getId(), name, type.getName());
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toCollection(ArrayList::new));
     }
 }
