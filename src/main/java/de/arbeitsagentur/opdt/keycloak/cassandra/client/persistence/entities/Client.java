@@ -23,6 +23,11 @@ import lombok.*;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.map.common.ExpirableEntity;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 @EqualsAndHashCode(of = "id")
 @Builder
 @Data
@@ -36,4 +41,18 @@ public class Client {
 
     @ClusteringColumn
     private String id;
+
+    @Builder.Default
+    private Map<String, Set<String>> attributes = new ConcurrentHashMap<>();
+
+    public Map<String, Set<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new ConcurrentHashMap<>();
+        }
+        return attributes;
+    }
+
+    public Set<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new HashSet<>());
+    }
 }

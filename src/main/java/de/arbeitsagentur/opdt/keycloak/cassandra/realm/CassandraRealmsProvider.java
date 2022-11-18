@@ -69,6 +69,7 @@ public class CassandraRealmsProvider implements RealmProvider {
 
     Realm realm = Realm.builder()
         .id(id)
+        .name(name)
         .build();
 
     realmRepository.createRealm(realm);
@@ -94,7 +95,7 @@ public class CassandraRealmsProvider implements RealmProvider {
 
     log.tracef("getRealm(%s)%s", name, getShortStackTrace());
 
-    Realm realm = realmRepository.findRealmByAttribute(CassandraRealmAdapter.NAME, name);
+    Realm realm = realmRepository.findRealmByName(name);
     return entityToAdapter(realm);
   }
 
@@ -105,7 +106,10 @@ public class CassandraRealmsProvider implements RealmProvider {
 
   @Override
   public Stream<RealmModel> getRealmsWithProviderTypeStream(Class<?> type) {
-    return realmRepository.findRealmsByAttribute(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE, type.getName()).stream().map(this::entityToAdapter);
+    return realmRepository.getAllRealms().stream()
+        .filter(r -> r.getAttributes().containsKey(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE))
+        .filter(r -> r.getAttributes().get(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE).contains(type.getName()))
+        .map(this::entityToAdapter);
   }
 
   @Override

@@ -15,23 +15,20 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.AttributeToClientMapping;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.AttributeToClientScopeMapping;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeToAttributeMapping;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.NameToClientScope;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class CassandraClientScopeRepository implements ClientScopeRepository {
     private final ClientScopeDao clientScopeDao;
 
     @Override
-    public void create(ClientScope clientScope) {
-        clientScopeDao.insert(clientScope);
+    public void insertOrUpdate(ClientScope clientScope) {
+        clientScopeDao.insertOrUpdate(clientScope);
+        clientScopeDao.insertOrUpdate(new NameToClientScope(clientScope.getName(), clientScope.getId()));
     }
 
     @Override
@@ -45,60 +42,18 @@ public class CassandraClientScopeRepository implements ClientScopeRepository {
     }
 
     @Override
-    public List<ClientScope> findAllClientScopesByAttribute(String attributeName, String attributeValue) {
-        return clientScopeDao.findAllClientScopeMappingsByAttribute(attributeName, attributeValue).all().stream()
-                .map(AttributeToClientScopeMapping::getClientScopeId)
-                .flatMap(id -> Optional.ofNullable(getClientScopeById(id)).stream())
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void insertOrUpdate(ClientScopeToAttributeMapping attributeMapping) {
-        ClientScopeToAttributeMapping oldAttribute = clientScopeDao.findClientScopeAttribute(attributeMapping.getClientScopeId(), attributeMapping.getAttributeName());
-        clientScopeDao.insertOrUpdate(attributeMapping);
-
-        if (oldAttribute != null) {
-            oldAttribute
-                    .getAttributeValues()
-                    .forEach(value -> clientScopeDao.deleteAttributeToClientScopeMapping(new AttributeToClientScopeMapping(oldAttribute.getAttributeName(), value, oldAttribute.getClientScopeId())));
-        }
-
-        attributeMapping
-                .getAttributeValues()
-                .forEach(value -> {
-                    AttributeToClientScopeMapping attributeToClientMapping = new AttributeToClientScopeMapping(attributeMapping.getAttributeName(), value, attributeMapping.getClientScopeId());
-                    clientScopeDao.insert(attributeToClientMapping);
-                });
-
-    }
-
-    @Override
     public void remove(ClientScope clientScope) {
         clientScopeDao.delete(clientScope);
+        clientScopeDao.deleteNameToClientScope(clientScope.getName());
     }
 
     @Override
-    public void deleteClientScopeAttribute(String clientScopeId, String attributeName) {
-        ClientScopeToAttributeMapping attribute = findClientScopeAttribute(clientScopeId, attributeName);
-
-        if (attribute == null) {
-            return;
+    public ClientScope findClientScopeByName(String name) {
+        NameToClientScope byName = clientScopeDao.findByName(name);
+        if(byName == null) {
+            return null;
         }
 
-        clientScopeDao.deleteClientScopeAttribute(clientScopeId, attributeName);
-        attribute
-                .getAttributeValues()
-                .forEach(value -> clientScopeDao.deleteAttributeToClientScopeMapping(new AttributeToClientScopeMapping(attributeName, value, clientScopeId)));
-
-    }
-
-    @Override
-    public ClientScopeToAttributeMapping findClientScopeAttribute(String clientScopeId, String attributeName) {
-        return clientScopeDao.findClientScopeAttribute(clientScopeId, attributeName);
-    }
-
-    @Override
-    public List<ClientScopeToAttributeMapping> findAllClientScopeAttributes(String clientScopeId) {
-        return clientScopeDao.findAllClientScopeAttributes(clientScopeId).all();
+        return getClientScopeById(byName.getId());
     }
 }

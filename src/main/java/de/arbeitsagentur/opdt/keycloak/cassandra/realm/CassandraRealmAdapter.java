@@ -20,7 +20,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.RealmToAttributeMapping;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -49,7 +48,6 @@ import static java.util.Objects.nonNull;
 public class CassandraRealmAdapter implements RealmModel {
   private static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
   private static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled"; // Copied from MapRealmAdapter
-  public static final String NAME = INTERNAL_ATTRIBUTE_PREFIX + "name";
   public static final String COMPONENT_PROVIDER_TYPE = INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
   public static final String DEFAULT_GROUP_IDS = INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
   public static final String DEFAULT_ROLE_ID = INTERNAL_ATTRIBUTE_PREFIX + "defaultRoleId";
@@ -145,12 +143,13 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public String getName() {
-    return getAttribute(NAME);
+    return realmEntity.getName();
   }
 
   @Override
   public void setName(String name) {
-    setAttribute(NAME, name);
+    realmEntity.setName(name);
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
@@ -592,7 +591,7 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public Map<String, Integer> getUserActionTokenLifespans() {
-    Map<String, List<String>> attrs = realmRepository.findAllRealmAttributes(realmEntity.getId());
+    Map<String, Set<String>> attrs = realmEntity.getAttributes();
     if (attrs == null || attrs.isEmpty()) return Collections.emptyMap();
 
     Map<String, Integer> tokenLifespans = attrs.entrySet().stream()
@@ -601,7 +600,7 @@ public class CassandraRealmAdapter implements RealmModel {
         .filter(entry -> entry.getKey().startsWith(ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN + "."))
         .collect(Collectors.toMap(
             entry -> entry.getKey().substring(ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN.length() + 1),
-            entry -> Integer.valueOf(entry.getValue().get(0))));
+            entry -> Integer.valueOf(entry.getValue().iterator().next())));
 
     return Collections.unmodifiableMap(tokenLifespans);
   }
@@ -1518,35 +1517,50 @@ public class CassandraRealmAdapter implements RealmModel {
   // Attributes
   @Override
   public void setAttribute(String name, String value) {
-    realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), name, Arrays.asList(value)));
+    if(name == null || value == null) {
+      return;
+    }
+
+    realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
   public void removeAttribute(String name) {
-    realmRepository.deleteRealmAttribute(realmEntity.getId(), name);
+    if(name == null) {
+      return;
+    }
+
+    realmEntity.getAttributes().remove(name);
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
   public String getAttribute(String name) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), name);
-    return attribute == null || attribute.getAttributeValues().isEmpty() || attribute.getAttributeValues().get(0).isEmpty() ? null : attribute.getAttributeValues().get(0);
+    Set<String> values = realmEntity.getAttribute(name);
+    return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
   }
 
   @Override
   public Map<String, String> getAttributes() {
-    return realmRepository.findAllRealmAttributes(realmEntity.getId()).entrySet().stream()
+    return realmEntity.getAttributes().entrySet().stream()
         .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
-        .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().get(0).isEmpty())
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
+        .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
   }
 
   public void setAttributeValues(String name, List<String> values) {
-    realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), name, values));
+    if(name == null || values == null) {
+      return;
+    }
+
+    realmEntity.getAttributes().put(name, new HashSet<>(values));
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   private List<String> getAttributeValues(String name) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), name);
-    return attribute == null ? new ArrayList<>() : attribute.getAttributeValues().stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
+    Set<String> values = realmEntity.getAttribute(name);
+    return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
   }
 
   private <T> void setSerializedAttributeValue(String name, T value) {
@@ -1554,7 +1568,7 @@ public class CassandraRealmAdapter implements RealmModel {
   }
 
   private void setSerializedAttributeValues(String name, List<?> values) {
-    List<String> attributeValues = values.stream()
+    Set<String> attributeValues = values.stream()
         .map(value -> {
           try {
             return CassandraJsonSerialization.writeValueAsString(value);
@@ -1563,9 +1577,10 @@ public class CassandraRealmAdapter implements RealmModel {
             throw new RuntimeException(e);
           }
         })
-        .collect(Collectors.toCollection(ArrayList::new));
+        .collect(Collectors.toCollection(HashSet::new));
 
-    realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), name, attributeValues));
+    realmEntity.getAttributes().put(name, attributeValues);
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
@@ -1577,12 +1592,12 @@ public class CassandraRealmAdapter implements RealmModel {
   }
 
   private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), name);
-    if (attribute == null) {
+    Set<String> values = realmEntity.getAttribute(name);
+    if (values == null) {
       return new ArrayList<>();
     }
 
-    return attribute.getAttributeValues().stream()
+    return values.stream()
         .map(value -> {
           try {
             return CassandraJsonSerialization.readValue(value, type);
@@ -1595,12 +1610,9 @@ public class CassandraRealmAdapter implements RealmModel {
   }
 
   private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), name);
-    if (attribute == null) {
-      return new ArrayList<>();
-    }
+    Set<String> values = realmEntity.getAttribute(name);
 
-    return attribute.getAttributeValues().stream()
+    return values.stream()
         .map(value -> {
           try {
             return CassandraJsonSerialization.readValue(value, type);
@@ -1697,63 +1709,50 @@ public class CassandraRealmAdapter implements RealmModel {
   @Override
   public void addDefaultClientScope(ClientScopeModel clientScope, boolean defaultScope) {
     String attrName = defaultScope ? DEFAULT_CLIENT_SCOPE_ID : OPTIONAL_CLIENT_SCOPE_ID;
-    RealmToAttributeMapping attr = realmRepository.findRealmAttribute(realmEntity.getId(), attrName);
-    if(attr == null) {
-      attr = new RealmToAttributeMapping(realmEntity.getId(), attrName, Arrays.asList(clientScope.getId()));
-    } else if (!attr.getAttributeValues().contains(clientScope.getId())) {
-      attr.getAttributeValues().add(clientScope.getId());
-    }
-    realmRepository.insertOrUpdate(attr);
+    Set<String> values = realmEntity.getAttribute(attrName);
+    values.add(clientScope.getId());
+    realmEntity.getAttributes().put(attrName, values);
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
   public void removeDefaultClientScope(ClientScopeModel clientScope) {
-    boolean removedDefault = realmRepository.deleteRealmAttribute(realmEntity.getId(), DEFAULT_CLIENT_SCOPE_ID, clientScope.getId());
-    if (!removedDefault) {
-      realmRepository.deleteRealmAttribute(realmEntity.getId(), OPTIONAL_CLIENT_SCOPE_ID, clientScope.getId());
+    if (realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).contains(clientScope.getId())) {
+      realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).remove(clientScope.getId());
+    } else {
+      realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
     }
+
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
   public Stream<ClientScopeModel> getDefaultClientScopesStream(boolean defaultScope) {
-    RealmToAttributeMapping attribute = defaultScope
-        ? realmRepository.findRealmAttribute(realmEntity.getId(), DEFAULT_CLIENT_SCOPE_ID)
-        : realmRepository.findRealmAttribute(realmEntity.getId(), OPTIONAL_CLIENT_SCOPE_ID);
-    return attribute == null ? Stream.empty() : attribute.getAttributeValues().stream().map(this::getClientScopeById);
+    Set<String> values = defaultScope
+        ? realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID)
+        : realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID);
+    return values.stream().map(this::getClientScopeById);
   }
 
   // Groups
   @Override
   public Stream<GroupModel> getDefaultGroupsStream() {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), DEFAULT_GROUP_IDS);
-    if (attribute == null) {
-      return Stream.empty();
-    }
-
-    return attribute.getAttributeValues().stream().map(this::getGroupById);
+    Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+    return values.stream().map(this::getGroupById);
   }
 
   @Override
   public void addDefaultGroup(GroupModel group) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), DEFAULT_GROUP_IDS);
-    List<String> groupIds = new ArrayList<>();
-    if (attribute != null) {
-      groupIds = attribute.getAttributeValues();
-    }
-
-    groupIds.add(group.getId());
-    realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), DEFAULT_GROUP_IDS, groupIds));
+    Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+    values.add(group.getId());
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
   public void removeDefaultGroup(GroupModel group) {
-    RealmToAttributeMapping attribute = realmRepository.findRealmAttribute(realmEntity.getId(), DEFAULT_GROUP_IDS);
-    if (attribute == null) {
-      return;
-    }
-
-    attribute.getAttributeValues().remove(group.getId());
-    realmRepository.insertOrUpdate(attribute);
+    Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+    values.remove(group.getId());
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override
@@ -1820,7 +1819,8 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public void setDefaultRole(RoleModel role) {
-    realmRepository.insertOrUpdate(new RealmToAttributeMapping(realmEntity.getId(), DEFAULT_ROLE_ID, Arrays.asList(role.getId())));
+    realmEntity.getAttributes().put(DEFAULT_ROLE_ID, new HashSet<>(Arrays.asList(role.getId())));
+    realmRepository.insertOrUpdate(realmEntity);
   }
 
   @Override

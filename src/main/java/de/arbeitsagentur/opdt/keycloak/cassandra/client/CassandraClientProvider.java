@@ -20,7 +20,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
-import org.keycloak.models.map.client.MapClientEntity;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.*;
@@ -73,7 +72,7 @@ public class CassandraClientProvider implements ClientProvider {
                 .realmId(realm.getId())
                 .build();
 
-        clientRepository.create(client);
+        clientRepository.insertOrUpdate(client);
         ClientModel adapter = entityToAdapter(client);
         adapter.setClientId(clientId != null ? clientId : client.getId());
         adapter.setEnabled(true);
