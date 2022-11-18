@@ -22,22 +22,19 @@ import java.util.List;
 import java.util.Set;
 
 public interface UserRepository {
+  List<User> findAllUsers();
+
   User findUserById(String realmId, String id);
 
-  Set<String> findUserIdsByAttribute(
-      String name, String value, int firstResult, int maxResult);
+  User findUserByEmail(String realmId, String email);
 
-  List<User> findUsersByAttribute(String realmId, String name, String value);
+  User findUserByUsername(String realmId, String username);
 
-  User findUserByAttribute(String realmId, String name, String value);
+  User findUserByUsernameCaseInsensitive(String realmId, String username);
 
-  MultivaluedHashMap<String, String> findAllUserAttributes(String userId);
+  User findUserByServiceAccountLink(String realmId, String serviceAccountLink);
 
-  UserToAttributeMapping findUserAttribute(String userId, String attributeName);
-
-  void updateAttribute(UserToAttributeMapping UserAttributeMapping);
-
-  void deleteAttribute(String userId, String attributeName);
+  User findUserByFederatedIdentityLink(String realmId, String federationLink);
 
   void addRequiredAction(UserRequiredAction requiredAction);
 
@@ -45,11 +42,17 @@ public interface UserRepository {
 
   List<UserRequiredAction> findAllRequiredActions(String userId);
 
+  void deleteUsernameSearchIndex(String realmId, User user);
+
+  void deleteEmailSearchIndex(String realmId, User user);
+
+  void deleteFederationLinkSearchIndex(String realmId, User user);
+
+  void deleteServiceAccountLinkSearchIndex(String realmId, User user);
+
   void createOrUpdateUser(String realmId, User user);
 
   boolean deleteUser(String realmId, String userId);
-
-  void deleteAllAttributes(String userId);
 
   void deleteAllRequiredActions(String userId);
 

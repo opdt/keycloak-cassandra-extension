@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraLoginFailureProvider implements UserLoginFailureProvider {
+public class CassandraLoginFailureProvider extends AbstractCassandraProvider implements UserLoginFailureProvider {
   private final KeycloakSession session;
   private final LoginFailureRepository loginFailureRepository;
 
@@ -81,10 +82,5 @@ public class CassandraLoginFailureProvider implements UserLoginFailureProvider {
   @Override
   public void removeAllUserLoginFailures(RealmModel realm) {
     loginFailureRepository.findAllLoginFailures().forEach(loginFailureRepository::deleteLoginFailure);
-  }
-
-  @Override
-  public void close() {
-
   }
 }

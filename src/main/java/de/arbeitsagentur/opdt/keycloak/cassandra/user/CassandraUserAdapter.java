@@ -37,9 +37,6 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public abstract class CassandraUserAdapter implements UserModel {
   public static final String NOT_BEFORE = "notBefore";
-  public static final String FEDERATION_LINK = "federationLink";
-  public static final String SERVICE_ACCOUNT_CLIENT_LINK = "serviceAccountClientLink";
-  public static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
   private final RealmModel realm;
   private final UserRepository userRepository;
   private final User userEntity;
@@ -51,7 +48,7 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public String getUsername() {
-    return getAttribute(USERNAME).stream().findFirst().orElse(null);
+    return userEntity.getUsername();
   }
 
   @Override
@@ -65,8 +62,8 @@ public abstract class CassandraUserAdapter implements UserModel {
         : KeycloakModelUtils.toLowerCaseSafe(username);
 
     String currentUsername = KeycloakModelUtils.isUsernameCaseSensitive(realm)
-        ? getAttribute(USERNAME).stream().findFirst().orElse(null)
-        : getAttribute(USERNAME_CASE_INSENSITIVE).stream().findFirst().orElse(null);
+        ? userEntity.getUsername()
+        : userEntity.getUsernameCaseInsensitive();
 
     // Do not continue if current username of entity is the requested username
     if (usernameToCompare.equals(currentUsername)) return;
@@ -75,13 +72,15 @@ public abstract class CassandraUserAdapter implements UserModel {
       throw new ModelDuplicateException("A user with username " + username + " already exists");
     }
 
-    setSingleAttribute(USERNAME, username);
-    setSingleAttribute(USERNAME_CASE_INSENSITIVE, KeycloakModelUtils.toLowerCaseSafe(username));
+    userRepository.deleteUsernameSearchIndex(realm.getId(), userEntity);
+    userEntity.setUsername(username);
+    userEntity.setUsernameCaseInsensitive(KeycloakModelUtils.toLowerCaseSafe(username));
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public String getEmail() {
-    return getAttribute(EMAIL).stream().findFirst().orElse(null);
+    return userEntity.getEmail();
   }
 
   @Override
@@ -101,27 +100,31 @@ public abstract class CassandraUserAdapter implements UserModel {
       throw new ModelDuplicateException("A user with email " + email + " already exists");
     }
 
-    setSingleAttribute(EMAIL, email);
+    userRepository.deleteEmailSearchIndex(realm.getId(), userEntity);
+    userEntity.setEmail(email);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public String getFirstName() {
-    return getAttribute(FIRST_NAME).stream().findFirst().orElse(null);
+    return userEntity.getFirstName();
   }
 
   @Override
   public void setFirstName(String firstName) {
-    setSingleAttribute(FIRST_NAME, firstName);
+    userEntity.setFirstName(firstName);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public String getLastName() {
-    return getAttribute(LAST_NAME).stream().findFirst().orElse(null);
+    return userEntity.getLastName();
   }
 
   @Override
   public void setLastName(String lastName) {
-    setSingleAttribute(LAST_NAME, lastName);
+    userEntity.setLastName(lastName);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
@@ -160,40 +163,27 @@ public abstract class CassandraUserAdapter implements UserModel {
   public Map<String, List<String>> getAttributes() {
     log.debugv("get attributes: realm={0} userId={1}", realm.getId(), userEntity.getId());
 
-    return userRepository.findAllUserAttributes(userEntity.getId());
+    return userEntity.getAttributes();
   }
 
   @Override
   public void setAttribute(String name, List<String> values) {
-    log.debugv(
-        "set attribute: realm={0} userId={1} name={2} value={3}",
-        realm.getId(), userEntity.getId(), name, values);
+    log.debugv(realm.getId(), userEntity.getId(), name, values);
 
-    UserToAttributeMapping attribute = new UserToAttributeMapping(userEntity.getId(), name, values);
-
-    userRepository.updateAttribute(attribute);
+    userEntity.getAttributes().put(name, values);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public void setSingleAttribute(String name, String value) {
-    log.debugv(
-        "set single attribute: realm={0} userId={1} name={2} value={3}",
-        realm.getId(), userEntity.getId(), name, value);
+    log.debugv(realm.getId(), userEntity.getId(), name, value);
 
-    UserToAttributeMapping attribute =
-        new UserToAttributeMapping(userEntity.getId(), name, Collections.singletonList(value));
-
-    userRepository.updateAttribute(attribute);
+    userEntity.getAttributes().put(name, Collections.singletonList(value));
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   public List<String> getAttribute(String name) {
-    UserToAttributeMapping attribute = userRepository.findUserAttribute(userEntity.getId(), name);
-
-    if (attribute == null) {
-      return Collections.emptyList();
-    }
-
-    return attribute.getAttributeValues();
+    return userEntity.getAttribute(name);
   }
 
   @Override
@@ -207,10 +197,10 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public void removeAttribute(String name) {
-    log.debugv(
-        "remove attribute: realm={0} userId={1} name={2}", realm.getId(), userEntity.getId(), name);
+    log.debugv("remove attribute: realm={0} userId={1} name={2}", realm.getId(), userEntity.getId(), name);
 
-    userRepository.deleteAttribute(userEntity.getId(), name);
+    userEntity.getAttributes().remove(name);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
@@ -265,46 +255,32 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public String getFederationLink() {
-    List<String> attribute = getAttribute(FEDERATION_LINK);
-
-    if (attribute.isEmpty()) {
-      return null;
-    }
-
-    return attribute.get(0);
+    return userEntity.getFederationLink();
   }
 
   @Override
   public void setFederationLink(String link) {
-    setSingleAttribute(FEDERATION_LINK, link);
+    userRepository.deleteFederationLinkSearchIndex(realm.getId(), userEntity);
+    userEntity.setFederationLink(link);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public String getServiceAccountClientLink() {
-    List<String> attribute = getAttribute(SERVICE_ACCOUNT_CLIENT_LINK);
-
-    if (attribute.isEmpty()) {
-      return null;
-    }
-
-    return attribute.get(0);
+    return userEntity.getServiceAccountClientLink();
   }
 
   @Override
   public void setServiceAccountClientLink(String clientInternalId) {
-    setSingleAttribute(SERVICE_ACCOUNT_CLIENT_LINK, clientInternalId);
+    userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userEntity);
+    userEntity.setServiceAccountClientLink(clientInternalId);
     userRepository.makeUserServiceAccount(userEntity, realm.getId());
   }
 
 
   @Override
   public Stream<String> getAttributeStream(String name) {
-    UserToAttributeMapping attribute = userRepository.findUserAttribute(userEntity.getId(), name);
-    if (attribute == null) {
-      return Stream.empty();
-    }
-
-    return attribute.getAttributeValues().stream();
+    return userEntity.getAttribute(name).stream();
   }
 
   @Override

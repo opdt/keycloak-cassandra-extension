@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -96,15 +96,17 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
         .build();
 
+    // User-Tables
     createUserTable(cqlSession);
+    createUserSearchIndexTable(cqlSession);
     createFederatedIdentityTable(cqlSession);
     createFederatedIdentityToUserMappingTable(cqlSession);
-    createUsersToAttributesMappingTable(cqlSession);
-    createAttributesToUsersMappingTable(cqlSession);
     createUserRoleMappingTable(cqlSession);
     createUserClientRoleMappingTable(cqlSession);
     createUserRequiredActionTable(cqlSession);
     createCredentialsTable(cqlSession);
+
+    // Role-Tables
     createRoleTable(cqlSession);
     createClientRoleTable(cqlSession);
     createRealmRoleTable(cqlSession);
@@ -114,8 +116,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     // Realm-Tables
     createRealmTable(cqlSession);
-    createRealmsToAttributesMappingTable(cqlSession);
-    createAttributesToRealmsMappingTable(cqlSession);
+    createNameToRealmTable(cqlSession);
     createClientInitialAccessesTable(cqlSession);
 
     // UserSession-Tables
@@ -136,14 +137,10 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     // Client-Tables
     createClientTables(cqlSession);
-    createAttributesToClientsMappingTable(cqlSession);
-    createClientsToAttributesMappingTable(cqlSession);
 
     // ClientScope-Tables
-
     createClientScopeTables(cqlSession);
-    createAttributesToClientScopesMappingTable(cqlSession);
-    createClientScopesToAttributesMappingTable(cqlSession);
+    createNameToClientScopeTable(cqlSession);
 
     log.info("Schema created.");
   }
@@ -183,10 +180,31 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .ifNotExists()
             .withPartitionKey("realm_id", DataTypes.TEXT)
             .withPartitionKey("id", DataTypes.TEXT)
+            .withColumn("username", DataTypes.TEXT)
+            .withColumn("email", DataTypes.TEXT)
+            .withColumn("first_name", DataTypes.TEXT)
+            .withColumn("last_name", DataTypes.TEXT)
+            .withColumn("username_case_insensitive", DataTypes.TEXT)
+            .withColumn("service_account_client_link", DataTypes.TEXT)
+            .withColumn("federation_link", DataTypes.TEXT)
             .withColumn("enabled", DataTypes.BOOLEAN)
             .withColumn("email_verified", DataTypes.BOOLEAN)
             .withColumn("service_account", DataTypes.BOOLEAN)
             .withColumn("created_timestamp", DataTypes.TIMESTAMP)
+            .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenListOf(DataTypes.TEXT)))
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createUserSearchIndexTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("user_search_index")
+            .ifNotExists()
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withPartitionKey("name", DataTypes.TEXT)
+            .withPartitionKey("value", DataTypes.TEXT)
+            .withColumn("user_id", DataTypes.TEXT)
             .build();
 
     session.execute(statement);
@@ -197,6 +215,19 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         SchemaBuilder.createTable("realms")
             .ifNotExists()
             .withPartitionKey("id", DataTypes.TEXT)
+            .withColumn("name", DataTypes.TEXT)
+            .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
+            .build();
+
+    session.execute(statement);
+  }
+
+  private void createNameToRealmTable(CqlSession session) {
+    SimpleStatement statement =
+        SchemaBuilder.createTable("name_to_realm")
+            .ifNotExists()
+            .withPartitionKey("name", DataTypes.TEXT)
+            .withColumn("id", DataTypes.TEXT)
             .build();
 
     session.execute(statement);
@@ -309,30 +340,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     session.execute(statement);
   }
 
-  private void createRealmsToAttributesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("realms_to_attributes")
-            .ifNotExists()
-            .withPartitionKey("realm_id", DataTypes.TEXT)
-            .withClusteringColumn("attribute_name", DataTypes.TEXT)
-            .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createAttributesToRealmsMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("attributes_to_realms")
-            .ifNotExists()
-            .withPartitionKey("attribute_name", DataTypes.TEXT)
-            .withClusteringColumn("attribute_value", DataTypes.TEXT)
-            .withClusteringColumn("realm_id", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
   private void createClientInitialAccessesTable(CqlSession session) {
     SimpleStatement statement =
         SchemaBuilder.createTable("client_initial_accesses")
@@ -371,30 +378,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .withPartitionKey("broker_user_id", DataTypes.TEXT)
             .withPartitionKey("identity_provider", DataTypes.TEXT)
             .withColumn("user_id", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createUsersToAttributesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("users_to_attributes")
-            .ifNotExists()
-            .withPartitionKey("user_id", DataTypes.TEXT)
-            .withClusteringColumn("attribute_name", DataTypes.TEXT)
-            .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createAttributesToUsersMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("attributes_to_users")
-            .ifNotExists()
-            .withPartitionKey("attribute_name", DataTypes.TEXT)
-            .withClusteringColumn("attribute_value", DataTypes.TEXT)
-            .withClusteringColumn("user_id", DataTypes.TEXT)
             .build();
 
     session.execute(statement);
@@ -564,70 +547,37 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
   private void createClientTables(CqlSession session) {
     SimpleStatement statement =
-            SchemaBuilder.createTable("clients")
-                    .ifNotExists()
-                    .withPartitionKey("realm_id", DataTypes.TEXT)
-                    .withClusteringColumn("id", DataTypes.TEXT)
-                    .build();
-
-    session.execute(statement);
-  }
-
-  private void createAttributesToClientsMappingTable(CqlSession session) {
-    SimpleStatement statement =
-            SchemaBuilder.createTable("attributes_to_clients")
-                    .ifNotExists()
-                    .withPartitionKey("attribute_name", DataTypes.TEXT)
-                    .withPartitionKey("attribute_value", DataTypes.TEXT)
-                    .withClusteringColumn("client_id", DataTypes.TEXT)
-                    .build();
-
-    session.execute(statement);
-  }
-
-  private void createClientsToAttributesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-            SchemaBuilder.createTable("clients_to_attributes")
-                    .ifNotExists()
-                    .withPartitionKey("client_id", DataTypes.TEXT)
-                    .withClusteringColumn("attribute_name", DataTypes.TEXT)
-                    .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
-                    .build();
+        SchemaBuilder.createTable("clients")
+            .ifNotExists()
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withClusteringColumn("id", DataTypes.TEXT)
+            .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
+            .build();
 
     session.execute(statement);
   }
 
   private void createClientScopeTables(CqlSession session) {
     SimpleStatement statement =
-            SchemaBuilder.createTable("client_scopes")
-                    .ifNotExists()
-                    .withPartitionKey("id", DataTypes.TEXT)
-                    .withColumn("realm_id", DataTypes.TEXT)
-                    .build();
+        SchemaBuilder.createTable("client_scopes")
+            .ifNotExists()
+            .withPartitionKey("id", DataTypes.TEXT)
+            .withColumn("realm_id", DataTypes.TEXT)
+            .withColumn("name", DataTypes.TEXT)
+            .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
+            .build();
 
     session.execute(statement);
   }
 
-  private void createAttributesToClientScopesMappingTable(CqlSession session) {
+  private void createNameToClientScopeTable(CqlSession session) {
     SimpleStatement statement =
-            SchemaBuilder.createTable("attributes_to_client_scopes")
-                    .ifNotExists()
-                    .withPartitionKey("attribute_name", DataTypes.TEXT)
-                    .withPartitionKey("attribute_value", DataTypes.TEXT)
-                    .withClusteringColumn("client_scope_id", DataTypes.TEXT)
-                    .build();
-
-    session.execute(statement);
-  }
-
-  private void createClientScopesToAttributesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-            SchemaBuilder.createTable("client_scopes_to_attributes")
-                    .ifNotExists()
-                    .withPartitionKey("client_scope_id", DataTypes.TEXT)
-                    .withClusteringColumn("attribute_name", DataTypes.TEXT)
-                    .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
-                    .build();
+        SchemaBuilder.createTable("name_to_client_scope")
+            .ifNotExists()
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withClusteringColumn("name", DataTypes.TEXT)
+            .withColumn("id", DataTypes.TEXT)
+            .build();
 
     session.execute(statement);
   }

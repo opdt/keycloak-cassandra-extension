@@ -19,7 +19,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,7 +26,17 @@ import java.util.stream.Collectors;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraUserRepository implements UserRepository {
+  private static final String USERNAME = "username";
+  private static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
+  private static final String EMAIL = "email";
+  private static final String SERVICE_ACCOUNT_LINK = "serviceAccountLink";
+  private static final String FEDERATED_IDENTITY_LINK = "federatedIdentityLink";
   private final UserDao userDao;
+
+  @Override
+  public List<User> findAllUsers() {
+    return userDao.findAll().all();
+  }
 
   @Override
   public User findUserById(String realmId, String id) {
@@ -35,94 +44,55 @@ public class CassandraUserRepository implements UserRepository {
   }
 
   @Override
-  public Set<String> findUserIdsByAttribute(
-      String name, String value, int firstResult, int maxResult) {
-    return StreamExtensions.paginated(
-            userDao.findByAttribute(name, value), firstResult, maxResult)
-        .map(AttributeToUserMapping::getUserId)
-        .collect(Collectors.toSet());
-  }
-
-  @Override
-  public List<User> findUsersByAttribute(String realmId, String name, String value) {
-    return userDao.findByAttribute(name, value).all().stream()
-        .map(AttributeToUserMapping::getUserId)
-        .flatMap(id -> Optional.ofNullable(findUserById(realmId, id)).stream())
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  public User findUserByAttribute(String realmId, String name, String value) {
-    List<User> users = findUsersByAttribute(realmId, name, value);
-
-    if (users.size() > 1) {
-      throw new IllegalStateException("Found more than one user with attributeName " + name + " and value " + value);
-    }
-
-    if (users.isEmpty()) {
+  public User findUserByEmail(String realmId, String email) {
+    UserSearchIndex user = userDao.findUser(realmId, EMAIL, email);
+    if (user == null) {
       return null;
     }
 
-    return users.get(0);
+    return findUserById(realmId, user.getUserId());
   }
 
   @Override
-  public MultivaluedHashMap<String, String> findAllUserAttributes(String userId) {
-    List<UserToAttributeMapping> attributeMappings = userDao.findAllAttributes(userId).all();
-    MultivaluedHashMap<String, String> result = new MultivaluedHashMap<>();
-
-    attributeMappings.forEach(
-        mapping -> result.addAll(mapping.getAttributeName(), mapping.getAttributeValues()));
-
-    return result;
-  }
-
-  @Override
-  public UserToAttributeMapping findUserAttribute(String userId, String attributeName) {
-    return userDao.findAttribute(userId, attributeName);
-  }
-
-  @Override
-  public void updateAttribute(UserToAttributeMapping UserAttributeMapping) {
-    UserToAttributeMapping oldAttribute = userDao.findAttribute(UserAttributeMapping.getUserId(), UserAttributeMapping.getAttributeName());
-    userDao.update(UserAttributeMapping);
-
-    if (oldAttribute != null) {
-      // Alte AttributeToUserMappings löschen, da die Values als Teil des PartitionKey nicht
-      // geändert werden können
-      oldAttribute
-          .getAttributeValues()
-          .forEach(value -> userDao.deleteAttributeToUserMapping(oldAttribute.getAttributeName(), value, oldAttribute.getUserId()));
+  public User findUserByUsername(String realmId, String username) {
+    UserSearchIndex user = userDao.findUser(realmId, USERNAME, username);
+    if (user == null) {
+      return null;
     }
 
-    UserAttributeMapping
-        .getAttributeValues()
-        .forEach(
-            value -> {
-              AttributeToUserMapping AttributeToUserMapping =
-                  new AttributeToUserMapping(
-                      UserAttributeMapping.getAttributeName(),
-                      value,
-                      UserAttributeMapping.getUserId());
-              userDao.insert(AttributeToUserMapping);
-            });
+    return findUserById(realmId, user.getUserId());
   }
 
   @Override
-  public void deleteAttribute(String userId, String attributeName) {
-    UserToAttributeMapping attribute = findUserAttribute(userId, attributeName);
-
-    if (attribute == null) {
-      return;
+  public User findUserByUsernameCaseInsensitive(String realmId, String username) {
+    UserSearchIndex user = userDao.findUser(realmId, USERNAME_CASE_INSENSITIVE, username);
+    if (user == null) {
+      return null;
     }
 
-    // Beide Mapping-Tabellen beachten!
-    userDao.deleteAttribute(userId, attributeName);
-    attribute
-        .getAttributeValues()
-        .forEach(value -> userDao.deleteAttributeToUserMapping(attributeName, value, userId));
+    return findUserById(realmId, user.getUserId());
   }
-// +
+
+  @Override
+  public User findUserByServiceAccountLink(String realmId, String serviceAccountLink) {
+    UserSearchIndex user = userDao.findUser(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink);
+    if (user == null) {
+      return null;
+    }
+
+    return findUserById(realmId, user.getUserId());
+  }
+
+  @Override
+  public User findUserByFederatedIdentityLink(String realmId, String federationLink) {
+    UserSearchIndex user = userDao.findUser(realmId, FEDERATED_IDENTITY_LINK, federationLink);
+    if (user == null) {
+      return null;
+    }
+
+    return findUserById(realmId, user.getUserId());
+  }
+
   @Override
   public void addRequiredAction(UserRequiredAction requiredAction) {
     userDao.insert(requiredAction);
@@ -139,9 +109,35 @@ public class CassandraUserRepository implements UserRepository {
   }
 
   @Override
+  public void deleteUsernameSearchIndex(String realmId, User user) {
+    userDao.deleteIndex(realmId, USERNAME, user.getUsername());
+    userDao.deleteIndex(realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive());
+  }
+
+  @Override
+  public void deleteEmailSearchIndex(String realmId, User user) {
+    userDao.deleteIndex(realmId, EMAIL, user.getEmail());
+  }
+
+  @Override
+  public void deleteFederationLinkSearchIndex(String realmId, User user) {
+    userDao.deleteIndex(realmId, FEDERATED_IDENTITY_LINK, user.getFederationLink());
+  }
+
+  @Override
+  public void deleteServiceAccountLinkSearchIndex(String realmId, User user) {
+    userDao.deleteIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink());
+  }
+  @Override
   public void createOrUpdateUser(String realmId, User user) {
     userDao.insert(user);
     userDao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, USERNAME, user.getUsername(), user.getId()));
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId()));
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, EMAIL, user.getEmail(), user.getId()));
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, FEDERATED_IDENTITY_LINK, user.getFederationLink(), user.getId()));
   }
 
   @Override
@@ -155,20 +151,13 @@ public class CassandraUserRepository implements UserRepository {
     userDao.delete(user);
     userDao.deleteRealmToUserMapping(realmId, user.isServiceAccount(), user.getId());
 
-    deleteAllAttributes(user.getId());
     deleteAllRequiredActions(user.getId());
+    deleteUsernameSearchIndex(realmId, user);
+    deleteEmailSearchIndex(realmId, user);
+    deleteServiceAccountLinkSearchIndex(realmId, user);
+    deleteFederationLinkSearchIndex(realmId, user);
 
     return true;
-  }
-
-  @Override
-  public void deleteAllAttributes(String userId) {
-    MultivaluedHashMap<String, String> userAttributes = findAllUserAttributes(userId);
-    userAttributes.entrySet().stream()
-        .flatMap(entry -> entry.getValue().stream().map(value -> Map.entry(entry.getKey(), value)))
-        .forEach(entry -> userDao.deleteAttributeToUserMapping(entry.getKey(), entry.getValue(), userId));
-
-    userDao.deleteUserAttributes(userId);
   }
 
   @Override
@@ -183,6 +172,8 @@ public class CassandraUserRepository implements UserRepository {
 
     userDao.deleteRealmToUserMapping(realmId, false, user.getId());
     userDao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+
+    userDao.insertOrUpdate(new UserSearchIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
   }
 
   @Override
