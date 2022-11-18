@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
@@ -42,7 +43,7 @@ import static org.keycloak.models.utils.SessionExpiration.getAuthSessionLifespan
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraAuthSessionProvider implements AuthenticationSessionProvider {
+public class CassandraAuthSessionProvider extends AbstractCassandraProvider implements AuthenticationSessionProvider {
   private final KeycloakSession session;
   private final AuthSessionRepository authSessionRepository;
   private final int authSessionsLimit;
@@ -158,10 +159,5 @@ public class CassandraAuthSessionProvider implements AuthenticationSessionProvid
       authenticationSession.setAuthNotes(authNotesFragment);
       authSessionRepository.insertOrUpdate(authenticationSession);
     }
-  }
-
-  @Override
-  public void close() {
-
   }
 }

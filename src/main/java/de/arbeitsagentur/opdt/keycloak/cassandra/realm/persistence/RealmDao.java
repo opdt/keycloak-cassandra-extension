@@ -27,8 +27,17 @@ public interface RealmDao {
   @Select
   PagingIterable<Realm> findAll();
 
-  @Insert
-  void insert(Realm realm);
+  @Select(customWhereClause = "name = :name")
+  NameToRealm findByName(String name);
+
+  @Delete(entityClass = NameToRealm.class)
+  void deleteNameToRealm(String name);
+
+  @Update
+  void insertOrUpdate(Realm realm);
+
+  @Update
+  void insertOrUpdate(NameToRealm nameToRealm);
 
   @Delete
   void delete(Realm realm);
@@ -55,33 +64,4 @@ public interface RealmDao {
 
   @Delete(entityClass = ClientInitialAccess.class)
   void deleteAllClientInitialAccessModels(String realmId);
-
-  // Attributes
-  @Insert
-  // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-  void insert(AttributeToRealmMapping mapping);
-
-  @Update
-  void insert(RealmToAttributeMapping mapping);
-
-  @Select(customWhereClause = "realm_id = :realmId AND attribute_name = :attributeName")
-  RealmToAttributeMapping findAttribute(String realmId, String attributeName);
-
-  @Select(customWhereClause = "realm_id = :realmId")
-  PagingIterable<RealmToAttributeMapping> findAllAttributes(String realmId);
-
-  @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
-  PagingIterable<AttributeToRealmMapping> findByAttribute(String attributeName, String attributeValue);
-
-  @Delete
-  boolean deleteAttributeToRealmMapping(AttributeToRealmMapping mapping);
-
-  @Delete(entityClass = AttributeToRealmMapping.class)
-  boolean deleteAttributeToRealmMapping(String attributeName, String attributeValue, String realmId);
-
-  @Delete(entityClass = RealmToAttributeMapping.class)
-  boolean deleteAllRealmToAttributeMappings(String realmId);
-
-  @Delete(entityClass = RealmToAttributeMapping.class)
-  boolean deleteAttribute(String realmId, String attributeName);
 }

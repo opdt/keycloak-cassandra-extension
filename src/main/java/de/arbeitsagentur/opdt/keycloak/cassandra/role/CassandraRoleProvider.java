@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.role;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.ClientRole;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RealmRole;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
-public class CassandraRoleProvider implements RoleProvider {
+public class CassandraRoleProvider extends AbstractCassandraProvider implements RoleProvider {
   private final RoleRepository roleRepository;
 
   public CassandraRoleProvider(RoleRepository roleRepository) {
@@ -218,10 +219,5 @@ public class CassandraRoleProvider implements RoleProvider {
     }
 
     return entityToAdapterFunc(client.getRealm()).apply(clientRole.toRole());
-  }
-
-  @Override
-  public void close() {
-
   }
 }

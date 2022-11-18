@@ -21,6 +21,8 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -35,10 +37,32 @@ public class User {
   @PartitionKey(1)
   private String id;
 
+  private String username;
+  private String email;
+  private String firstName;
+  private String lastName;
+  private String usernameCaseInsensitive;
+  private String serviceAccountClientLink;
+  private String federationLink;
+
   @Builder.Default private Boolean enabled = true;
   @Builder.Default private Boolean emailVerified = false;
 
   @Builder.Default private boolean serviceAccount = false;
 
   @Builder.Default private Instant createdTimestamp = Instant.now();
+
+  @Builder.Default
+  private Map<String, List<String>> attributes = new ConcurrentHashMap<>();
+
+  public Map<String, List<String>> getAttributes() {
+    if (attributes == null) {
+      attributes = new ConcurrentHashMap<>();
+    }
+    return attributes;
+  }
+
+  public List<String> getAttribute(String name) {
+    return attributes.getOrDefault(name, new ArrayList<>());
+  }
 }

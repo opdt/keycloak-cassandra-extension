@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -42,7 +43,7 @@ import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraUserSessionProvider implements UserSessionProvider {
+public class CassandraUserSessionProvider extends AbstractCassandraProvider implements UserSessionProvider {
   private final KeycloakSession session;
   private final UserSessionRepository userSessionRepository;
 
@@ -459,11 +460,6 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
   @Override
   public int getStartupTime(RealmModel realm) {
     return realm.getNotBefore();
-  }
-
-  @Override
-  public void close() {
-    // NOOP
   }
 
   private Stream<UserSession> getOfflineUserSessionEntityStream(RealmModel realm, String userSessionId) {
