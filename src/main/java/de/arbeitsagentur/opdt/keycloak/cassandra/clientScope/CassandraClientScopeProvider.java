@@ -44,7 +44,7 @@ public class CassandraClientScopeProvider implements ClientScopeProvider {
     }
 
     private CassandraClientScopeAdapter entityToModel(ClientScope clientScope) {
-        return clientScope == null ? null : new CassandraClientScopeAdapter(clientScope, repository);
+        return clientScope == null ? null : new CassandraClientScopeAdapter(session, clientScope, repository);
     }
 
     @Override

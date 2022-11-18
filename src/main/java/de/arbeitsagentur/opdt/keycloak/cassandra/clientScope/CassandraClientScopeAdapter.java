@@ -23,10 +23,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entitie
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.models.ClientScopeModel;
-import org.keycloak.models.ProtocolMapperModel;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
+import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
@@ -45,17 +42,19 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     public static final String PROTOCOL = INTERNAL_ATTRIBUTE_PREFIX + "protocol";
     public static final String PROTOCOL_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "protocolMappers";
     public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
+
+    private final KeycloakSession session;
     private final ClientScope clientScopeEntity;
     private final ClientScopeRepository clientScopeRepository;
 
     @Override
     public String getId() {
-        return null;
+        return clientScopeEntity.getId();
     }
 
     @Override
     public RealmModel getRealm() {
-        return null;
+        return session.realms().getRealm(clientScopeEntity.getRealmId());
     }
 
     @Override
