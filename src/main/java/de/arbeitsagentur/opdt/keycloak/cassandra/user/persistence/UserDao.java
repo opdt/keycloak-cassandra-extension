@@ -34,9 +34,6 @@ public interface UserDao {
   void update(User User);
 
   @Update
-  void update(UserToAttributeMapping UserAttributeMapping);
-
-  @Update
   void update(FederatedIdentity federatedIdentity);
 
   @Update
@@ -44,10 +41,6 @@ public interface UserDao {
 
   @Update
   void update(Credential credential);
-
-  @Insert
-    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-  void insert(AttributeToUserMapping UserAttributeMapping);
 
   @Insert
     // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
@@ -64,23 +57,6 @@ public interface UserDao {
 
   @Select(customWhereClause = "realm_id = :realmId AND id = :id")
   User findById(String realmId, String id);
-
-  @Select(
-      customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
-  PagingIterable<AttributeToUserMapping> findByAttribute(
-      String attributeName, String attributeValue);
-
-  @Query("SELECT COUNT(*) FROM attributes_to_users WHERE attribute_name = :attributeName")
-  long countAttributes(String attributeName);
-
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<UserToAttributeMapping> findAllAttributes(String userId);
-
-  @Select(customWhereClause = "user_id = :userId AND attribute_name = :attributeName")
-  UserToAttributeMapping findAttribute(String userId, String attributeName);
-
-  @Select
-  PagingIterable<UserToAttributeMapping> findAllAttributes();
 
   @Select(customWhereClause = "user_id = :userId")
   PagingIterable<UserRequiredAction> findAllRequiredActions(String userId);
@@ -125,14 +101,8 @@ public interface UserDao {
   @Delete
   void delete(User User);
 
-  @Delete(entityClass = UserToAttributeMapping.class)
-  void deleteUserAttributes(String userId);
-
   @Delete(entityClass = UserRequiredAction.class)
   void deleteAllRequiredActions(String userId);
-
-  @Delete(entityClass = AttributeToUserMapping.class)
-  boolean deleteAttributeToUserMapping(String attributeName, String attributeValue, String userId);
 
   @Delete
   boolean delete(FederatedIdentity federatedIdentity);
@@ -149,9 +119,6 @@ public interface UserDao {
   @Delete
   boolean delete(UserRequiredAction UserRequiredAction);
 
-  @Delete(entityClass = UserToAttributeMapping.class)
-  boolean deleteAttribute(String userId, String attributeName);
-
   @Delete(entityClass = UserRequiredAction.class)
   boolean deleteRequiredAction(String userId, String requiredAction);
 
@@ -164,4 +131,17 @@ public interface UserDao {
   @Query(
       "SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId AND service_account = false")
   long countNonServiceAccountUsersByRealmId(String realmId);
+
+  // Search
+  @Insert
+  void insertOrUpdate(UserSearchIndex searchIndex);
+
+  @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
+  UserSearchIndex findUser(String realmId, String name, String value);
+
+  @Delete
+  void delete(UserSearchIndex searchIndex);
+
+  @Delete(entityClass = UserSearchIndex.class)
+  void deleteIndex(String realmId, String name, String value);
 }

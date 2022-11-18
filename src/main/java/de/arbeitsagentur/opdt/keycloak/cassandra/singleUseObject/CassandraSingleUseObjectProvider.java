@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider {
+public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider implements SingleUseObjectProvider {
   private final KeycloakSession session;
   private final SingleUseObjectRepository repository;
 
@@ -123,10 +124,5 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
     SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
 
     return singleUseEntity != null;
-  }
-
-  @Override
-  public void close() {
-
   }
 }

@@ -17,13 +17,13 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.RealmToAttributeMapping;
 import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.List;
 import java.util.Set;
 
 public interface RealmRepository {
+  void insertOrUpdate(Realm realm);
   Realm getRealmById(String id);
 
   List<Realm> getAllRealms();
@@ -43,20 +43,5 @@ public interface RealmRepository {
   void deleteClientInitialAccess(ClientInitialAccess access);
   void deleteClientInitialAccess(String realmId, String id);
 
-  // Attributes
-  Set<String> findRealmIdsByAttribute(String name, String value, int firstResult, int maxResult);
-
-  List<Realm> findRealmsByAttribute(String name, String value);
-
-  Realm findRealmByAttribute(String name, String value);
-
-  MultivaluedHashMap<String, String> findAllRealmAttributes(String realmId);
-
-  RealmToAttributeMapping findRealmAttribute(String realmId, String attributeName);
-
-  void insertOrUpdate(RealmToAttributeMapping mapping);
-
-  boolean deleteRealmAttribute(String realmId, String attributeName);
-
-  boolean deleteRealmAttribute(String realmId, String attributeName, String attributeValue);
+  Realm findRealmByName(String name);
 }

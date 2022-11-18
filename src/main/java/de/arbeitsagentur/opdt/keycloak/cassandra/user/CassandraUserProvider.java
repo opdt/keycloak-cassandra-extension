@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
@@ -34,7 +35,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.utils.KeycloakModelUtils.isUsernameCaseSensitive;
 
 @JBossLog
-public class CassandraUserProvider implements UserProvider {
+public class CassandraUserProvider extends AbstractCassandraProvider implements UserProvider {
 
   private final KeycloakSession session;
   private final UserRepository userRepository;
@@ -131,7 +132,7 @@ public class CassandraUserProvider implements UserProvider {
 
   @Override
   public UserModel getServiceAccount(ClientModel client) {
-    User user = userRepository.findUserByAttribute(client.getRealm().getId(), CassandraUserAdapter.SERVICE_ACCOUNT_CLIENT_LINK, client.getId());
+    User user = userRepository.findUserByServiceAccountLink(client.getRealm().getId(), client.getId());
     return entityToAdapterFunc(client.getRealm()).apply(user);
   }
 
@@ -259,15 +260,15 @@ public class CassandraUserProvider implements UserProvider {
   public UserModel getUserByUsername(RealmModel realm, String username) {
     log.debugv("getUserByUsername realm={0} username={1}", realm, username);
     User userByUsername = isUsernameCaseSensitive(realm)
-        ? userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.USERNAME, username)
-        : userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.USERNAME_CASE_INSENSITIVE, KeycloakModelUtils.toLowerCaseSafe(username));
+        ? userRepository.findUserByUsername(realm.getId(), username)
+        : userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(username));
     return entityToAdapterFunc(realm).apply(userByUsername);
   }
 
   @Override
   public UserModel getUserByEmail(RealmModel realm, String email) {
     log.debugv("getUserByEmail realm={0} email={1}", realm, email);
-    User userByEmail = userRepository.findUserByAttribute(realm.getId(), CassandraUserAdapter.EMAIL, email);
+    User userByEmail = userRepository.findUserByEmail(realm.getId(), email);
     UserModel userModel = entityToAdapterFunc(realm).apply(userByEmail);
 
     if (userModel == null) {
@@ -296,9 +297,8 @@ public class CassandraUserProvider implements UserProvider {
           .sorted(Comparator.comparing(UserModel::getUsername));
     }
 
-    return userRepository.findUserIdsByAttribute(CassandraUserAdapter.USERNAME_CASE_INSENSITIVE, KeycloakModelUtils.toLowerCaseSafe(searchString), firstResult, maxResults).stream()
-        .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream())
-        .sorted(Comparator.comparing(UserModel::getUsername));
+    return Optional.ofNullable(userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(searchString)))
+        .map(entityToAdapterFunc(realm)).stream();
   }
 
   @Override
@@ -310,8 +310,10 @@ public class CassandraUserProvider implements UserProvider {
   public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
     log.debugf("Search with attribute %s:%s", attrName, attrValue);
 
-    return userRepository.findUserIdsByAttribute(attrName, attrValue, 0, -1).stream()
-        .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream())
+    return userRepository.findAllUsers().stream()
+        .filter(u -> u.getRealmId().equals(realm.getId()))
+        .filter(u -> u.getAttribute(attrName).contains(attrValue))
+        .map(entityToAdapterFunc(realm))
         .sorted(Comparator.comparing(UserModel::getUsername));
   }
 
@@ -365,11 +367,6 @@ public class CassandraUserProvider implements UserProvider {
   @Override
   public void preRemove(RealmModel realm, ComponentModel component) {
     // TODO: Implement
-  }
-
-  @Override
-  public void close() {
-
   }
 
   private UserModel getByIdOrThrow(RealmModel realm, UserModel user) {
