@@ -99,12 +99,16 @@ public class CassandraClientScopeProvider implements ClientScopeProvider {
     }
 
     @Override
+    public ClientScopeModel getClientScopeById(RealmModel realm, String id) {
+        if (id == null) {
+            return null;
+        }
+
+        log.tracef("getClientScopeById(%s, %s)%s", realm, id, getShortStackTrace());
+        return entityToModel(repository.getClientScopeById(id));
+    }
+    @Override
     public void close() {
 
-    }
-
-    @Override
-    public ClientScopeModel getClientScopeById(RealmModel realm, String id) {
-        return entityToModel(repository.getClientScopeById(id));
     }
 }

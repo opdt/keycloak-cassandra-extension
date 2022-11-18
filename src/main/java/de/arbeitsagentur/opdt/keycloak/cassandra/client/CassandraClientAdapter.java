@@ -743,7 +743,7 @@ public class CassandraClientAdapter implements ClientModel {
     }
     private boolean getAttribute(String name, boolean defaultValue) {
         String v = getAttribute(name);
-        return v != null ? Boolean.valueOf(v) : defaultValue;
+        return v != null && !v.isEmpty() ? Boolean.valueOf(v) : defaultValue;
     }
 
     private void setAttribute(String name, int value) {
@@ -751,7 +751,7 @@ public class CassandraClientAdapter implements ClientModel {
     }
     private int getAttribute(String name, int defaultValue) {
         String v = getAttribute(name);
-        return v != null ? Integer.valueOf(v) : defaultValue;
+        return v != null && !v.isEmpty() ? Integer.valueOf(v) : defaultValue;
     }
 
     public void setAttributeValues(String name, List<String> values) {
