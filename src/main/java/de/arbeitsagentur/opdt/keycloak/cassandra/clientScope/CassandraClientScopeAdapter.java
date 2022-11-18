@@ -84,7 +84,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void setProtocol(String protocol) {
-        setProtocol(PROTOCOL);
+        setAttribute(PROTOCOL, protocol);
     }
 
     @Override
