@@ -43,7 +43,8 @@ public class CassandraClientRepository implements ClientRepository {
     }
 
     @Override
-    public void insertOrUpdate(ClientToAttributeMapping attributeMapping) {    ClientToAttributeMapping oldAttribute = clientDao.findAttribute(attributeMapping.getClientId(), attributeMapping.getAttributeName());
+    public void insertOrUpdate(ClientToAttributeMapping attributeMapping) {
+        ClientToAttributeMapping oldAttribute = clientDao.findAttribute(attributeMapping.getClientId(), attributeMapping.getAttributeName());
         clientDao.insertOrUpdate(attributeMapping);
 
         if (oldAttribute != null) {
@@ -60,7 +61,6 @@ public class CassandraClientRepository implements ClientRepository {
                     AttributeToClientMapping attributeToClientMapping = new AttributeToClientMapping(attributeMapping.getAttributeName(), value, attributeMapping.getClientId());
                     clientDao.insert(attributeToClientMapping);
                 });
-
     }
 
     @Override

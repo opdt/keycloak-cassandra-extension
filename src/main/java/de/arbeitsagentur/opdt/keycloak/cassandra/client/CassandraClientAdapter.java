@@ -5,6 +5,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.ClientToAttributeMapping;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 
 @JBossLog
 @RequiredArgsConstructor
+@EqualsAndHashCode(of = "clientEntity")
 public class CassandraClientAdapter implements ClientModel {
     private static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
     public static final String CLIENT_ID = INTERNAL_ATTRIBUTE_PREFIX + "clientId";
