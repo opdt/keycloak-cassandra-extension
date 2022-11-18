@@ -124,6 +124,12 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     createAttributesToClientsMappingTable(cqlSession);
     createClientsToAttributesMappingTable(cqlSession);
 
+    // ClientScope-Tables
+
+    createClientScopeTables(cqlSession);
+    createAttributesToClientScopesMappingTable(cqlSession);
+    createClientScopesToAttributesMappingTable(cqlSession);
+
     log.info("Schema created.");
   }
 
@@ -575,4 +581,40 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     session.execute(statement);
   }
+
+  private void createClientScopeTables(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("client_scopes")
+                    .ifNotExists()
+                    .withPartitionKey("id", DataTypes.TEXT)
+                    .withColumn("realm_id", DataTypes.TEXT)
+                    .build();
+
+    session.execute(statement);
+  }
+
+  private void createAttributesToClientScopesMappingTable(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("attributes_to_client_scopes")
+                    .ifNotExists()
+                    .withPartitionKey("attribute_name", DataTypes.TEXT)
+                    .withPartitionKey("attribute_value", DataTypes.TEXT)
+                    .withClusteringColumn("client_scope_id", DataTypes.TEXT)
+                    .build();
+
+    session.execute(statement);
+  }
+
+  private void createClientScopesToAttributesMappingTable(CqlSession session) {
+    SimpleStatement statement =
+            SchemaBuilder.createTable("client_scopes_to_attributes")
+                    .ifNotExists()
+                    .withPartitionKey("client_scope_id", DataTypes.TEXT)
+                    .withClusteringColumn("attribute_name", DataTypes.TEXT)
+                    .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
+                    .build();
+
+    session.execute(statement);
+  }
+
 }

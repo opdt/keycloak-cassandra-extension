@@ -23,6 +23,10 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.CassandraClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.CassandraClientScopeRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
@@ -57,6 +61,8 @@ public abstract class AbstractCassandraProviderFactory {
   CassandraLoginFailureRepository loginFailureRepository;
   CassandraSingleUseObjectRepository singleUseObjectRepository;
   CassandraClientRepository clientRepository;
+  CassandraClientScopeRepository clientScopeRepository;
+
 
   protected ManagedCompositeCassandraRepository createRepository(KeycloakSession session) {
     CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
@@ -102,6 +108,11 @@ public abstract class AbstractCassandraProviderFactory {
       clientRepository = new CassandraClientRepository(clientMapper.clientDao());
     }
 
+    if (clientScopeRepository == null) {
+      ClientScopeMapper clientScopeMapper = new ClientScopeMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+      clientScopeRepository = new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
+    }
+
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
     threadLocalCache.reset();
 
@@ -114,6 +125,7 @@ public abstract class AbstractCassandraProviderFactory {
     cassandraRepository.setLoginFailureRepository(loginFailureRepository);
     cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
     cassandraRepository.setClientRepository(clientRepository);
+    cassandraRepository.setClientScopeRepository(clientScopeRepository);
 
     return cassandraRepository;
   }

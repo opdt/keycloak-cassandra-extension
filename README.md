@@ -10,7 +10,7 @@ Requires Keycloak 20.0.x with enabled Map-Storage feature.
 - [ ] authorization
 - [x] authSession
 - [x] client
-- [ ] clientScope
+- [x] clientScope
 - [ ] events
 - [ ] group
 - [x] loginFailure
