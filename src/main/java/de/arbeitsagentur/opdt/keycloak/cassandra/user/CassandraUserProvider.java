@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
@@ -34,7 +35,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.utils.KeycloakModelUtils.isUsernameCaseSensitive;
 
 @JBossLog
-public class CassandraUserProvider implements UserProvider {
+public class CassandraUserProvider extends AbstractCassandraProvider implements UserProvider {
 
   private final KeycloakSession session;
   private final UserRepository userRepository;
@@ -365,11 +366,6 @@ public class CassandraUserProvider implements UserProvider {
   @Override
   public void preRemove(RealmModel realm, ComponentModel component) {
     // TODO: Implement
-  }
-
-  @Override
-  public void close() {
-
   }
 
   private UserModel getByIdOrThrow(RealmModel realm, UserModel user) {

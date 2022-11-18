@@ -23,7 +23,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.CassandraClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
-import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.CassandraClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapperBuilder;
@@ -114,7 +113,6 @@ public abstract class AbstractCassandraProviderFactory {
     }
 
     ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
-    threadLocalCache.reset();
 
     ManagedCompositeCassandraRepository cassandraRepository = Arc.container().instance(ManagedCompositeCassandraRepository.class).get();
     cassandraRepository.setRoleRepository(roleRepository);

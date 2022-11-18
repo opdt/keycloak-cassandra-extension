@@ -20,7 +20,8 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -32,4 +33,20 @@ import java.util.List;
 public class Realm {
   @PartitionKey
   private String id;
+
+  private String name;
+
+  @Builder.Default
+  private Map<String, Set<String>> attributes = new ConcurrentHashMap<>();
+
+  public Map<String, Set<String>> getAttributes() {
+    if (attributes == null) {
+      attributes = new ConcurrentHashMap<>();
+    }
+    return attributes;
+  }
+
+  public Set<String> getAttribute(String name) {
+    return attributes.getOrDefault(name, new HashSet<>());
+  }
 }
