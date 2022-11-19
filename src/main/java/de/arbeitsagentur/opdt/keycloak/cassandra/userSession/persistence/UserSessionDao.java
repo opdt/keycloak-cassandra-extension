@@ -18,9 +18,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
+
+import java.util.List;
 
 @Dao
 public interface UserSessionDao {
@@ -32,6 +33,9 @@ public interface UserSessionDao {
   @Select(customWhereClause = "id = :id")
   UserSession findById(String id);
 
+  @Select(customWhereClause = "id IN :ids")
+  PagingIterable<UserSession> findByIds(List<String> ids);
+
   @Select
   PagingIterable<UserSession> findAll();
 
@@ -40,20 +44,6 @@ public interface UserSessionDao {
 
   @Delete(entityClass = UserSession.class)
   void deleteUserSession(String id);
-
-  // AuthenticatedClientSession
-
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(AuthenticatedClientSession session, int ttl);
-
-  @Select(customWhereClause = "client_id = :clientId AND user_session_id = :userSessionId")
-  AuthenticatedClientSession findClientSession(String clientId, String userSessionId);
-
-  @Delete(entityClass = AuthenticatedClientSession.class, customWhereClause = "client_id = :clientId")
-  void deleteClientSessions(String clientId);
-
-  @Delete
-  void deleteClientSession(AuthenticatedClientSession session);
 
   // Attributes
   @Insert

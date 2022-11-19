@@ -43,6 +43,7 @@ public class L1CacheInterceptor {
     CACHE_INVALIDATION_NAMES.add("delete");
     CACHE_INVALIDATION_NAMES.add("remove");
     CACHE_INVALIDATION_NAMES.add("insert");
+    CACHE_INVALIDATION_NAMES.add("make");
   }
 
   private final ThreadLocalCache cache;
@@ -54,35 +55,42 @@ public class L1CacheInterceptor {
 
   @AroundInvoke
   Object invoke(InvocationContext context) throws Exception {
-    if(log.isDebugEnabled()) {
-      log.debugf("Intercept %s ()", context.getMethod().getName(), Arrays.stream(context.getParameters()).map(p -> p == null ? "null" : p.toString()).collect(Collectors.joining(", ")));
-    }
+    L1Cached cacheAnnotation = context.getMethod().getAnnotation(L1Cached.class);
+    String cacheName = cacheAnnotation.cacheName();
+    boolean invalidateCache = context.getMethod().getAnnotation(InvalidateCache.class) != null;
 
-    if(CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> context.getMethod().getName().toLowerCase().contains(name))) {
-      if(log.isDebugEnabled()) {
-        log.debugf("Cache wird invalidiert durch Methode %s", context.getMethod().getName());
+    if(invalidateCache) {
+      if(log.isTraceEnabled()) {
+        log.tracef("Cache wird invalidiert durch Methode %s (%s)", context.getMethod().getName(),
+            Arrays.stream(context.getParameters())
+                .map(Object::getClass)
+                .map(Object::toString)
+                .collect(Collectors.joining(", ")));
       }
 
-      cache.reset();
+      cache.reset(cacheName);
 
       return context.proceed();
+    } else if(CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> context.getMethod().getName().toLowerCase().contains(name))) {
+      log.warnf("Method %s(%s) might need to invalidate cache but isnt annotated with @InvalidateCache",
+          context.getMethod().getName(), Arrays.stream(context.getParameters())
+              .map(Object::getClass)
+              .map(Object::toString)
+              .collect(Collectors.joining(", ")));
     }
 
     CacheInvocationContext cacheInvocationContext = CacheInvocationContext.create(context);
 
-    Object result = cache.get(cacheInvocationContext);
+    Object result = cache.get(cacheName, cacheInvocationContext);
     if (ThreadLocalCache.NONE == result) {
+      long timestamp = System.currentTimeMillis();
       result = context.proceed();
 
-      if(log.isDebugEnabled()) {
-        log.debugf("Result: %s", result);
+      if(log.isTraceEnabled()) {
+        log.tracef("Uncached Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
       }
 
-      cache.put(cacheInvocationContext, result);
-    } else {
-      if(log.isDebugEnabled()) {
-        log.debugf("Aufruf an %s aus Cache bedient, Result: %s", cacheInvocationContext.toString(), result);
-      }
+      cache.put(cacheName, cacheInvocationContext, result);
     }
 
     return result;

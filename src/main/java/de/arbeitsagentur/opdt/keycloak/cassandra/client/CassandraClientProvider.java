@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.client;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.ManagedCompositeCassandraRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import lombok.extern.jbosslog.JBossLog;
@@ -54,10 +55,11 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
   @Override
   public Stream<ClientModel> getClientsStream(RealmModel realm, Integer firstResult, Integer maxResults) {
     return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+        .filter(Objects::nonNull)
         .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
         .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
         .map(this::entityToAdapter)
-        .sorted(Comparator.comparing(ClientModel::getName));
+        .sorted(Comparator.comparing(ClientModel::getClientId));
   }
 
   @Override
@@ -193,9 +195,21 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
 
   @Override
   public Map<String, ClientScopeModel> getClientScopes(RealmModel realm, ClientModel client, boolean defaultScopes) {
-    // TODO: what for is realm used?
     if (client == null) return null;
 
-    return client.getClientScopes(defaultScopes);
+    // Defaults to openid-connect
+    String clientProtocol = client.getProtocol() == null ? "openid-connect" : client.getProtocol();
+
+    log.tracef("getClientScopes(%s, %s, %b)%s", realm, client, defaultScopes, getShortStackTrace());
+
+    return client.getClientScopes(defaultScopes).values().stream()
+        .filter(Objects::nonNull)
+        .filter(clientScope -> Objects.equals(clientScope.getProtocol(), clientProtocol))
+        .collect(Collectors.toMap(ClientScopeModel::getName, Function.identity()));
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.CLIENT_CACHE;
   }
 }

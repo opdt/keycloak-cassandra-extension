@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import lombok.RequiredArgsConstructor;
@@ -82,5 +83,10 @@ public class CassandraLoginFailureProvider extends AbstractCassandraProvider imp
   @Override
   public void removeAllUserLoginFailures(RealmModel realm) {
     loginFailureRepository.findAllLoginFailures().forEach(loginFailureRepository::deleteLoginFailure);
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.LOGIN_FAILURE_CACHE;
   }
 }

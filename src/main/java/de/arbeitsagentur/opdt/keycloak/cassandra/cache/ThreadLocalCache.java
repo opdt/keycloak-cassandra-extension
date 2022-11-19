@@ -16,37 +16,56 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
 
+import lombok.extern.jbosslog.JBossLog;
+
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+@JBossLog
 @Singleton
 public class ThreadLocalCache {
+  public static final String USER_CACHE = "userCache";
+  public static final String ROLE_CACHE = "roleCache";
+  public static final String REALM_CACHE = "realmCache";
+  public static final String USER_SESSION_CACHE = "userSessionCache";
+  public static final String AUTH_SESSION_CACHE = "authSessionCache";
+  public static final String LOGIN_FAILURE_CACHE = "loginFailureCache";
+  public static final String SUO_CACHE = "suoCache";
+  public static final String CLIENT_CACHE = "clientCache";
+  public static final String CLIENT_SCOPE_CACHE = "clientScopeCache";
+
   static final Object NONE = new Object();
 
-  private static final ThreadLocal<Map<CacheInvocationContext, Object>> threadLocalCacheContainer = new ThreadLocal<>();
+  private static final ThreadLocal<Map<String, Map<CacheInvocationContext, Object>>> threadLocalCacheContainer = new ThreadLocal<>();
 
-  public Object get(CacheInvocationContext invocationContext) {
-    Map<CacheInvocationContext, Object> cache = getCache();
+  public Object get(String cacheName, CacheInvocationContext invocationContext) {
+    Map<CacheInvocationContext, Object> cache = getCache(cacheName);
 
     return cache.getOrDefault(invocationContext, NONE);
   }
 
-  void put(CacheInvocationContext methodInvocation, Object result) {
-    Map<CacheInvocationContext, Object> cache = getCache();
+  void put(String cacheName, CacheInvocationContext methodInvocation, Object result) {
+    Map<CacheInvocationContext, Object> cache = getCache(cacheName);
     cache.put(methodInvocation, result);
   }
 
-  public void reset() {
-    threadLocalCacheContainer.remove();
+  public void reset(String cacheName) {
+    log.tracef("Reset cache %s", cacheName);
+    getCache(cacheName).clear();
   }
 
-  private Map<CacheInvocationContext, Object> getCache() {
-    Map<CacheInvocationContext, Object> cache = threadLocalCacheContainer.get();
+  private Map<CacheInvocationContext, Object> getCache(String cacheName) {
+    Map<String, Map<CacheInvocationContext, Object>> cache = threadLocalCacheContainer.get();
     if(cache == null) {
       cache = new WeakHashMap<>();
       threadLocalCacheContainer.set(cache);
     }
-    return cache;
+
+    if(!cache.containsKey(cacheName)){
+      cache.put(cacheName, new WeakHashMap<>());
+    }
+
+    return cache.get(cacheName);
   }
 }

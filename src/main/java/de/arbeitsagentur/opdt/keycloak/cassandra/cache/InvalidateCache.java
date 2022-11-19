@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package de.arbeitsagentur.opdt.keycloak.cassandra;
+package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
-import io.quarkus.arc.Arc;
-import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.provider.Provider;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@JBossLog
-public abstract class AbstractCassandraProvider implements Provider {
-  @Override
-  public void close() {
-    log.debugf("Close provider %s", getClass().getName());
-    ThreadLocalCache threadLocalCache = Arc.container().instance(ThreadLocalCache.class).get();
-    threadLocalCache.reset(getCacheName());
-  }
-
-  protected abstract String getCacheName();
+@Target({ ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface InvalidateCache {
 }

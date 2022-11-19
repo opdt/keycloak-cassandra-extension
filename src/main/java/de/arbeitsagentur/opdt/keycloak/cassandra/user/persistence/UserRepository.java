@@ -16,7 +16,6 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
-import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.List;
 import java.util.Set;
@@ -34,13 +33,7 @@ public interface UserRepository {
 
   User findUserByServiceAccountLink(String realmId, String serviceAccountLink);
 
-  User findUserByFederatedIdentityLink(String realmId, String federationLink);
-
-  void addRequiredAction(UserRequiredAction requiredAction);
-
-  void deleteRequiredAction(String userId, String requiredAction);
-
-  List<UserRequiredAction> findAllRequiredActions(String userId);
+  List<User> findUsersByFederationLink(String realmId, String federationLink);
 
   void deleteUsernameSearchIndex(String realmId, User user);
 
@@ -53,8 +46,6 @@ public interface UserRepository {
   void createOrUpdateUser(String realmId, User user);
 
   boolean deleteUser(String realmId, String userId);
-
-  void deleteAllRequiredActions(String userId);
 
   void makeUserServiceAccount(User user, String realmId);
 
@@ -69,27 +60,7 @@ public interface UserRepository {
 
   boolean deleteFederatedIdentity(String userId, String identityProvider);
 
-  void createOrUpdateCredential(Credential credential);
-
-  List<Credential> findCredentials(String userId);
-
-  Credential findCredential(String userId, String credId);
-
-  boolean deleteCredential(String userId, String credId);
-
   Set<String> findUserIdsByRealmId(String realmId, int first, int max);
 
   long countUsersByRealmId(String realmId, boolean includeServiceAccounts);
-
-  Set<UserRealmRoleMapping> getRealmRolesByUserId(String userId);
-
-  Set<UserClientRoleMapping> getAllClientRoleMappingsByUserId(String userId);
-
-  void removeRoleMapping(String userId, String roleId);
-
-  void removeClientRoleMapping(String userId, String clientId, String roleId);
-
-  void addRealmRoleMapping(UserRealmRoleMapping roleMapping);
-
-  void addClientRoleMapping(UserClientRoleMapping roleMapping);
 }

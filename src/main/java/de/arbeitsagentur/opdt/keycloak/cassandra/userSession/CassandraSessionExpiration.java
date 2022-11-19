@@ -15,7 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.ClientModel;
@@ -24,7 +24,7 @@ import org.keycloak.models.map.common.TimeAdapter;
 import org.keycloak.protocol.oidc.OIDCConfigAttributes;
 
 public class CassandraSessionExpiration {
-  public static void setClientSessionExpiration(AuthenticatedClientSession entity, RealmModel realm, ClientModel client) {
+  public static void setClientSessionExpiration(AuthenticatedClientSessionValue entity, RealmModel realm, ClientModel client) {
     long timestampMillis = entity.getTimestamp() != null ? entity.getTimestamp() : 0L;
     if (Boolean.TRUE.equals(entity.isOffline())) {
       long sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
@@ -101,7 +101,7 @@ public class CassandraSessionExpiration {
   public static void setUserSessionExpiration(UserSession entity, RealmModel realm) {
     long timestampMillis = entity.getTimestamp() != null ? entity.getTimestamp() : 0L;
     long lastSessionRefreshMillis = entity.getLastSessionRefresh() != null ? entity.getLastSessionRefresh() : 0L;
-    if (Boolean.TRUE.equals(entity.isOffline())) {
+    if (Boolean.TRUE.equals(entity.getOffline())) {
       long sessionExpires = lastSessionRefreshMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
       if (realm.isOfflineSessionMaxLifespanEnabled()) {
         sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionMaxLifespan());
@@ -126,7 +126,7 @@ public class CassandraSessionExpiration {
       entity.setExpiration(Math.min(expiration, sessionExpires));
     } else {
       long sessionExpires = timestampMillis
-          + (Boolean.TRUE.equals(entity.isRememberMe()) && realm.getSsoSessionMaxLifespanRememberMe() > 0
+          + (Boolean.TRUE.equals(entity.getRememberMe()) && realm.getSsoSessionMaxLifespanRememberMe() > 0
           ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespanRememberMe())
           : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespan()));
 
@@ -137,7 +137,7 @@ public class CassandraSessionExpiration {
         sessionExpires = Math.min(sessionExpires, clientSessionMaxExpiration);
       }
 
-      long expiration = lastSessionRefreshMillis + (Boolean.TRUE.equals(entity.isRememberMe()) && realm.getSsoSessionIdleTimeoutRememberMe() > 0
+      long expiration = lastSessionRefreshMillis + (Boolean.TRUE.equals(entity.getRememberMe()) && realm.getSsoSessionIdleTimeoutRememberMe() > 0
           ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeoutRememberMe())
           : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeout()));
 

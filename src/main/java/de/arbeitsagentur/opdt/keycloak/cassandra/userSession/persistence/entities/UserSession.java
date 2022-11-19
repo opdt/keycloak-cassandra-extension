@@ -47,14 +47,17 @@ public class UserSession implements ExpirableEntity {
   private String brokerUserId;
   private Long timestamp;
   private Long expiration;
-  private boolean offline;
-  private boolean rememberMe;
+  private Boolean offline;
+  private Boolean rememberMe;
   private Long lastSessionRefresh;
 
   private UserSessionModel.State state;
 
   @Builder.Default
-  private Map<String,String> notes = new ConcurrentHashMap<>();
+  private Map<String, String> notes = new ConcurrentHashMap<>();
+
+  @Builder.Default
+  private Map<String, AuthenticatedClientSessionValue> clientSessions = new ConcurrentHashMap<>();
 
   private UserSessionModel.SessionPersistenceState persistenceState;
 
@@ -63,9 +66,16 @@ public class UserSession implements ExpirableEntity {
   }
 
   public Map<String, String> getNotes() {
-    if(notes == null) {
+    if (notes == null) {
       notes = new ConcurrentHashMap<>();
     }
     return notes;
+  }
+
+  public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
+    if (clientSessions == null) {
+      clientSessions = new ConcurrentHashMap<>();
+    }
+    return clientSessions;
   }
 }

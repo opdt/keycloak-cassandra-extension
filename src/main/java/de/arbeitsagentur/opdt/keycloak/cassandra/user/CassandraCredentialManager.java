@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,8 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.Credential;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.CredentialValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.reflections.Types;
@@ -24,7 +25,9 @@ import org.keycloak.credential.*;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @JBossLog
@@ -35,6 +38,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
   private final RealmModel realm;
   private final UserRepository userRepository;
   private final UserModel user;
+  private final User userEntity;
 
   @Override
   public boolean isValid(List<CredentialInput> inputs) {
@@ -60,25 +64,30 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
   @Override
   public void updateStoredCredential(CredentialModel cred) {
     throwExceptionIfInvalidUser(user);
-    Credential credential = fromModel(cred);
-    userRepository.createOrUpdateCredential(credential);
+    CredentialValue credential = fromModel(cred);
+    userEntity.getCredentials().remove(credential);
+    userEntity.getCredentials().add(credential);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public CredentialModel createStoredCredential(CredentialModel cred) {
     throwExceptionIfInvalidUser(user);
-    Credential existing = userRepository.findCredential(user.getId(), cred.getId());
+    boolean existsAlready = userEntity.hasCredential(cred.getId());
 
-    if (existing != null) {
+    if (existsAlready) {
       throw new ModelDuplicateException("A CredentialModel with given id already exists");
     }
 
-    Credential credential = fromModel(cred);
+    CredentialValue credential = fromModel(cred);
 
-    List<Credential> credentials = userRepository.findCredentials(user.getId());
+    List<CredentialValue> credentials = userEntity.getSortedCredentials();
     int priority = credentials.isEmpty() ? PRIORITY_DIFFERENCE : credentials.get(credentials.size() - 1).getPriority() + PRIORITY_DIFFERENCE;
     credential.setPriority(priority);
-    userRepository.createOrUpdateCredential(credential);
+
+    userEntity.getCredentials().remove(credential);
+    userEntity.getCredentials().add(credential);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
 
     return toModel(credential);
   }
@@ -87,12 +96,23 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
   public boolean removeStoredCredentialById(String id) {
     throwExceptionIfInvalidUser(user);
 
-    return userRepository.deleteCredential(user.getId(), id);
+    boolean removed = userEntity.getCredentials().remove(CredentialValue.builder().id(id).build());
+
+    if (!removed) {
+      return false;
+    }
+
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
+    return true;
   }
 
   @Override
   public CredentialModel getStoredCredentialById(String id) {
-    Credential credential = userRepository.findCredential(user.getId(), id);
+    CredentialValue credential = userEntity.getCredentials().stream()
+        .filter(c -> c.getId().equals(id))
+        .findFirst()
+        .orElse(null);
+
     if (credential == null) {
       return null;
     }
@@ -101,7 +121,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
 
   @Override
   public Stream<CredentialModel> getStoredCredentialsStream() {
-    return Optional.ofNullable(userRepository.findCredentials(user.getId())).orElse(Collections.emptyList()).stream()
+    return userEntity.getSortedCredentials().stream()
         .map(this::toModel);
   }
 
@@ -123,14 +143,14 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
     throwExceptionIfInvalidUser(user);
 
     // 1 - Get all credentials from the entity.
-    List<Credential> credentialsList = userRepository.findCredentials(user.getId());
+    List<CredentialValue> credentialsList = userEntity.getSortedCredentials();
 
     // 2 - Find indexes of our and newPrevious credential
     int ourCredentialIndex = -1;
     int newPreviousCredentialIndex = -1;
-    Credential ourCredential = null;
+    CredentialValue ourCredential = null;
     int i = 0;
-    for (Credential credential : credentialsList) {
+    for (CredentialValue credential : credentialsList) {
       if (credentialId.equals(credential.getId())) {
         ourCredentialIndex = i;
         ourCredential = credential;
@@ -161,13 +181,16 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
 
     // 5 - newList contains credentials in requested order now. Iterate through whole list and change priorities accordingly.
     int expectedPriority = 0;
-    for (Credential credential : credentialsList) {
+    for (CredentialValue credential : credentialsList) {
       expectedPriority += PRIORITY_DIFFERENCE;
       if (credential.getPriority() != expectedPriority) {
         credential.setPriority(expectedPriority);
 
         log.tracef("Priority of credential [%s] of user [%s] changed to [%d]", credential.getId(), user.getUsername(), expectedPriority);
-        userRepository.createOrUpdateCredential(credential);
+
+        userEntity.getCredentials().remove(credential);
+        userEntity.getCredentials().add(credential);
+        userRepository.createOrUpdateUser(realm.getId(), userEntity);
       }
     }
 
@@ -252,11 +275,9 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
     }
   }
 
-  private Credential fromModel(CredentialModel model) {
-    return Credential.builder()
+  private CredentialValue fromModel(CredentialModel model) {
+    return CredentialValue.builder()
         .id(model.getId() == null ? KeycloakModelUtils.generateId() : model.getId())
-        .userId(user.getId())
-        .realmId(realm.getId())
         .created(model.getCreatedDate())
         .userLabel(model.getUserLabel())
         .type(model.getType())
@@ -265,7 +286,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
         .build();
   }
 
-  private CredentialModel toModel(Credential entity) {
+  private CredentialModel toModel(CredentialValue entity) {
     CredentialModel credentialModel = new CredentialModel();
     credentialModel.setId(entity.getId());
     credentialModel.setCreatedDate(entity.getCreated());

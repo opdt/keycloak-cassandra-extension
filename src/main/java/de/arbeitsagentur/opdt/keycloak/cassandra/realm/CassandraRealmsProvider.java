@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.realm;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.ManagedCompositeCassandraRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
@@ -473,5 +474,10 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
   @Deprecated
   public Stream<RoleModel> searchForClientRolesStream(ClientModel client, String search, Integer first, Integer max) {
     return session.roles().searchForClientRolesStream(client, search, first, max);
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.REALM_CACHE;
   }
 }

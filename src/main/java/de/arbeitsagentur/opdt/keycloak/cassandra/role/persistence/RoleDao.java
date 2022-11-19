@@ -24,62 +24,11 @@ import java.util.List;
 @Dao
 public interface RoleDao {
   @Update
-  void insertOrUpdate(RealmRole realmRole);
-
-  @Update
-  void insertOrUpdate(ClientRole clientRole);
-
-  @Update
-  void insertOrUpdate(Role role);
-
-  @Insert // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-  void insert(AttributeToRoleMapping mapping);
-
-  @Update
-  void insertOrUpdate(RoleToAttributeMapping mapping);
+  void insertOrUpdate(Roles role);
 
   @Select(customWhereClause = "realm_id = :realmId")
-  PagingIterable<RealmRole> findAllRealmRoles(String realmId);
+  Roles getRolesByRealmId(String realmId);
 
-  @Select(customWhereClause = "client_id = :clientId")
-  PagingIterable<ClientRole> findAllClientRoles(String clientId);
-
-  @Select(customWhereClause = "id = :id")
-  Role getRoleById(String id);
-
-  @Select(customWhereClause = "id IN :ids")
-  PagingIterable<Role> getRolesByIds(List<String> ids);
-
-  @Select(customWhereClause = "realm_id = :realmId AND name = :name")
-  RealmRole getRealmRoleByName(String realmId, String name);
-
-  @Select(customWhereClause = "client_id = :clientId AND name = :name")
-  ClientRole getClientRoleByName(String clientId, String name);
-
-  @Select(customWhereClause = "role_id = :roleId AND attribute_name = :attributeName")
-  RoleToAttributeMapping findAttribute(String roleId, String attributeName);
-
-  @Select(customWhereClause = "role_id = :roleId")
-  PagingIterable<RoleToAttributeMapping> findAllAttributes(String roleId);
-
-  @Delete(entityClass = RealmRole.class)
+  @Delete(entityClass = Roles.class)
   void deleteAllRealmRoles(String realmId);
-
-  @Delete(entityClass = ClientRole.class)
-  void deleteAllClientRoles(String clientId);
-
-  @Delete(entityClass = Role.class)
-  void deleteRole(String id);
-
-  @Delete(entityClass = RealmRole.class)
-  boolean deleteRealmRole(String realmId, String name);
-
-  @Delete(entityClass = ClientRole.class)
-  boolean deleteClientRole(String clientId, String name);
-
-  @Delete
-  boolean deleteAttributeToRoleMapping(AttributeToRoleMapping attributeToRoleMapping);
-
-  @Delete(entityClass = RoleToAttributeMapping.class)
-  boolean deleteAttribute(String roleId, String attributeName);
 }

@@ -17,7 +17,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +68,15 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
       insertOrUpdate(new UserSessionToAttributeMapping(session.getId(), BROKER_SESSION_ID, Arrays.asList(session.getBrokerSessionId())));
     }
 
+    UserSessionToAttributeMapping clientIdsAttribute = new UserSessionToAttributeMapping(session.getId(), CLIENT_IDS, new ArrayList<>());
+
+    for (String clientId : session.getClientSessions().keySet()) {
+      clientIdsAttribute.getAttributeValues().add(clientId);
+    }
+
+    if(!clientIdsAttribute.getAttributeValues().isEmpty()) {
+      insertOrUpdate(clientIdsAttribute);
+    }
   }
 
   @Override
@@ -102,18 +110,6 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
   }
 
   @Override
-  public List<AuthenticatedClientSession> findClientSessionsByUserSessionId(String userSessionId) {
-    UserSessionToAttributeMapping clientIds = findUserSessionAttribute(userSessionId, CLIENT_IDS);
-    if (clientIds == null) {
-      return Collections.emptyList();
-    }
-
-    return clientIds.getAttributeValues().stream()
-        .map(clientId -> findClientSession(clientId, userSessionId))
-        .collect(Collectors.toList());
-  }
-
-  @Override
   public void deleteUserSession(UserSession session) {
     deleteUserSession(session.getId());
   }
@@ -121,12 +117,6 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
   @Override
   public void deleteUserSession(String id) {
     dao.deleteUserSession(id);
-
-    // Client Sessions
-    UserSessionToAttributeMapping clientIdsAttribute = findUserSessionAttribute(CLIENT_IDS, id);
-    if (clientIdsAttribute != null) {
-      clientIdsAttribute.getAttributeValues().forEach(this::deleteClientSessions);
-    }
 
     // Attributes
     for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(id)) {
@@ -151,39 +141,6 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     deleteUserSessionAttribute(session.getId(), CORRESPONDING_SESSION_ID);
   }
 
-  // AuthenticatedClientSessions
-
-  @Override
-  public void insertOrUpdate(String userSessionId, AuthenticatedClientSession session) {
-    int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
-
-    dao.insertOrUpdate(session, ttl);
-    UserSessionToAttributeMapping attribute = dao.findAttribute(userSessionId, CLIENT_IDS);
-
-    if (attribute == null) {
-      attribute = new UserSessionToAttributeMapping(userSessionId, CLIENT_IDS, Arrays.asList(session.getClientId()));
-    } else if (!attribute.getAttributeValues().contains(session.getClientId())){
-      attribute.getAttributeValues().add(session.getClientId());
-    }
-
-    insertOrUpdate(attribute);
-  }
-
-  @Override
-  public AuthenticatedClientSession findClientSession(String clientId, String userSessionId) {
-    return dao.findClientSession(clientId, userSessionId);
-  }
-
-  @Override
-  public void deleteClientSessions(String clientId) {
-    dao.deleteClientSessions(clientId);
-  }
-
-  @Override
-  public void deleteClientSession(AuthenticatedClientSession session) {
-    dao.deleteClientSession(session);
-  }
-
   // Attributes
   @Override
   public Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult) {
@@ -194,10 +151,11 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
   @Override
   public List<UserSession> findUserSessionsByAttribute(String name, String value) {
-    return dao.findByAttribute(name, value).all().stream()
+    List<String> userIds = dao.findByAttribute(name, value).all().stream()
         .map(AttributeToUserSessionMapping::getUserSessionId)
-        .flatMap(id -> Optional.ofNullable(findUserSessionById(id)).stream())
         .collect(Collectors.toList());
+
+    return dao.findByIds(userIds).all();
   }
 
   @Override

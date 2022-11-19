@@ -19,14 +19,10 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 
+import java.util.List;
+
 @Dao
 public interface UserDao {
-  @Insert
-  void insert(UserRealmRoleMapping userRealmRoleMapping);
-
-  @Insert
-  void insert(UserClientRoleMapping UserClientRoleMapping);
-
   @Insert
   void insert(User User);
 
@@ -38,13 +34,6 @@ public interface UserDao {
 
   @Update
   void update(FederatedIdentityToUserMapping identityToUserMapping);
-
-  @Update
-  void update(Credential credential);
-
-  @Insert
-    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-  void insert(UserRequiredAction UserRequiredAction);
 
   @Insert
   void insert(RealmToUserMapping realmToUserMapping);
@@ -58,8 +47,8 @@ public interface UserDao {
   @Select(customWhereClause = "realm_id = :realmId AND id = :id")
   User findById(String realmId, String id);
 
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<UserRequiredAction> findAllRequiredActions(String userId);
+  @Select(customWhereClause = "realm_id = :realmId AND id IN :ids")
+  PagingIterable<User> findByIds(String realmId, List<String> ids);
 
   @Select(customWhereClause = "user_id = :userId AND identity_provider = :identityProvider")
   FederatedIdentity findFederatedIdentity(String userId, String identityProvider);
@@ -73,54 +62,17 @@ public interface UserDao {
   @Select(customWhereClause = "user_id = :userId")
   PagingIterable<FederatedIdentity> findFederatedIdentities(String userId);
 
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<Credential> findCredentials(String userId);
-
-  @Select(customWhereClause = "user_id = :userId AND id = :id")
-  Credential findCredential(String userId, String id);
-
   @Select(customWhereClause = "realm_id = :realmId")
   PagingIterable<RealmToUserMapping> findUsersByRealmId(String realmId);
 
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<UserRealmRoleMapping> findRealmRolesByUserId(String userId);
-
-  @Select(customWhereClause = "user_id = :userId AND client_id = :clientId")
-  PagingIterable<UserClientRoleMapping> findAllByUserIdAndClientId(
-      String userId, String clientId);
-
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<UserClientRoleMapping> findAllClientRoleMappingsByUserId(String userId);
-
-  @Delete
-  boolean removeRoleMapping(UserRealmRoleMapping userRealmRoleMapping);
-
-  @Delete
-  boolean removeClientRoleMapping(UserClientRoleMapping UserClientRoleMapping);
-
   @Delete
   void delete(User User);
-
-  @Delete(entityClass = UserRequiredAction.class)
-  void deleteAllRequiredActions(String userId);
 
   @Delete
   boolean delete(FederatedIdentity federatedIdentity);
 
   @Delete
   boolean delete(FederatedIdentityToUserMapping identityToUserMapping);
-
-  @Delete
-  boolean delete(Credential credential);
-
-  @Delete(entityClass = Credential.class)
-  boolean deleteAllCredentials(String userId);
-
-  @Delete
-  boolean delete(UserRequiredAction UserRequiredAction);
-
-  @Delete(entityClass = UserRequiredAction.class)
-  boolean deleteRequiredAction(String userId, String requiredAction);
 
   @Delete(entityClass = RealmToUserMapping.class)
   boolean deleteRealmToUserMapping(String realmId, boolean serviceAccount, String userId);
@@ -137,7 +89,7 @@ public interface UserDao {
   void insertOrUpdate(UserSearchIndex searchIndex);
 
   @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
-  UserSearchIndex findUser(String realmId, String name, String value);
+  PagingIterable<UserSearchIndex> findUsers(String realmId, String name, String value);
 
   @Delete
   void delete(UserSearchIndex searchIndex);

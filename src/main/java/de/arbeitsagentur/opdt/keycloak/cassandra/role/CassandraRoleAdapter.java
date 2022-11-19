@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,8 +16,9 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.role;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleToAttributeMapping;
-import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Role;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -27,16 +28,21 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 @EqualsAndHashCode(of = "role")
 @JBossLog
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class CassandraRoleAdapter implements RoleModel {
   private final RealmModel realm;
-  private final Role role;
+  private RoleValue role;
   private final RoleRepository roleRepository;
+
+  public RoleValue getRole() {
+    return role;
+  }
 
   @Override
   public String getName() {
@@ -50,8 +56,7 @@ public class CassandraRoleAdapter implements RoleModel {
 
   @Override
   public void setDescription(String description) {
-    role.setDescription(description);
-    roleRepository.addOrUpdateRole(role);
+    updateAndRefresh(r -> role.setDescription(description));
   }
 
   @Override
@@ -61,8 +66,7 @@ public class CassandraRoleAdapter implements RoleModel {
 
   @Override
   public void setName(String name) {
-    role.setName(name);
-    roleRepository.addOrUpdateRole(role);
+    updateAndRefresh(r -> role.setName(name));
   }
 
   @Override
@@ -73,34 +77,38 @@ public class CassandraRoleAdapter implements RoleModel {
   @Override
   public void addCompositeRole(RoleModel roleToAdd) {
     log.debugv("add composite Role: roleNameOrigin={0} roleNameTarget={1}", this.role.getName(), roleToAdd.getName());
-    List<String> childRoles = new ArrayList<>(this.role.getChildRoles());
 
-    childRoles.add(roleToAdd.getId());
-    this.role.setChildRoles(childRoles);
+    updateAndRefresh(r -> {
+      Roles roles = roleRepository.getRolesByRealmId(realm.getId());
+      if (roles.getRoleById(roleToAdd.getId()) == null) {
+        RoleValue toAdd = RoleValue.builder()
+            .id(roleToAdd.getId())
+            .realmId(realm.getId())
+            .clientId(roleToAdd.isClientRole() ? roleToAdd.getContainerId() : null)
+            .name(roleToAdd.getName())
+            .attributes(roleToAdd.getAttributes())
+            .description(roleToAdd.getDescription())
+            .build();
 
-    roleRepository.addOrUpdateRole(this.role);
+        if (roleToAdd.isClientRole()) {
+          roles.addClientRole(roleToAdd.getContainerId(), toAdd);
+        } else {
+          roles.addRealmRole(toAdd);
+        }
+      }
 
-    Role compositeRole = roleRepository.getRoleById(roleToAdd.getId());
-
-    if (compositeRole == null) {
-      log.debugv("Composite Role is null! Creating... : name={0}", roleToAdd.getName());
-      compositeRole = new Role(
-          roleToAdd.getId(),
-          roleToAdd.getName(),
-          roleToAdd.getDescription(),
-          roleToAdd.isClientRole(),
-          roleToAdd.isClientRole() ? roleToAdd.getContainer().getId() : null,
-          realm.getId(),
-          Collections.emptyList());
-      roleRepository.addOrUpdateRole(compositeRole);
-    }
+      if (!this.role.getChildRoles().contains(roleToAdd.getId())) {
+        List<String> newRoles = new ArrayList<>(this.role.getChildRoles());
+        newRoles.add(roleToAdd.getId());
+        this.role.setChildRoles(newRoles);
+      }
+    });
   }
 
   @Override
   public void removeCompositeRole(RoleModel roleToDelete) {
     log.debugv("remove composite Role: roleNameOrigin={0} roleNameTarget={1}", this.role.getName(), roleToDelete.getName());
-    this.role.getChildRoles().remove(roleToDelete.getId());
-    roleRepository.addOrUpdateRole(this.role);
+    updateAndRefresh(r -> role.getChildRoles().remove(roleToDelete.getId()));
   }
 
   @Override
@@ -112,8 +120,9 @@ public class CassandraRoleAdapter implements RoleModel {
   public Stream<RoleModel> getCompositesStream(String search, Integer first, Integer max) {
     log.debugv("get composites: roleId={0} search={1} first={2} max={3}", role.getId(), search, first, max);
 
+    Roles roles = roleRepository.getRolesByRealmId(realm.getId());
     return role.getChildRoles().stream()
-        .map(roleRepository::getRoleById)
+        .map(roles::getRoleById)
         .filter(role -> search == null
             || search.isEmpty()
             || role.getName().toLowerCase().contains(search.toLowerCase())
@@ -123,12 +132,12 @@ public class CassandraRoleAdapter implements RoleModel {
 
   @Override
   public boolean isClientRole() {
-    return role.isClientRole();
+    return role.getClientId() != null;
   }
 
   @Override
   public String getContainerId() {
-    return role.isClientRole() ? role.getClientId() : realm.getId();
+    return role.getClientId() != null ? role.getClientId() : realm.getId();
   }
 
   @Override
@@ -145,22 +154,20 @@ public class CassandraRoleAdapter implements RoleModel {
   public void setSingleAttribute(String name, String value) {
     log.debugv("set attribute: roleId={0} name={1} value={2}", role.getId(), name, value);
 
-    RoleToAttributeMapping attribute = new RoleToAttributeMapping(role.getId(), name, Collections.singletonList(value));
-    roleRepository.updateAttribute(attribute);
+    updateAndRefresh(r -> role.getAttributes().put(name, Collections.singletonList(value)));
   }
 
   @Override
   public void setAttribute(String name, List<String> values) {
     log.debugv("set attribute: roleId={0} name={1} value={2}", role.getId(), name, values);
 
-    RoleToAttributeMapping attribute = new RoleToAttributeMapping(role.getId(), name, values);
-    roleRepository.updateAttribute(attribute);
+    updateAndRefresh(r -> role.getAttributes().put(name, values));
   }
 
   @Override
   public void removeAttribute(String name) {
     log.debugv("remove attribute: roleId={0} name={1}", role.getId(), name);
-    roleRepository.deleteAttribute(role.getId(), name);
+    updateAndRefresh(r -> role.getAttributes().remove(name));
   }
 
   @Override
@@ -172,15 +179,20 @@ public class CassandraRoleAdapter implements RoleModel {
   public Stream<String> getAttributeStream(String name) {
     log.debugv("get attribute: roleId={0} name={1}", role.getId(), name);
 
-    RoleToAttributeMapping attribute = roleRepository.findRoleAttribute(role.getId(), name);
-    return attribute.getAttributeValues().stream();
+    return role.getAttributes().getOrDefault(name, Collections.emptyList()).stream();
   }
 
   @Override
   public Map<String, List<String>> getAttributes() {
     log.debugv("get all attributes: roleId={0", role.getId());
 
-    return roleRepository.findAllRoleAttributes(role.getId()).stream()
-        .collect(Collectors.toMap(RoleToAttributeMapping::getRoleId, RoleToAttributeMapping::getAttributeValues));
+    return role.getAttributes();
+  }
+
+  private void updateAndRefresh(Consumer<RoleValue> roleUpdateFn) {
+    // Read cached -> references stay intact
+    Roles roles = roleRepository.getRolesByRealmId(realm.getId());
+    roleUpdateFn.accept(role);
+    roleRepository.addOrUpdateRoles(roles);
   }
 }

@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
+import javax.enterprise.util.Nonbinding;
 import javax.interceptor.InterceptorBinding;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,4 +26,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @InterceptorBinding
 public @interface L1Cached {
+  @Nonbinding
+  String cacheName() default "defaultCache";
 }

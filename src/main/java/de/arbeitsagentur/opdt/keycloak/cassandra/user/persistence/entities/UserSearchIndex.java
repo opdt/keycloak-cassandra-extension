@@ -16,6 +16,7 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities;
 
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -38,5 +39,6 @@ public class UserSearchIndex {
   @PartitionKey(2)
   private String value;
 
+  @ClusteringColumn
   private String userId;
 }

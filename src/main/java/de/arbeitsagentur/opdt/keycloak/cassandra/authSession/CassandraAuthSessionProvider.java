@@ -19,6 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.Time;
@@ -159,5 +160,10 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
       authenticationSession.setAuthNotes(authNotesFragment);
       authSessionRepository.insertOrUpdate(authenticationSession);
     }
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.AUTH_SESSION_CACHE;
   }
 }

@@ -22,9 +22,6 @@ import lombok.RequiredArgsConstructor;
 import javax.interceptor.InvocationContext;
 import java.util.Arrays;
 
-/**
- * Nötig, um die verschiedenen Aufrufe unterscheiden zu können, siehe https://vladmihalcea.com/spring-request-level-memoization/
- */
 @EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor

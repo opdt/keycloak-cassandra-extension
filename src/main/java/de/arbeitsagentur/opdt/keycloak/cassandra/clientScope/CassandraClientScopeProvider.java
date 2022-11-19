@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
 import lombok.RequiredArgsConstructor;
@@ -105,5 +106,10 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
 
     log.tracef("getClientScopeById(%s, %s)%s", realm, id, getShortStackTrace());
     return entityToModel(repository.getClientScopeById(id));
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.CLIENT_SCOPE_CACHE;
   }
 }

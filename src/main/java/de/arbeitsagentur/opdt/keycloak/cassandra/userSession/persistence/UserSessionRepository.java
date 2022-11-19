@@ -15,7 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import org.keycloak.common.util.MultivaluedHashMap;
@@ -25,6 +24,7 @@ import java.util.Set;
 
 public interface UserSessionRepository {
   void insertOrUpdate(UserSession session);
+
   void insertOrUpdate(UserSession session, String correspondingSessionId);
 
   UserSession findUserSessionById(String id);
@@ -39,21 +39,11 @@ public interface UserSessionRepository {
 
   List<UserSession> findUserSessionsByBrokerUserId(String brokerUserId);
 
-  List<AuthenticatedClientSession> findClientSessionsByUserSessionId(String userSessionId);
-
   void deleteUserSession(UserSession session);
 
   void deleteUserSession(String id);
 
   void deleteCorrespondingUserSession(UserSession session);
-
-  void insertOrUpdate(String userSessionId, AuthenticatedClientSession session);
-
-  AuthenticatedClientSession findClientSession(String clientId, String userSessionId);
-
-  void deleteClientSessions(String clientId);
-
-  void deleteClientSession(AuthenticatedClientSession session);
 
   // Attributes
   Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult);

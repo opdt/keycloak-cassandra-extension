@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,19 +16,17 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.ObjectUtil;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,12 +161,26 @@ public abstract class CassandraUserAdapter implements UserModel {
   public Map<String, List<String>> getAttributes() {
     log.debugv("get attributes: realm={0} userId={1}", realm.getId(), userEntity.getId());
 
-    return userEntity.getAttributes();
+    Map<String, List<String>> attributes = userEntity.getAttributes();
+    MultivaluedHashMap<String, String> result = attributes == null ? new MultivaluedHashMap<>() : new MultivaluedHashMap<>(attributes);
+    result.add(UserModel.FIRST_NAME, userEntity.getFirstName());
+    result.add(UserModel.LAST_NAME, userEntity.getLastName());
+    result.add(UserModel.EMAIL, userEntity.getEmail());
+    result.add(UserModel.USERNAME, userEntity.getUsername());
+
+    return result;
   }
 
   @Override
   public void setAttribute(String name, List<String> values) {
     log.debugv(realm.getId(), userEntity.getId(), name, values);
+
+    if (values == null) {
+      return;
+    }
+
+    String valueToSet = !values.isEmpty() ? values.get(0) : null;
+    if (setSpecialAttributeValue(name, valueToSet)) return;
 
     userEntity.getAttributes().put(name, values);
     userRepository.createOrUpdateUser(realm.getId(), userEntity);
@@ -178,21 +190,25 @@ public abstract class CassandraUserAdapter implements UserModel {
   public void setSingleAttribute(String name, String value) {
     log.debugv(realm.getId(), userEntity.getId(), name, value);
 
+    if (value == null) {
+      return;
+    }
+
+    if (setSpecialAttributeValue(name, value)) return;
+
     userEntity.getAttributes().put(name, Collections.singletonList(value));
     userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
-  public List<String> getAttribute(String name) {
-    return userEntity.getAttribute(name);
-  }
-
   @Override
   public String getFirstAttribute(String name) {
-    List<String> attributeValues = getAttribute(name);
-    if (attributeValues == null || attributeValues.isEmpty()) {
-      return null;
-    }
-    return attributeValues.get(0);
+    return getSpecialAttributeValue(name).orElseGet(() -> {
+      List<String> attributeValues = userEntity.getAttribute(name);
+      if (attributeValues == null || attributeValues.isEmpty()) {
+        return null;
+      }
+      return attributeValues.get(0);
+    });
   }
 
   @Override
@@ -205,18 +221,17 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public void grantRole(RoleModel role) {
-    log.debugv(
-        "grant role mapping: realm={0} userId={1} role={2}",
-        realm.getId(), userEntity.getId(), role.getName());
+    log.debugv("grant role mapping: realm={0} userId={1} role={2}", realm.getId(), userEntity.getId(), role.getName());
 
     if (role.isClientRole()) {
-      UserClientRoleMapping userEntityClientRoleMapping =
-          new UserClientRoleMapping(userEntity.getId(), role.getContainer().getId(), role.getId());
-      userRepository.addClientRoleMapping(userEntityClientRoleMapping);
+      Set<String> clientRoles = userEntity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
+      clientRoles.add(role.getId());
+      userEntity.getClientRoles().put(role.getContainerId(), clientRoles);
     } else {
-      UserRealmRoleMapping userEntityRoleMapping = new UserRealmRoleMapping(userEntity.getId(), role.getId());
-      userRepository.addRealmRoleMapping(userEntityRoleMapping);
+      userEntity.getRealmRoles().add(role.getId());
     }
+
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
@@ -226,31 +241,38 @@ public abstract class CassandraUserAdapter implements UserModel {
         realm.getId(), userEntity.getId(), role.getName());
 
     if (role.isClientRole()) {
-      userRepository.removeClientRoleMapping(
-          userEntity.getId(), role.getContainer().getId(), role.getId());
+      Set<String> clientRoles = userEntity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
+      clientRoles.remove(role.getId());
+      userEntity.getClientRoles().put(role.getContainerId(), clientRoles);
     } else {
-      userRepository.removeRoleMapping(userEntity.getId(), role.getId());
+      userEntity.getRealmRoles().remove(role.getId());
     }
+
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public void addRequiredAction(RequiredAction action) {
-    userRepository.addRequiredAction(new UserRequiredAction(userEntity.getId(), action.name()));
+    userEntity.getRequiredActions().add(action.name());
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public void addRequiredAction(String action) {
-    userRepository.addRequiredAction(new UserRequiredAction(userEntity.getId(), action));
+    userEntity.getRequiredActions().add(action);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public void removeRequiredAction(RequiredAction action) {
-    userRepository.deleteRequiredAction(userEntity.getId(), action.name());
+    userEntity.getRequiredActions().remove(action.name());
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
   public void removeRequiredAction(String action) {
-    userRepository.deleteRequiredAction(userEntity.getId(), action);
+    userEntity.getRequiredActions().remove(action);
+    userRepository.createOrUpdateUser(realm.getId(), userEntity);
   }
 
   @Override
@@ -280,16 +302,12 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public Stream<String> getAttributeStream(String name) {
-    return userEntity.getAttribute(name).stream();
+    return getSpecialAttributeValue(name).map(Collections::singletonList).orElseGet(() -> userEntity.getAttribute(name)).stream();
   }
 
   @Override
   public Stream<String> getRequiredActionsStream() {
-    List<UserRequiredAction> allRequiredActions = userRepository.findAllRequiredActions(userEntity.getId());
-    if (allRequiredActions == null) {
-      return Stream.empty();
-    }
-    return allRequiredActions.stream().map(UserRequiredAction::getRequiredAction);
+    return userEntity.getRequiredActions().stream();
   }
 
   @Override
@@ -340,22 +358,11 @@ public abstract class CassandraUserAdapter implements UserModel {
     log.debugv("get role mappings: realm={0} userId={1}", realm.getId(), userEntity.getId());
 
     List<String> roleIds = new ArrayList<>();
-    List<String> realmRoleIds =
-        userRepository.getRealmRolesByUserId(userEntity.getId()).stream()
-            .map(UserRealmRoleMapping::getRoleId)
-            .collect(Collectors.toList());
-    roleIds.addAll(realmRoleIds);
+    roleIds.addAll(userEntity.getRealmRoles());
+    roleIds.addAll(userEntity.getClientRoles().entrySet().stream().flatMap(e -> e.getValue().stream()).collect(Collectors.toSet()));
 
-    List<String> clientRoleIds =
-        userRepository.getAllClientRoleMappingsByUserId(userEntity.getId()).stream()
-            .filter(role -> realm
-                .getClientsStream()
-                .anyMatch(client -> client.getId().equals(role.getClientId())))
-            .map(UserClientRoleMapping::getRoleId)
-            .collect(Collectors.toList());
-    roleIds.addAll(clientRoleIds);
-
-    return roleIds.stream().map(realm::getRoleById);
+    // TODO: Remove and save Role-mappings for no longer existent roles...
+    return roleIds.stream().map(realm::getRoleById).filter(Objects::nonNull);
   }
 
   public abstract boolean checkEmailUniqueness(RealmModel realm, String email);
@@ -364,4 +371,36 @@ public abstract class CassandraUserAdapter implements UserModel {
 
   @Override
   public abstract SubjectCredentialManager credentialManager();
+
+  private Optional<String> getSpecialAttributeValue(String name) {
+    if (UserModel.FIRST_NAME.equals(name)) {
+      return Optional.ofNullable(userEntity.getFirstName());
+    } else if (UserModel.LAST_NAME.equals(name)) {
+      return Optional.ofNullable(userEntity.getLastName());
+    } else if (UserModel.EMAIL.equals(name)) {
+      return Optional.ofNullable(userEntity.getEmail());
+    } else if (UserModel.USERNAME.equals(name)) {
+      return Optional.ofNullable(userEntity.getUsername());
+    }
+
+    return Optional.empty();
+  }
+
+  private boolean setSpecialAttributeValue(String name, String value) {
+    if (UserModel.FIRST_NAME.equals(name)) {
+      userEntity.setFirstName(value);
+      return true;
+    } else if (UserModel.LAST_NAME.equals(name)) {
+      userEntity.setLastName(value);
+      return true;
+    } else if (UserModel.EMAIL.equals(name)) {
+      setEmail(value);
+      return true;
+    } else if (UserModel.USERNAME.equals(name)) {
+      setUsername(value);
+      return true;
+    }
+
+    return false;
+  }
 }

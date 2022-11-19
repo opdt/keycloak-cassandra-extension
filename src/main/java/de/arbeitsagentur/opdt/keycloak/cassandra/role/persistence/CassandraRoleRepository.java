@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions.paginated;
 
@@ -29,139 +28,24 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions.paginat
 public class CassandraRoleRepository implements RoleRepository {
   private final RoleDao roleDao;
 
+
   @Override
-  public void addOrUpdateRole(Role role) {
+  public void addOrUpdateRoles(Roles role) {
     roleDao.insertOrUpdate(role);
-
-    if (role.isClientRole()) {
-      roleDao.insertOrUpdate(
-          new ClientRole(
-              role.getClientId(),
-              role.getName(),
-              role.getId(),
-              role.getDescription(),
-              role.getRealmId(),
-              role.getChildRoles()));
-    } else {
-      roleDao.insertOrUpdate(
-          new RealmRole(
-              role.getRealmId(),
-              role.getName(),
-              role.getId(),
-              role.getDescription(),
-              role.getChildRoles()));
-    }
   }
 
   @Override
-  public boolean removeRealmRole(String realmId, String roleId) {
-    Role role = roleDao.getRoleById(roleId);
-    if(role == null) {
-      return false;
+  public Roles getRolesByRealmId(String realmId) {
+    Roles rolesByRealmId = roleDao.getRolesByRealmId(realmId);
+    if(rolesByRealmId == null) {
+      rolesByRealmId = Roles.builder().realmId(realmId).build();
     }
 
-    roleDao.deleteRole(roleId);
-    roleDao.deleteRealmRole(realmId, role.getName());
-    return true;
+    return rolesByRealmId;
   }
 
   @Override
-  public boolean removeClientRole(String clientId, String roleId) {
-    Role role = roleDao.getRoleById(roleId);
-
-    if(role == null) {
-      return false;
-    }
-    roleDao.deleteRole(roleId);
-    roleDao.deleteClientRole(clientId, role.getName());
-    return true;
-  }
-
-  @Override
-  public void removeAllRealmRoles(String realmId) {
-    getAllRealmRoles(realmId, 0, -1).forEach(r -> roleDao.deleteRole(r.getId()));
+  public void deleteRealmRoles(String realmId) {
     roleDao.deleteAllRealmRoles(realmId);
-  }
-
-  @Override
-  public void removeAllClientRoles(String clientId) {
-    getAllClientRoles(clientId, 0, -1).forEach(r -> roleDao.deleteRole(r.getId()));
-    roleDao.deleteAllClientRoles(clientId);
-  }
-
-  @Override
-  public RealmRole getRealmRoleByName(String realmId, String name) {
-    return roleDao.getRealmRoleByName(realmId, name);
-  }
-
-  @Override
-  public ClientRole getClientRoleByName(String clientId, String name) {
-    return roleDao.getClientRoleByName(clientId, name);
-  }
-
-  @Override
-  public List<RealmRole> getAllRealmRoles(String realmId, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.findAllRealmRoles(realmId), firstResult, maxResult).collect(Collectors.toList());
-  }
-
-  @Override
-  public List<ClientRole> getAllClientRoles(String clientId, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.findAllClientRoles(clientId), firstResult, maxResult).collect(Collectors.toList());
-  }
-
-  @Override
-  public void updateAttribute(RoleToAttributeMapping attributeMapping) {
-    RoleToAttributeMapping oldAttribute = roleDao.findAttribute(attributeMapping.getRoleId(), attributeMapping.getAttributeName());
-    roleDao.insertOrUpdate(attributeMapping);
-
-    if (oldAttribute != null) {
-      // Alte AttributeToUserMappings löschen, da die Values als Teil des PartitionKey nicht
-      // geändert werden können
-      oldAttribute
-          .getAttributeValues()
-          .forEach(value -> roleDao.deleteAttributeToRoleMapping(new AttributeToRoleMapping(oldAttribute.getAttributeName(), value, oldAttribute.getRoleId())));
-    }
-
-    attributeMapping
-        .getAttributeValues()
-        .forEach(value -> {
-          AttributeToRoleMapping attributeToRoleMapping = new AttributeToRoleMapping(attributeMapping.getAttributeName(), value, attributeMapping.getRoleId());
-          roleDao.insert(attributeToRoleMapping);
-        });
-  }
-
-  @Override
-  public void deleteAttribute(String roleId, String attributeName) {
-    RoleToAttributeMapping attribute = findRoleAttribute(roleId, attributeName);
-
-    if (attribute == null) {
-      return;
-    }
-
-    // Beide Mapping-Tabellen beachten!
-    roleDao.deleteAttribute(roleId, attributeName);
-    attribute
-        .getAttributeValues()
-        .forEach(value -> roleDao.deleteAttributeToRoleMapping(new AttributeToRoleMapping(attributeName, value, roleId)));
-  }
-
-  @Override
-  public RoleToAttributeMapping findRoleAttribute(String roleId, String attributeName) {
-    return roleDao.findAttribute(roleId, attributeName);
-  }
-
-  @Override
-  public List<RoleToAttributeMapping> findAllRoleAttributes(String roleId) {
-    return roleDao.findAllAttributes(roleId).all();
-  }
-
-  @Override
-  public Role getRoleById(String id) {
-    return roleDao.getRoleById(id);
-  }
-
-  @Override
-  public List<Role> getRolesByIds(List<String> ids, Integer firstResult, Integer maxResult) {
-    return paginated(roleDao.getRolesByIds(ids), firstResult, maxResult).collect(Collectors.toList());
   }
 }

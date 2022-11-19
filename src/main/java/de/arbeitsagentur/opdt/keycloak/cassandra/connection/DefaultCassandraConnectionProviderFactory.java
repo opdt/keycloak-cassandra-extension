@@ -18,11 +18,15 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
+import com.datastax.oss.driver.internal.core.type.codec.extras.json.JsonCodec;
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.CredentialValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
@@ -94,6 +98,9 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
         .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
         .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
+        .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
+        .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
+        .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
         .build();
 
     // User-Tables
@@ -101,18 +108,10 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     createUserSearchIndexTable(cqlSession);
     createFederatedIdentityTable(cqlSession);
     createFederatedIdentityToUserMappingTable(cqlSession);
-    createUserRoleMappingTable(cqlSession);
-    createUserClientRoleMappingTable(cqlSession);
-    createUserRequiredActionTable(cqlSession);
-    createCredentialsTable(cqlSession);
+    createRealmToUserMappingTable(cqlSession);
 
     // Role-Tables
-    createRoleTable(cqlSession);
-    createClientRoleTable(cqlSession);
-    createRealmRoleTable(cqlSession);
-    createAttributesToRolesMappingTable(cqlSession);
-    createRolesToAttributesMappingTable(cqlSession);
-    createRealmToUserMappingTable(cqlSession);
+    createRolesTable(cqlSession);
 
     // Realm-Tables
     createRealmTable(cqlSession);
@@ -121,7 +120,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
     // UserSession-Tables
     createUserSessionTable(cqlSession);
-    createAuthenticatedClientSessionTable(cqlSession);
     createUserSessionsToAttributesMappingTable(cqlSession);
     createAttributesToUserSessionsMappingTable(cqlSession);
 
@@ -191,6 +189,10 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .withColumn("email_verified", DataTypes.BOOLEAN)
             .withColumn("service_account", DataTypes.BOOLEAN)
             .withColumn("created_timestamp", DataTypes.TIMESTAMP)
+            .withColumn("credentials", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("required_actions", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("realm_roles", DataTypes.setOf(DataTypes.TEXT))
+            .withColumn("client_roles", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
             .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenListOf(DataTypes.TEXT)))
             .build();
 
@@ -204,7 +206,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .withPartitionKey("realm_id", DataTypes.TEXT)
             .withPartitionKey("name", DataTypes.TEXT)
             .withPartitionKey("value", DataTypes.TEXT)
-            .withColumn("user_id", DataTypes.TEXT)
+            .withClusteringColumn("user_id", DataTypes.TEXT)
             .build();
 
     session.execute(statement);
@@ -252,6 +254,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .withColumn("last_session_refresh", DataTypes.BIGINT)
             .withColumn("state", DataTypes.TEXT)
             .withColumn("notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
+            .withColumn("client_sessions", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .withColumn("persistence_state", DataTypes.TEXT)
             .build();
 
@@ -289,28 +292,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .withColumn("user_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .withColumn("auth_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .withColumn("client_notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createAuthenticatedClientSessionTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("authenticated_client_sessions")
-            .ifNotExists()
-            .withPartitionKey("client_id", DataTypes.TEXT)
-            .withClusteringColumn("user_session_id", DataTypes.TEXT)
-            .withColumn("realm_id", DataTypes.TEXT)
-            .withColumn("id", DataTypes.TEXT)
-            .withColumn("timestamp", DataTypes.BIGINT)
-            .withColumn("expiration", DataTypes.BIGINT)
-            .withColumn("auth_method", DataTypes.TEXT)
-            .withColumn("redirect_uri", DataTypes.TEXT)
-            .withColumn("action", DataTypes.TEXT)
-            .withColumn("current_refresh_token", DataTypes.TEXT)
-            .withColumn("current_refresh_token_use_count", DataTypes.INT)
-            .withColumn("offline", DataTypes.BOOLEAN)
-            .withColumn("notes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT))
             .build();
 
     session.execute(statement);
@@ -383,123 +364,13 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     session.execute(statement);
   }
 
-  private void createUserRoleMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("user_realm_role_mapping")
-            .ifNotExists()
-            .withPartitionKey("user_id", DataTypes.TEXT)
-            .withClusteringColumn("role_id", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createUserClientRoleMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("user_client_role_mapping")
-            .ifNotExists()
-            .withPartitionKey("user_id", DataTypes.TEXT)
-            .withClusteringColumn("client_id", DataTypes.TEXT)
-            .withClusteringColumn("role_id", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createUserRequiredActionTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("users_to_required_actions")
-            .ifNotExists()
-            .withPartitionKey("user_id", DataTypes.TEXT)
-            .withClusteringColumn("required_action", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createCredentialsTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("credentials")
-            .ifNotExists()
-            .withPartitionKey("user_id", DataTypes.TEXT)
-            .withClusteringColumn("id", DataTypes.TEXT)
-            .withColumn("type", DataTypes.TEXT)
-            .withColumn("name", DataTypes.TEXT)
-            .withColumn("realm_id", DataTypes.TEXT)
-            .withColumn("secret_data", DataTypes.TEXT)
-            .withColumn("credential_data", DataTypes.TEXT)
-            .withColumn("user_label", DataTypes.TEXT)
-            .withColumn("priority", DataTypes.INT)
-            .withColumn("created", DataTypes.BIGINT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createRoleTable(CqlSession session) {
+  private void createRolesTable(CqlSession session) {
     SimpleStatement statement =
         SchemaBuilder.createTable("roles")
             .ifNotExists()
-            .withPartitionKey("id", DataTypes.TEXT)
-            .withClusteringColumn("name", DataTypes.TEXT)
-            .withColumn("description", DataTypes.TEXT)
-            .withColumn("client_role", DataTypes.BOOLEAN)
-            .withColumn("client_id", DataTypes.TEXT)
-            .withColumn("realm_id", DataTypes.TEXT)
-            .withColumn("child_roles", DataTypes.listOf(DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createClientRoleTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("client_roles")
-            .ifNotExists()
-            .withPartitionKey("client_id", DataTypes.TEXT)
-            .withClusteringColumn("name", DataTypes.TEXT)
-            .withColumn("id", DataTypes.TEXT)
-            .withColumn("description", DataTypes.TEXT)
-            .withColumn("realm_id", DataTypes.TEXT)
-            .withColumn("child_roles", DataTypes.listOf(DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createRealmRoleTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("realm_roles")
-            .ifNotExists()
             .withPartitionKey("realm_id", DataTypes.TEXT)
-            .withClusteringColumn("name", DataTypes.TEXT)
-            .withColumn("id", DataTypes.TEXT)
-            .withColumn("description", DataTypes.TEXT)
-            .withColumn("child_roles", DataTypes.listOf(DataTypes.TEXT))
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createAttributesToRolesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("attributes_to_roles")
-            .ifNotExists()
-            .withPartitionKey("attribute_name", DataTypes.TEXT)
-            .withPartitionKey("attribute_value", DataTypes.TEXT)
-            .withClusteringColumn("role_id", DataTypes.TEXT)
-            .build();
-
-    session.execute(statement);
-  }
-
-  private void createRolesToAttributesMappingTable(CqlSession session) {
-    SimpleStatement statement =
-        SchemaBuilder.createTable("roles_to_attributes")
-            .ifNotExists()
-            .withPartitionKey("role_id", DataTypes.TEXT)
-            .withClusteringColumn("attribute_name", DataTypes.TEXT)
-            .withColumn("attribute_values", DataTypes.listOf(DataTypes.TEXT))
+            .withColumn("realm_roles", DataTypes.frozenSetOf(DataTypes.TEXT))
+            .withColumn("client_roles", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
             .build();
 
     session.execute(statement);

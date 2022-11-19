@@ -16,7 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.keycloak.models.*;
@@ -26,13 +26,13 @@ import java.util.Map;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setClientSessionExpiration;
 
-@EqualsAndHashCode(of = "userSessionEntity")
+@EqualsAndHashCode(of = "userSession")
 @AllArgsConstructor
 public abstract class CassandraAuthenticatedClientSessionAdapter implements AuthenticatedClientSessionModel {
   protected KeycloakSession session;
   protected RealmModel realm;
-  protected UserSessionModel userSession;
-  protected AuthenticatedClientSession clientSessionEntity;
+  protected CassandraUserSessionAdapter userSession;
+  protected AuthenticatedClientSessionValue clientSessionEntity;
   protected UserSessionRepository userSessionRepository;
 
   @Override
@@ -52,7 +52,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
 
     // whenever the timestamp is changed recompute the expiration time
     setClientSessionExpiration(clientSessionEntity, realm, getClient());
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -68,7 +68,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
   @Override
   public void setCurrentRefreshToken(String currentRefreshToken) {
     clientSessionEntity.setCurrentRefreshToken(currentRefreshToken);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -80,7 +80,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
   @Override
   public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
     clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -96,13 +96,13 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     }
 
     clientSessionEntity.getNotes().put(name, value);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
   public void removeNote(String name) {
     clientSessionEntity.getNotes().remove(name);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -118,7 +118,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
   @Override
   public void setRedirectUri(String uri) {
     clientSessionEntity.setRedirectUri(uri);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -139,7 +139,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
   @Override
   public void setAction(String action) {
     clientSessionEntity.setAction(action);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 
   @Override
@@ -150,6 +150,6 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
   @Override
   public void setProtocol(String method) {
     clientSessionEntity.setAuthMethod(method);
-    userSessionRepository.insertOrUpdate(userSession.getId(), clientSessionEntity);
+    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
   }
 }

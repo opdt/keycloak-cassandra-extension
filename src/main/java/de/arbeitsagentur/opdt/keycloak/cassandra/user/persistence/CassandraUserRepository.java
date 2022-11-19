@@ -20,7 +20,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @JBossLog
@@ -30,7 +31,7 @@ public class CassandraUserRepository implements UserRepository {
   private static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
   private static final String EMAIL = "email";
   private static final String SERVICE_ACCOUNT_LINK = "serviceAccountLink";
-  private static final String FEDERATED_IDENTITY_LINK = "federatedIdentityLink";
+  private static final String FEDERATION_LINK = "federationLink";
   private final UserDao userDao;
 
   @Override
@@ -49,7 +50,7 @@ public class CassandraUserRepository implements UserRepository {
       return null;
     }
 
-    UserSearchIndex user = userDao.findUser(realmId, EMAIL, email);
+    UserSearchIndex user = userDao.findUsers(realmId, EMAIL, email).all().stream().findFirst().orElse(null);
     if (user == null) {
       return null;
     }
@@ -63,7 +64,7 @@ public class CassandraUserRepository implements UserRepository {
       return null;
     }
 
-    UserSearchIndex user = userDao.findUser(realmId, USERNAME, username);
+    UserSearchIndex user = userDao.findUsers(realmId, USERNAME, username).all().stream().findFirst().orElse(null);
     if (user == null) {
       return null;
     }
@@ -77,7 +78,7 @@ public class CassandraUserRepository implements UserRepository {
       return null;
     }
 
-    UserSearchIndex user = userDao.findUser(realmId, USERNAME_CASE_INSENSITIVE, username);
+    UserSearchIndex user = userDao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream().findFirst().orElse(null);;
     if (user == null) {
       return null;
     }
@@ -91,7 +92,7 @@ public class CassandraUserRepository implements UserRepository {
       return null;
     }
 
-    UserSearchIndex user = userDao.findUser(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink);
+    UserSearchIndex user = userDao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink).all().stream().findFirst().orElse(null);;
     if (user == null) {
       return null;
     }
@@ -100,32 +101,16 @@ public class CassandraUserRepository implements UserRepository {
   }
 
   @Override
-  public User findUserByFederatedIdentityLink(String realmId, String federationLink) {
+  public List<User> findUsersByFederationLink(String realmId, String federationLink) {
     if(federationLink == null) {
       return null;
     }
 
-    UserSearchIndex user = userDao.findUser(realmId, FEDERATED_IDENTITY_LINK, federationLink);
-    if (user == null) {
-      return null;
-    }
+    List<String> userIds = userDao.findUsers(realmId, FEDERATION_LINK, federationLink).all().stream()
+        .map(UserSearchIndex::getUserId)
+        .collect(Collectors.toList());
 
-    return findUserById(realmId, user.getUserId());
-  }
-
-  @Override
-  public void addRequiredAction(UserRequiredAction requiredAction) {
-    userDao.insert(requiredAction);
-  }
-
-  @Override
-  public void deleteRequiredAction(String userId, String requiredAction) {
-    userDao.deleteRequiredAction(userId, requiredAction);
-  }
-
-  @Override
-  public List<UserRequiredAction> findAllRequiredActions(String userId) {
-    return userDao.findAllRequiredActions(userId).all();
+    return userDao.findByIds(realmId, userIds).all();
   }
 
   @Override
@@ -149,7 +134,7 @@ public class CassandraUserRepository implements UserRepository {
   @Override
   public void deleteFederationLinkSearchIndex(String realmId, User user) {
     if(user.getFederationLink() != null) {
-      userDao.deleteIndex(realmId, FEDERATED_IDENTITY_LINK, user.getFederationLink());
+      userDao.deleteIndex(realmId, FEDERATION_LINK, user.getFederationLink());
     }
   }
 
@@ -181,7 +166,7 @@ public class CassandraUserRepository implements UserRepository {
     }
 
     if(user.getFederationLink() != null) {
-      userDao.insertOrUpdate(new UserSearchIndex(realmId, FEDERATED_IDENTITY_LINK, user.getFederationLink(), user.getId()));
+      userDao.insertOrUpdate(new UserSearchIndex(realmId, FEDERATION_LINK, user.getFederationLink(), user.getId()));
     }
   }
 
@@ -196,18 +181,12 @@ public class CassandraUserRepository implements UserRepository {
     userDao.delete(user);
     userDao.deleteRealmToUserMapping(realmId, user.isServiceAccount(), user.getId());
 
-    deleteAllRequiredActions(user.getId());
     deleteUsernameSearchIndex(realmId, user);
     deleteEmailSearchIndex(realmId, user);
     deleteServiceAccountLinkSearchIndex(realmId, user);
     deleteFederationLinkSearchIndex(realmId, user);
 
     return true;
-  }
-
-  @Override
-  public void deleteAllRequiredActions(String userId) {
-    userDao.deleteAllRequiredActions(userId);
   }
 
   @Override
@@ -273,38 +252,6 @@ public class CassandraUserRepository implements UserRepository {
   }
 
   @Override
-  public void createOrUpdateCredential(Credential credential) {
-    userDao.update(credential);
-  }
-
-  @Override
-  public List<Credential> findCredentials(String userId) {
-    return userDao.findCredentials(userId).all().stream()
-        .sorted(Comparator.comparing(Credential::getPriority))
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  public Credential findCredential(String userId, String credId) {
-    return findCredentials(userId).stream()
-        .filter(cred -> cred.getId().equals(credId))
-        .findFirst()
-        .orElse(null);
-  }
-
-  @Override
-  public boolean deleteCredential(String userId, String credId) {
-    Credential credential = findCredential(userId, credId);
-
-    if (credential != null) {
-      userDao.delete(credential);
-      return true;
-    }
-
-    return false;
-  }
-
-  @Override
   public Set<String> findUserIdsByRealmId(String realmId, int first, int max) {
     return StreamExtensions.paginated(userDao.findUsersByRealmId(realmId), first, max)
         .map(RealmToUserMapping::getUserId)
@@ -318,35 +265,5 @@ public class CassandraUserRepository implements UserRepository {
     } else {
       return userDao.countNonServiceAccountUsersByRealmId(realmId);
     }
-  }
-
-  @Override
-  public Set<UserRealmRoleMapping> getRealmRolesByUserId(String userId) {
-    return new HashSet<>(userDao.findRealmRolesByUserId(userId).all());
-  }
-
-  @Override
-  public Set<UserClientRoleMapping> getAllClientRoleMappingsByUserId(String userId) {
-    return new HashSet<>(userDao.findAllClientRoleMappingsByUserId(userId).all());
-  }
-
-  @Override
-  public void removeRoleMapping(String userId, String roleId) {
-    userDao.removeRoleMapping(new UserRealmRoleMapping(userId, roleId));
-  }
-
-  @Override
-  public void removeClientRoleMapping(String userId, String clientId, String roleId) {
-    userDao.removeClientRoleMapping(new UserClientRoleMapping(userId, clientId, roleId));
-  }
-
-  @Override
-  public void addRealmRoleMapping(UserRealmRoleMapping roleMapping) {
-    userDao.insert(roleMapping);
-  }
-
-  @Override
-  public void addClientRoleMapping(UserClientRoleMapping roleMapping) {
-    userDao.insert(roleMapping);
   }
 }

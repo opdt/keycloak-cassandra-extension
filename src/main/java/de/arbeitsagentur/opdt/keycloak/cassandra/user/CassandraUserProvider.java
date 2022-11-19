@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,11 +16,10 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserClientRoleMapping;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserRealmRoleMapping;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.*;
@@ -29,6 +28,7 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
@@ -61,7 +61,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
       @Override
       public SubjectCredentialManager credentialManager() {
-        return new CassandraCredentialManager(session, realm, userRepository, this);
+        return new CassandraCredentialManager(session, realm, userRepository, this, origEntity);
       }
     };
   }
@@ -97,7 +97,9 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     userModel.setUsername(username);
 
     if (addDefaultRoles) {
-      userModel.grantRole(realm.getDefaultRole());
+      if (realm.getDefaultRole() != null) {
+        userModel.grantRole(realm.getDefaultRole());
+      }
 
       // No need to check if user has group as it's new user
       realm.getDefaultGroupsStream().forEach(userModel::joinGroup);
@@ -139,12 +141,16 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
   @Override
   public void removeImportedUsers(RealmModel realm, String storageProviderId) {
-    // TODO: Implement
+    log.tracef("removeImportedUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
+    List<User> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId);
+    users.forEach(u -> userRepository.deleteUser(realm.getId(), u.getId()));
   }
 
   @Override
   public void unlinkUsers(RealmModel realm, String storageProviderId) {
-    // TODO: Implement
+    log.tracef("unlinkUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
+    List<User> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId);
+    users.forEach(u -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), u));
   }
 
   @Override
@@ -239,13 +245,18 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
   @Override
   public void grantToAllUsers(RealmModel realm, RoleModel role) {
-    Set<String> userIdsByRealmId = userRepository.findUserIdsByRealmId(realm.getId(), 0, -1);
-    for (String userId : userIdsByRealmId) {
+    List<User> users = userRepository.findAllUsers().stream()
+        .filter(u -> u.getRealmId().equals(realm.getId()))
+        .collect(Collectors.toList());
+    for (User user : users) {
       if (role.isClientRole()) {
-        userRepository.addClientRoleMapping(new UserClientRoleMapping(userId, role.getContainer().getId(), role.getId()));
+        Set<String> clientRoles = user.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
+        clientRoles.add(role.getId());
       } else {
-        userRepository.addRealmRoleMapping(new UserRealmRoleMapping(userId, role.getId()));
+        user.getRealmRoles().add(role.getId());
       }
+
+      userRepository.createOrUpdateUser(realm.getId(), user);
     }
   }
 
@@ -331,42 +342,46 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
   @Override
   public void preRemove(RealmModel realm) {
-    // TODO: Implement
+    log.tracef("preRemove[RealmModel](%s)%s", realm, getShortStackTrace());
   }
 
   @Override
   public void preRemove(RealmModel realm, IdentityProviderModel provider) {
-    // TODO: Implement
+    String providerAlias = provider.getAlias();
+    log.tracef("preRemove[RealmModel realm, IdentityProviderModel provider](%s, %s)%s", realm, providerAlias, getShortStackTrace());
+
+    List<User> users = userRepository.findUsersByFederationLink(realm.getId(), providerAlias);
+    users.forEach(u -> userRepository.deleteFederatedIdentity(realm.getId(), providerAlias));
   }
 
   @Override
   public void preRemove(RealmModel realm, RoleModel role) {
-    // TODO: Implement
+    // NOOP (delete/ignore ad-hoc when read)
   }
 
   @Override
   public void preRemove(RealmModel realm, GroupModel group) {
-    // TODO: Implement
+    // NOOP (delete/ignore ad-hoc when read)
   }
 
   @Override
   public void preRemove(RealmModel realm, ClientModel client) {
-    // TODO: Implement
+    // TODO: Implement (Consent)
   }
 
   @Override
   public void preRemove(ProtocolMapperModel protocolMapper) {
-    // TODO: Implement
+    // NOOP
   }
 
   @Override
   public void preRemove(ClientScopeModel clientScope) {
-    // TODO: Implement
+    // TODO: Implement (Consent)
   }
 
   @Override
   public void preRemove(RealmModel realm, ComponentModel component) {
-    // TODO: Implement
+    // NOOP
   }
 
   private UserModel getByIdOrThrow(RealmModel realm, UserModel user) {
@@ -376,5 +391,10 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     }
 
     return userById;
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.USER_CACHE;
   }
 }

@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
 import lombok.RequiredArgsConstructor;
@@ -124,5 +125,10 @@ public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider 
     SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
 
     return singleUseEntity != null;
+  }
+
+  @Override
+  protected String getCacheName() {
+    return ThreadLocalCache.SUO_CACHE;
   }
 }
