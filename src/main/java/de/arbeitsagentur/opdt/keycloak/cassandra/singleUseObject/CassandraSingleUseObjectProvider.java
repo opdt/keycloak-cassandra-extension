@@ -28,6 +28,7 @@ import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
@@ -49,7 +50,7 @@ public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider 
 
     singleUseEntity = SingleUseObject.builder()
         .key(key)
-        .notes(notes)
+        .notes(notes == null ? null : notes.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
         .build();
 
     int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanSeconds);
@@ -91,7 +92,7 @@ public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider 
 
     SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
     if (singleUseEntity != null) {
-      singleUseEntity.setNotes(notes);
+      singleUseEntity.setNotes(notes == null ? null : notes.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
       repository.insertOrUpdate(singleUseEntity);
       return true;
     }
