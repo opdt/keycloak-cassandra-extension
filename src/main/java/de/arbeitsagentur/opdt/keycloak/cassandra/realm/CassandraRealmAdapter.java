@@ -31,6 +31,7 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.*;
 import org.keycloak.models.map.common.TimeAdapter;
+import org.keycloak.models.map.realm.MapRealmAdapter;
 import org.keycloak.models.utils.ComponentUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
@@ -1066,21 +1067,76 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public void removeIdentityProviderByAlias(String alias) {
-    List<IdentityProviderModel> withoutModel = getDeserializedAttributes(IDENTITY_PROVIDERS, IdentityProviderModel.class).stream()
-        .filter(e -> !Objects.equals(e.getAlias(), alias))
-        .collect(Collectors.toList());
+    List<IdentityProviderModel> allProviders = getDeserializedAttributes(IDENTITY_PROVIDERS, IdentityProviderModel.class);
+    IdentityProviderModel model = allProviders.stream()
+        .filter(e -> Objects.equals(e.getAlias(), alias))
+        .findFirst()
+        .orElse(null);
 
-    setSerializedAttributeValues(IDENTITY_PROVIDERS, withoutModel);
+    if (model != null) {
+      allProviders.remove(model);
+      setSerializedAttributeValues(IDENTITY_PROVIDERS, allProviders);
+
+      session.getKeycloakSessionFactory().publish(new RealmModel.IdentityProviderRemovedEvent() {
+
+        @Override
+        public RealmModel getRealm() {
+          return CassandraRealmAdapter.this;
+        }
+
+        @Override
+        public IdentityProviderModel getRemovedIdentityProvider() {
+          return model;
+        }
+
+        @Override
+        public KeycloakSession getKeycloakSession() {
+          return session;
+        }
+      });
+    }
   }
 
   @Override
-  public void updateIdentityProvider(IdentityProviderModel model) {
-    List<IdentityProviderModel> withoutModel = getDeserializedAttributes(IDENTITY_PROVIDERS, IdentityProviderModel.class).stream()
-        .filter(e -> !e.getInternalId().equals(model.getInternalId()))
-        .collect(Collectors.toList());
+  public void updateIdentityProvider(IdentityProviderModel identityProvider) {
+    List<IdentityProviderModel> allProviders = getDeserializedAttributes(IDENTITY_PROVIDERS, IdentityProviderModel.class);
+    allProviders.stream()
+        .filter(e -> e.getInternalId().equals(identityProvider.getInternalId()))
+        .findFirst()
+        .ifPresent(oldPS -> {
+          oldPS.setAlias(identityProvider.getAlias());
+          oldPS.setDisplayName(identityProvider.getDisplayName());
+          oldPS.setProviderId(identityProvider.getProviderId());
+          oldPS.setFirstBrokerLoginFlowId(identityProvider.getFirstBrokerLoginFlowId());
+          oldPS.setPostBrokerLoginFlowId(identityProvider.getPostBrokerLoginFlowId());
+          oldPS.setEnabled(identityProvider.isEnabled());
+          oldPS.setTrustEmail(identityProvider.isTrustEmail());
+          oldPS.setStoreToken(identityProvider.isStoreToken());
+          oldPS.setLinkOnly(identityProvider.isLinkOnly());
+          oldPS.setAddReadTokenRoleOnCreate(identityProvider.isAddReadTokenRoleOnCreate());
+          oldPS.setAuthenticateByDefault(identityProvider.isAuthenticateByDefault());
+          oldPS.setConfig(identityProvider.getConfig() == null ? null : new HashMap<>(identityProvider.getConfig()));
+        });
 
-    withoutModel.add(model);
-    setSerializedAttributeValues(IDENTITY_PROVIDERS, withoutModel);
+    setSerializedAttributeValues(IDENTITY_PROVIDERS, allProviders);
+
+    session.getKeycloakSessionFactory().publish(new RealmModel.IdentityProviderUpdatedEvent() {
+
+      @Override
+      public RealmModel getRealm() {
+        return CassandraRealmAdapter.this;
+      }
+
+      @Override
+      public IdentityProviderModel getUpdatedIdentityProvider() {
+        return identityProvider;
+      }
+
+      @Override
+      public KeycloakSession getKeycloakSession() {
+        return session;
+      }
+    });
   }
 
   @Override
@@ -1519,7 +1575,7 @@ public class CassandraRealmAdapter implements RealmModel {
   // Attributes
   @Override
   public void setAttribute(String name, String value) {
-    if(name == null || value == null) {
+    if (name == null || value == null) {
       return;
     }
 
@@ -1529,7 +1585,7 @@ public class CassandraRealmAdapter implements RealmModel {
 
   @Override
   public void removeAttribute(String name) {
-    if(name == null) {
+    if (name == null) {
       return;
     }
 
@@ -1552,7 +1608,7 @@ public class CassandraRealmAdapter implements RealmModel {
   }
 
   public void setAttributeValues(String name, List<String> values) {
-    if(name == null || values == null) {
+    if (name == null || values == null) {
       return;
     }
 
