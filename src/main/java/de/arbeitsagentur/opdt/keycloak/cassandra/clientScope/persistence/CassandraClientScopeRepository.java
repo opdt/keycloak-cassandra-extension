@@ -15,45 +15,30 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.NameToClientScope;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 public class CassandraClientScopeRepository implements ClientScopeRepository {
     private final ClientScopeDao clientScopeDao;
 
     @Override
-    public void insertOrUpdate(ClientScope clientScope) {
-        clientScopeDao.insertOrUpdate(clientScope);
-        clientScopeDao.insertOrUpdate(new NameToClientScope(clientScope.getRealmId(), clientScope.getName(), clientScope.getId()));
+    public void addOrUpdateClientScopes(ClientScopes clientScopes) {
+        clientScopeDao.insertOrUpdate(clientScopes);
     }
 
     @Override
-    public ClientScope getClientScopeById(String id) {
-        return clientScopeDao.getClientScopeById(id);
-    }
-
-    @Override
-    public List<ClientScope> findAllClientScopes() {
-        return clientScopeDao.findAllClientScopes().all();
-    }
-
-    @Override
-    public void remove(ClientScope clientScope) {
-        clientScopeDao.delete(clientScope);
-        clientScopeDao.deleteNameToClientScope(clientScope.getRealmId(), clientScope.getName());
-    }
-
-    @Override
-    public ClientScope findClientScopeByName(String realmId, String name) {
-        NameToClientScope byName = clientScopeDao.findByName(realmId, name);
-        if(byName == null) {
-            return null;
+    public ClientScopes getClientScopesByRealmId(String realmId) {
+        ClientScopes clientScopes = clientScopeDao.getClientScopesByRealmId(realmId);
+        if(clientScopes == null) {
+            clientScopes = ClientScopes.builder().realmId(realmId).build();
         }
 
-        return getClientScopeById(byName.getId());
+        return clientScopes;
+    }
+
+    @Override
+    public void removeClientScopes(String realmId) {
+        clientScopeDao.deleteAllClientScopes(realmId);
     }
 }

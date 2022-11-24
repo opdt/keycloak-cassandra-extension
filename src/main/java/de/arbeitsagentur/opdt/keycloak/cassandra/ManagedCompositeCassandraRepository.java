@@ -23,7 +23,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.L1Cached;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
@@ -502,28 +503,18 @@ public class ManagedCompositeCassandraRepository implements RoleRepository, User
 
   @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
   @InvalidateCache
-  public void insertOrUpdate(ClientScope clientScope) {
-    this.clientScopeRepository.insertOrUpdate(clientScope);
+  public void addOrUpdateClientScopes(ClientScopes clientScopes) {
+    this.clientScopeRepository.addOrUpdateClientScopes(clientScopes);
   }
 
   @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
-  public ClientScope getClientScopeById(String id) {
-    return this.clientScopeRepository.getClientScopeById(id);
-  }
-
-  @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
-  public List<ClientScope> findAllClientScopes() {
-    return this.clientScopeRepository.findAllClientScopes();
+  public ClientScopes getClientScopesByRealmId(String realmId) {
+    return this.clientScopeRepository.getClientScopesByRealmId(realmId);
   }
 
   @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
   @InvalidateCache
-  public void remove(ClientScope clientScope) {
-    this.clientScopeRepository.remove(clientScope);
-  }
-
-  @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
-  public ClientScope findClientScopeByName(String realmId, String name) {
-    return this.clientScopeRepository.findClientScopeByName(realmId, name);
+  public void removeClientScopes(String realmId)  {
+    this.clientScopeRepository.removeClientScopes(realmId);
   }
 }

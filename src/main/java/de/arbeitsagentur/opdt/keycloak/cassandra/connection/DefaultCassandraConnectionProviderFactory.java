@@ -24,6 +24,7 @@ import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCod
 import com.datastax.oss.driver.internal.core.type.codec.extras.json.JsonCodec;
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.CredentialValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
@@ -101,7 +102,8 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
         .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
         .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
-        .build();
+        .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
+            .build();
 
     // User-Tables
     createUserTable(cqlSession);
@@ -432,10 +434,8 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     SimpleStatement statement =
         SchemaBuilder.createTable("client_scopes")
             .ifNotExists()
-            .withPartitionKey("id", DataTypes.TEXT)
-            .withColumn("realm_id", DataTypes.TEXT)
-            .withColumn("name", DataTypes.TEXT)
-            .withColumn("attributes", DataTypes.mapOf(DataTypes.TEXT, DataTypes.frozenSetOf(DataTypes.TEXT)))
+            .withPartitionKey("realm_id", DataTypes.TEXT)
+            .withColumn("client_scopes", DataTypes.frozenSetOf(DataTypes.TEXT))
             .build();
 
     session.execute(statement);

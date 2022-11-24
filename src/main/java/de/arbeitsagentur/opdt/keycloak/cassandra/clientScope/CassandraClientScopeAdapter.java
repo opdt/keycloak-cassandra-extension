@@ -18,7 +18,8 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 import com.fasterxml.jackson.core.type.TypeReference;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -28,6 +29,7 @@ import org.keycloak.models.utils.RoleUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,9 +43,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     public static final String PROTOCOL = INTERNAL_ATTRIBUTE_PREFIX + "protocol";
     public static final String PROTOCOL_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "protocolMappers";
     public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
-
-    private final KeycloakSession session;
-    private final ClientScope clientScopeEntity;
+    private final RealmModel realm;
+    private final ClientScopeValue clientScopeEntity;
     private final ClientScopeRepository clientScopeRepository;
 
     @Override
@@ -53,7 +54,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public RealmModel getRealm() {
-        return session.realms().getRealm(clientScopeEntity.getRealmId());
+        return realm;
     }
 
     @Override
@@ -63,8 +64,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void setName(String name) {
-        clientScopeEntity.setName(name);
-        clientScopeRepository.insertOrUpdate(clientScopeEntity);
+        updateAndRefresh(s -> s.setName(name));
     }
 
     @Override
@@ -187,8 +187,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             return;
         }
 
-        clientScopeEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
-        clientScopeRepository.insertOrUpdate(clientScopeEntity);
+        updateAndRefresh(s -> s.getAttributes().put(name, Arrays.asList(value)));
     }
 
     @Override
@@ -196,14 +195,12 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
         if(name == null) {
             return;
         }
-
-        clientScopeEntity.getAttributes().remove(name);
-        clientScopeRepository.insertOrUpdate(clientScopeEntity);
+        updateAndRefresh(s -> s.getAttributes().remove(name));
     }
 
     @Override
     public String getAttribute(String name) {
-        Set<String> values = clientScopeEntity.getAttribute(name);
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
         return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
     }
 
@@ -220,21 +217,16 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             return;
         }
 
-        clientScopeEntity.getAttributes().put(name, new HashSet<>(values));
-        clientScopeRepository.insertOrUpdate(clientScopeEntity);
+        updateAndRefresh(s -> s.getAttributes().put(name, values));
     }
 
     private List<String> getAttributeValues(String name) {
-        Set<String> values = clientScopeEntity.getAttribute(name);
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
         return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
     }
 
-    private <T> void setSerializedAttributeValue(String name, T value) {
-        setSerializedAttributeValues(name, value instanceof List ? (List<Object>) value : Arrays.asList(value));
-    }
-
     private void setSerializedAttributeValues(String name, List<?> values) {
-        Set<String> attributeValues = values.stream()
+        List<String> attributeValues = values.stream()
             .map(value -> {
                 try {
                     return CassandraJsonSerialization.writeValueAsString(value);
@@ -243,40 +235,13 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
                     throw new RuntimeException(e);
                 }
             })
-            .collect(Collectors.toCollection(HashSet::new));
+            .collect(Collectors.toList());
 
-        clientScopeEntity.getAttributes().put(name, attributeValues);
-        clientScopeRepository.insertOrUpdate(clientScopeEntity);
-    }
-
-    private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
-        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
-    }
-
-    private <T> T getDeserializedAttribute(String name, Class<T> type) {
-        return getDeserializedAttributes(name, type).stream().findFirst().orElse(null);
-    }
-
-    private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
-        Set<String> values = clientScopeEntity.getAttribute(name);
-        if (values == null) {
-            return new ArrayList<>();
-        }
-
-        return values.stream()
-            .map(value -> {
-                try {
-                    return CassandraJsonSerialization.readValue(value, type);
-                } catch (IOException e) {
-                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, clientScopeEntity.getId(), name);
-                    throw new RuntimeException(e);
-                }
-            })
-            .collect(Collectors.toCollection(ArrayList::new));
+        updateAndRefresh(s -> s.getAttributes().put(name, attributeValues));
     }
 
     private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-        Set<String> values = clientScopeEntity.getAttribute(name);
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
 
         return values.stream()
             .map(value -> {
@@ -289,19 +254,13 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             })
             .collect(Collectors.toCollection(ArrayList::new));
     }
-    private void setAttribute(String name, boolean value) {
-        setAttribute(name, Boolean.toString(value));
-    }
-    private boolean getAttribute(String name, boolean defaultValue) {
-        String v = getAttribute(name);
-        return v != null && !v.isEmpty() ? Boolean.valueOf(v) : defaultValue;
-    }
 
-    private void setAttribute(String name, int value) {
-        setAttribute(name, Integer.toString(value));
-    }
-    private int getAttribute(String name, int defaultValue) {
-        String v = getAttribute(name);
-        return v != null && !v.isEmpty() ? Integer.valueOf(v) : defaultValue;
+    private void updateAndRefresh(Consumer<ClientScopeValue> clientScopeUpdateFunc) {
+        // Read cached -> references stay intact
+        ClientScopes clientScopes = clientScopeRepository.getClientScopesByRealmId(realm.getId());
+        ClientScopeValue valueWithinClientScopes = clientScopes.getClientScopeById(clientScopeEntity.getId());
+        clientScopeUpdateFunc.accept(valueWithinClientScopes);
+        clientScopeUpdateFunc.accept(clientScopeEntity);
+        clientScopeRepository.addOrUpdateClientScopes(clientScopes);
     }
 }

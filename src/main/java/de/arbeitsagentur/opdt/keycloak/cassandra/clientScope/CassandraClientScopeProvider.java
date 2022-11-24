@@ -18,13 +18,16 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
+import java.util.HashMap;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
@@ -38,15 +41,14 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
 
   private final ClientScopeRepository repository;
 
+  private Function<ClientScopeValue, ClientScopeModel> entityToAdapterFunc(RealmModel realm) {
+    return origEntity -> origEntity == null ? null : new CassandraClientScopeAdapter(realm, origEntity, repository);
+  }
   @Override
   public Stream<ClientScopeModel> getClientScopesStream(RealmModel realm) {
-    return repository.findAllClientScopes().stream()
-        .filter(e -> Objects.equals(realm.getId(), e.getRealmId()))
-        .map(this::entityToModel);
-  }
-
-  private CassandraClientScopeAdapter entityToModel(ClientScope clientScope) {
-    return clientScope == null ? null : new CassandraClientScopeAdapter(session, clientScope, repository);
+    return repository.getClientScopesByRealmId(realm.getId())
+            .getClientScopes().stream()
+            .map(entityToAdapterFunc(realm));
   }
 
   @Override
@@ -55,47 +57,49 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
       throw new ModelDuplicateException("Client scope exists: " + id);
     }
 
-    ClientScope existingClientScopeWithNameAndRealm = repository.findClientScopeByName(realm.getId(), name);
+    ClientScopes clientScopes = repository.getClientScopesByRealmId(realm.getId());
+    ClientScopeValue existingClientScopeWithNameAndRealm = clientScopes.getClientScopes().stream()
+            .filter(s -> Objects.equals(s.getName(), name)).findFirst().orElse(null);
     if (existingClientScopeWithNameAndRealm != null) {
       throw new ModelDuplicateException("Client scope with name '" + name + "' in realm " + realm.getName());
     }
 
     log.tracef("addClientScope(%s, %s, %s)%s", realm, id, name, getShortStackTrace());
 
-    ClientScope clientScope = ClientScope.builder()
+    ClientScopeValue clientScopeValue = ClientScopeValue.builder()
         .id(id == null ? KeycloakModelUtils.generateId() : id)
         .realmId(realm.getId())
         .name(name)
         .build();
-    repository.insertOrUpdate(clientScope);
 
-    ClientScopeModel clientScopeModel = entityToModel(clientScope);
-    clientScopeModel.setName(name);
+    clientScopes.addClientScope(clientScopeValue);
+    repository.addOrUpdateClientScopes(clientScopes);
 
-    return clientScopeModel;
+    return entityToAdapterFunc(realm).apply(clientScopeValue);
   }
 
   @Override
   public boolean removeClientScope(RealmModel realm, String id) {
     if (id == null) return false;
-    ClientScope clientScope = repository.getClientScopeById(id);
-    if (clientScope == null) return false;
+    ClientScopes clientScopes = repository.getClientScopesByRealmId(realm.getId());
+    if (clientScopes == null) return false;
 
-    session.invalidate(CLIENT_SCOPE_BEFORE_REMOVE, realm, clientScope);
+    session.invalidate(CLIENT_SCOPE_BEFORE_REMOVE, realm, clientScopes);
 
-    repository.remove(clientScope);
+    boolean result = clientScopes.removeClientScope(id);
+    repository.addOrUpdateClientScopes(clientScopes);
 
-    session.invalidate(CLIENT_SCOPE_AFTER_REMOVE, clientScope);
+    session.invalidate(CLIENT_SCOPE_AFTER_REMOVE, clientScopes);
 
-    return true;
+    return result;
   }
 
   @Override
   public void removeClientScopes(RealmModel realm) {
     log.tracef("removeClients(%s)%s", realm, getShortStackTrace());
-    repository.findAllClientScopes().stream()
-        .filter(s -> Objects.equals(realm.getId(), s.getRealmId()))
-        .forEach(s -> repository.remove(s));
+    ClientScopes clientScopesOfRealm = repository.getClientScopesByRealmId(realm.getId());
+    clientScopesOfRealm.getClientScopes().stream()
+        .forEach(s -> removeClientScope(realm, s.getId()));
   }
 
   @Override
@@ -105,7 +109,7 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
     }
 
     log.tracef("getClientScopeById(%s, %s)%s", realm, id, getShortStackTrace());
-    return entityToModel(repository.getClientScopeById(id));
+    return entityToAdapterFunc(realm).apply(repository.getClientScopesByRealmId(realm.getId()).getClientScopeById(id));
   }
 
   @Override

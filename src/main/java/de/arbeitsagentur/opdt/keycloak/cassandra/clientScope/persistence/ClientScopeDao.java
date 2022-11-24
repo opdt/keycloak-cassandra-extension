@@ -15,30 +15,17 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScope;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.NameToClientScope;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 
 @Dao
 public interface ClientScopeDao {
     @Update
-    void insertOrUpdate(ClientScope clientScope);
+    void insertOrUpdate(ClientScopes role);
 
-    @Select(customWhereClause = "id = :id")
-    ClientScope getClientScopeById(String id);
+    @Select(customWhereClause = "realm_id = :realmId")
+    ClientScopes getClientScopesByRealmId(String realmId);
 
-    @Select
-    PagingIterable<ClientScope> findAllClientScopes();
-
-    @Delete
-    void delete(ClientScope clientScope);
-
-    @Select(customWhereClause = "realm_id = :realmId AND name = :name")
-    NameToClientScope findByName(String realmId, String name);
-
-    @Delete(entityClass = NameToClientScope.class)
-    void deleteNameToClientScope(String realmId, String name);
-    @Update
-    void insertOrUpdate(NameToClientScope nameToRealm);
+    @Delete(entityClass = ClientScopes.class)
+    void deleteAllClientScopes(String realmId);
 }

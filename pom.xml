@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension</artifactId>
-    <version>0.3.0-20.0.1</version>
+    <version>0.3.1-20.0.1</version>
     <packaging>jar</packaging>
     
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
