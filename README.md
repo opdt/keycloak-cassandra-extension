@@ -1,3 +1,6 @@
+[![CI](https://github.com/opdt/keycloak-cassandra-extension/workflows/CI/badge.svg)](https://github.com/opdt/keycloak-cassandra-extension/actions?query=workflow%3ACI)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.arbeitsagentur.opdt/keycloak-cassandra-extension/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.arbeitsagentur.opdt/keycloak-cassandra-extension)
+
 # Cassandra storage extension for Keycloak
 
 :warning: Work in progress! Do not use in production right now.
