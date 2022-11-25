@@ -1,5 +1,4 @@
-name: CI
-description: Publish package to Maven Central
+name: Publish package to Maven Central
 on:
   push:
     tags: '**' 
