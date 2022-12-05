@@ -17,12 +17,14 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.exportImportManager.CassandraExportImportManager;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
+import org.keycloak.storage.ExportImportManager;
 
 public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
   private KeycloakSession session;
@@ -63,5 +65,10 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
   @Override
   public ClientScopeProvider clientScopes() { return new CassandraClientScopeProvider(session, cassandraRepository); }
+
+  @Override
+  public ExportImportManager getExportImportManager() {
+    return new CassandraExportImportManager(session);
+  }
 
 }
