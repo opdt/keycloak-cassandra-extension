@@ -5,10 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.arbeitsagentur.opdt</groupId>
-    <artifactId>keycloak-cassandra-extension</artifactId>
-    <version>0.3.3-20.0.1</version>
-    <packaging>jar</packaging>
-    
+    <artifactId>keycloak-cassandra-extension-parent</artifactId>
+    <version>0.4.0-20.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
     <licenses>
         <license>
@@ -33,6 +33,11 @@
     <name>keycloak-extension-cassandra</name>
     <description>Keycloak-DatastoreProvider storing data in an Apache Cassandra NoSQL-database</description>
 
+    <modules>
+        <module>core</module>
+        <module>tests</module>
+    </modules>
+
     <properties>
         <!-- general settings -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,9 +50,8 @@
         <quarkus.version>2.13.3.Final</quarkus.version>
 
         <!-- testing -->
-        <junit-jupiter.version>5.8.2</junit-jupiter.version>
         <assertj-core.version>3.22.0</assertj-core.version>
-        <testcontainers-keycloak.version>2.1.2</testcontainers-keycloak.version>
+        <testcontainers-keycloak.version>1.17.6</testcontainers-keycloak.version>
 
         <!-- tooling -->
         <lombok.version>1.18.22</lombok.version>
@@ -75,95 +79,92 @@
             </dependency>
 
             <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.auto.service</groupId>
+                <artifactId>auto-service</artifactId>
+                <version>${auto-service.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-server-spi-private</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-services</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-model-map</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-common</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-arc</artifactId>
+                <version>${quarkus.version}</version>
+            </dependency>
+
+            <!-- Datastax Cassandra -->
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-core</artifactId>
+                <version>${cassandra-java-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-mapper-runtime</artifactId>
+                <version>${cassandra-java-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-query-builder</artifactId>
+                <version>${cassandra-java-driver.version}</version>
+            </dependency>
+
+            <!-- Metrics -->
+            <dependency>
+                <groupId>org.eclipse.microprofile.metrics</groupId>
+                <artifactId>microprofile-metrics-api</artifactId>
+                <version>3.0.1</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-metrics-micrometer</artifactId>
+                <version>${cassandra-java-driver.version}</version>
+            </dependency>
+
+            <!-- Test -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers-keycloak.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>cassandra</artifactId>
+                <version>${testcontainers-keycloak.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.auto.service</groupId>
-            <artifactId>auto-service</artifactId>
-            <version>${auto-service.version}</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-server-spi-private</artifactId>
-            <version>${keycloak.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-services</artifactId>
-            <version>${keycloak.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-model-map</artifactId>
-            <version>${keycloak.version}</version>
-            <!-- <scope>provided</scope> -->
-        </dependency>
-
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-common</artifactId>
-            <version>${keycloak.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Datastax Cassandra -->
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-core</artifactId>
-            <version>${cassandra-java-driver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-mapper-runtime</artifactId>
-            <version>${cassandra-java-driver.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-query-builder</artifactId>
-            <version>${cassandra-java-driver.version}</version>
-        </dependency>
-
-        <!-- Metrics -->
-        <dependency>
-            <groupId>org.eclipse.microprofile.metrics</groupId>
-            <artifactId>microprofile-metrics-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-metrics-micrometer</artifactId>
-            <version>${cassandra-java-driver.version}</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <pluginManagement>
@@ -173,119 +174,102 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.2.0</version>
                 </plugin>
+
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                            <path>
+                                <groupId>com.google.auto.service</groupId>
+                                <artifactId>auto-service</artifactId>
+                                <version>${auto-service.version}</version>
+                            </path>
+                            <path>
+                                <groupId>com.datastax.oss</groupId>
+                                <artifactId>java-driver-mapper-processor</artifactId>
+                                <version>${cassandra-java-driver.version}</version>
+                            </path>
+                            <!-- Optional: add this if you want to avoid the SLF4J warning "Failed to load class
+                              StaticLoggerBinder, defaulting to no-operation implementation" when compiling. -->
+                            <path>
+                                <groupId>org.slf4j</groupId>
+                                <artifactId>slf4j-nop</artifactId>
+                                <version>1.7.26</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.2.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.4.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.13</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <serverId>ossrh</serverId>
+                        <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
-
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>com.google.auto.service</groupId>
-                            <artifactId>auto-service</artifactId>
-                            <version>${auto-service.version}</version>
-                        </path>
-                        <path>
-                            <groupId>com.datastax.oss</groupId>
-                            <artifactId>java-driver-mapper-processor</artifactId>
-                            <version>${cassandra-java-driver.version}</version>
-                        </path>
-                        <!-- Optional: add this if you want to avoid the SLF4J warning "Failed to load class
-                          StaticLoggerBinder, defaulting to no-operation implementation" when compiling. -->
-                        <path>
-                            <groupId>org.slf4j</groupId>
-                            <artifactId>slf4j-nop</artifactId>
-                            <version>1.7.26</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                    <id>attach-sources</id>
-                    <goals>
-                        <goal>jar-no-fork</goal>
-                    </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.4.1</version>
-                <executions>
-                    <execution>
-                    <id>attach-javadocs</id>
-                    <goals>
-                        <goal>jar</goal>
-                    </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.keycloak:keycloak-model-map</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                    <id>sign-artifacts</id>
-                    <phase>verify</phase>
-                    <goals>
-                        <goal>sign</goal>
-                    </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.13</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 
     <distributionManagement>

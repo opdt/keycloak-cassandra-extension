@@ -13,6 +13,13 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+      - run: mvn -B verify -P coverage --no-transfer-progress
+      - uses: codecov/codecov-action@v3
+        with:
+          file: ./**/target/site/jacoco/jacoco.xml
+          name: codecov
+          fail_ci_if_error: true
+          verbose: true
       - name: Release Maven package
         uses: samuelmeuli/action-maven-publish@v1
         with:
