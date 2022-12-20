@@ -13,10 +13,11 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - run: mvn -B verify -P coverage --no-transfer-progress
+      - run: mvn -B verify --no-transfer-progress
+      - run: mvn -f ./core org.jacoco:jacoco-maven-plugin:0.8.7:report -Djacoco.dataFile="$(readlink -f ./tests/target/jacoco.exec)"
       - uses: codecov/codecov-action@v3
         with:
-          file: ./**/target/site/jacoco/jacoco.xml
+          file: ./core/target/site/jacoco/jacoco.xml
           name: codecov
           fail_ci_if_error: true
           verbose: true
