@@ -103,10 +103,10 @@ public class CassandraMapStorage extends KeycloakModelParameters {
   }
 
   private static GenericContainer createCassandraContainer() {
-    //return new GenericContainer("registry-ocp.idst.ibaintern.de:5050/public/ocp-3rd/bitnami/cassandra:4.0.6-debian-11-r4")
     return new GenericContainer("bitnami/cassandra:4.0.6-debian-11-r4")
         .withExposedPorts(9042)
         .withEnv("CASSANDRA_DATACENTER", "datacenter1")
+        // TODO: withLogConsumer
         .waitingFor(
             new LogMessageWaitStrategy().withRegEx(".*Starting listening for CQL clients.*")
                 .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES)));
