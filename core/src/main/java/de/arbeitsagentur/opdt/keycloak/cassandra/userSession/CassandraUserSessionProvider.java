@@ -114,6 +114,8 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     UserSession entity = createUserSessionEntityInstance(id, realm.getId(), user.getId(), loginUsername, ipAddress, authMethod,
         rememberMe, brokerSessionId, brokerUserId, false);
 
+    entity.setPersistenceState(persistenceState);
+    setUserSessionExpiration(entity, realm);
     if (TRANSIENT == persistenceState) {
       if (id == null) {
         entity.setId(UUID.randomUUID().toString());
@@ -126,8 +128,6 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
       userSessionRepository.insertOrUpdate(entity);
     }
 
-    entity.setPersistenceState(persistenceState);
-    setUserSessionExpiration(entity, realm);
     UserSessionModel userSession = entityToAdapterFunc(realm).apply(entity);
 
     if (userSession != null) {

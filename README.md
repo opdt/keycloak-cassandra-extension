@@ -45,6 +45,7 @@ In order to use all of the included providers, the `map_storage`-feature of Keyc
 
 ## Local development
 
+### Private image registries
 If you use a private image registry, you can use the .testcontainers file in your user directory to override all image-registries used by the tests.
 See https://www.testcontainers.org/features/image_name_substitution/
 
@@ -53,3 +54,9 @@ Example:
 docker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy
 hub.image.name.prefix=private-registry/3rd-party/
 ```
+
+### Debugging
+Debugging can be enabled via `mvn -Dmaven.surefire.debug verify` (Port 5005). 
+
+### Using an external cassandra instance
+If you want to use an external cassandra instance on localhost (Port 9042) you can use `mvn -Dkeycloak.testsuite.start-cassandra-container=false verify`

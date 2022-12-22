@@ -79,8 +79,8 @@ public class CassandraMapStorage extends KeycloakModelParameters {
         .config("dir", "${project.build.directory:target}");
 
     cf.spi(CassandraConnectionSpi.NAME).provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
-        .config("contactPoints", cassandraContainer.getHost())
-        .config("port", String.valueOf(cassandraContainer.getMappedPort(9042)))
+        .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
+        .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
         .config("localDatacenter", "datacenter1")
         .config("keyspace", "test")
         .config("username", "cassandra")
