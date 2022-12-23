@@ -85,4 +85,29 @@ public class UserSessionTest extends KeycloakModelTest {
       return null;
     });
   }
+
+  @Test
+  public void testClientSessionToUserSessionReference() {
+    withRealm(realmId, (s, realm) -> {
+      UserModel testuser = s.users().getUserById(realm, userId);
+      ClientModel client = s.clients().addClient(realm, "testclient");
+      UserSessionModel session = s.sessions().createUserSession(realm, testuser, "testuser", "127.0.0.1", "test", false, null, null);
+      session.setNote("key1", "value1");
+
+
+      AuthenticatedClientSessionModel clientSession = s.sessions().createClientSession(realm, client, session);
+      clientSession.setNote("ckey", "cval");
+
+      session.setNote("key2", "value2");
+      clientSession.getUserSession().setNote("key3", "value3");
+
+      UserSessionModel currentSession = s.sessions().getUserSession(realm, session.getId());
+      assertThat(currentSession.getNotes().entrySet(), hasSize(3));
+      assertThat(currentSession.getNotes().get("key1"), equalTo("value1"));
+      assertThat(currentSession.getNotes().get("key2"), equalTo("value2"));
+      assertThat(currentSession.getNotes().get("key3"), equalTo("value3"));
+
+      return session.getId();
+    });
+  }
 }

@@ -76,7 +76,11 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
   public AuthenticatedClientSessionModel createClientSession(RealmModel realm, ClientModel client, UserSessionModel userSession) {
     log.tracef("createClientSession(%s, %s, %s)%s", realm, client, userSession, getShortStackTrace());
 
-    UserSession userSessionEntity = getUserSessionById(userSession.getId());
+    if(userSession == null) {
+      throw new IllegalStateException("User session is null.");
+    }
+
+    UserSession userSessionEntity = ((CassandraUserSessionAdapter) userSession).getUserSessionEntity();
 
     if (userSessionEntity == null) {
       throw new IllegalStateException("User session entity does not exist: " + userSession.getId());
@@ -90,8 +94,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     userSessionEntity.getClientSessions().put(client.getId(), entity);
     userSessionRepository.insertOrUpdate(userSessionEntity);
 
-    UserSessionModel userSessionModel = entityToAdapterFunc(realm).apply(userSessionEntity);
-    return userSessionModel == null ? null : userSessionModel.getAuthenticatedClientSessionByClient(client.getId());
+    return userSession.getAuthenticatedClientSessionByClient(client.getId());
   }
 
   @Override
