@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.arbeitsagentur.opdt</groupId>
         <artifactId>keycloak-cassandra-extension-parent</artifactId>
-        <version>0.4.4-20.0.2-SNAPSHOT</version>
+        <version>0.4.4-20.0.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -22,6 +22,8 @@
         <surefire.memory.metaspace.max>512m</surefire.memory.metaspace.max>
         <surefire.memory.settings>-Xms${surefire.memory.Xms} -Xmx${surefire.memory.Xmx} -XX:MetaspaceSize=${surefire.memory.metaspace} -XX:MaxMetaspaceSize=${surefire.memory.metaspace.max}</surefire.memory.settings>
         <surefire.system.args></surefire.system.args>
+
+        <staging.skip>true</staging.skip>
     </properties>
 
     <dependencies>
