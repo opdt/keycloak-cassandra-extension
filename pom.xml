@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension-parent</artifactId>
-    <version>0.4.5-20.0.2-SNAPSHOT</version>
+    <version>0.4.5-20.0.2</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
@@ -44,7 +44,6 @@
         <java.version>11</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <staging.skip>false</staging.skip>
 
         <!-- keycloak -->
         <keycloak.version>20.0.2</keycloak.version>
@@ -286,15 +285,22 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                    </plugin>
+      
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                     </plugin>
 
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <configuration>
-                            <skipStaging>${staging.skip}</skipStaging>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

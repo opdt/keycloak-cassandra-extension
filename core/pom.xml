@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.arbeitsagentur.opdt</groupId>
         <artifactId>keycloak-cassandra-extension-parent</artifactId>
-        <version>0.4.5-20.0.2-SNAPSHOT</version>
+        <version>0.4.5-20.0.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -81,15 +81,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
