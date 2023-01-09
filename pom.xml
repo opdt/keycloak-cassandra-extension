@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension-parent</artifactId>
-    <version>0.4.4-20.0.2-SNAPSHOT</version>
+    <version>0.4.4-20.0.2</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
@@ -277,6 +277,25 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>deploy</id> <!-- active by default in samuelmeuli/action-maven-publish -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <distributionManagement>
         <repository>
