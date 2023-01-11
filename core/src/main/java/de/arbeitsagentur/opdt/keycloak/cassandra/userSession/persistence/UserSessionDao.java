@@ -25,52 +25,53 @@ import java.util.List;
 
 @Dao
 public interface UserSessionDao {
-  @Update
-  void insertOrUpdate(UserSession session);
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(UserSession session, int ttl);
+    @Update
+    void insertOrUpdate(UserSession session);
 
-  @Select(customWhereClause = "id = :id")
-  UserSession findById(String id);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(UserSession session, int ttl);
 
-  @Select(customWhereClause = "id IN :ids")
-  PagingIterable<UserSession> findByIds(List<String> ids);
+    @Select(customWhereClause = "id = :id")
+    UserSession findById(String id);
 
-  @Select
-  PagingIterable<UserSession> findAll();
+    @Select(customWhereClause = "id IN :ids")
+    PagingIterable<UserSession> findByIds(List<String> ids);
 
-  @Delete
-  void deleteUserSession(UserSession session);
+    @Select
+    PagingIterable<UserSession> findAll();
 
-  @Delete(entityClass = UserSession.class)
-  void deleteUserSession(String id);
+    @Delete
+    void deleteUserSession(UserSession session);
 
-  // Attributes
-  @Insert
-  // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-  void insert(AttributeToUserSessionMapping mapping);
+    @Delete(entityClass = UserSession.class)
+    void deleteUserSession(String id);
 
-  @Update
-  void insert(UserSessionToAttributeMapping mapping);
+    // Attributes
+    @Insert
+    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
+    void insert(AttributeToUserSessionMapping mapping);
 
-  @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
-  UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
+    @Update
+    void insert(UserSessionToAttributeMapping mapping);
 
-  @Select(customWhereClause = "user_session_id = :userSessionId")
-  PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
+    @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
+    UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
 
-  @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
-  PagingIterable<AttributeToUserSessionMapping> findByAttribute(String attributeName, String attributeValue);
+    @Select(customWhereClause = "user_session_id = :userSessionId")
+    PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
 
-  @Delete
-  boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
+    @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
+    PagingIterable<AttributeToUserSessionMapping> findByAttribute(String attributeName, String attributeValue);
 
-  @Delete(entityClass = AttributeToUserSessionMapping.class)
-  boolean deleteAttributeToUserSessionMapping(String attributeName, String attributeValue, String userSessionId);
+    @Delete
+    boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
 
-  @Delete(entityClass = UserSessionToAttributeMapping.class)
-  boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
+    @Delete(entityClass = AttributeToUserSessionMapping.class)
+    boolean deleteAttributeToUserSessionMapping(String attributeName, String attributeValue, String userSessionId);
 
-  @Delete(entityClass = UserSessionToAttributeMapping.class)
-  boolean deleteAttribute(String userSessionId, String attributeName);
+    @Delete(entityClass = UserSessionToAttributeMapping.class)
+    boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
+
+    @Delete(entityClass = UserSessionToAttributeMapping.class)
+    boolean deleteAttribute(String userSessionId, String attributeName);
 }

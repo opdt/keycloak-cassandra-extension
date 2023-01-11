@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- *
  * @author hmlnarik
  */
 public class KeycloakModelParameters {
@@ -51,6 +50,7 @@ public class KeycloakModelParameters {
     /**
      * Returns stream of parameters of the given type, or an empty stream if no parameters of the given type are supplied
      * by this clazz.
+     *
      * @param <T>
      * @param clazz
      * @return

@@ -47,36 +47,35 @@ import org.keycloak.sessions.AuthenticationSessionSpi;
 import java.util.Set;
 
 /**
- *
  * @author hmlnarik
  */
 public class Map extends KeycloakModelParameters {
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
-      .add(AuthenticationSessionSpi.class)
-      .add(SingleUseObjectSpi.class)
-      .add(PublicKeyStorageSpi.class)
-      .add(MapStorageSpi.class)
+        .add(AuthenticationSessionSpi.class)
+        .add(SingleUseObjectSpi.class)
+        .add(PublicKeyStorageSpi.class)
+        .add(MapStorageSpi.class)
 
-      .build();
+        .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
-      .add(MapAuthorizationStoreFactory.class)
-      .add(MapClientProviderFactory.class)
-      .add(MapClientScopeProviderFactory.class)
-      .add(MapGroupProviderFactory.class)
-      .add(MapRealmProviderFactory.class)
-      .add(MapRoleProviderFactory.class)
-      .add(MapRootAuthenticationSessionProviderFactory.class)
-      .add(MapDeploymentStateProviderFactory.class)
-      .add(MapUserProviderFactory.class)
-      .add(MapUserSessionProviderFactory.class)
-      .add(MapUserLoginFailureProviderFactory.class)
-      .add(NoLockingDBLockProviderFactory.class)
-      .add(MapEventStoreProviderFactory.class)
-      .add(SingleUseObjectProviderFactory.class)
-      .add(MapPublicKeyStorageProviderFactory.class)
-      .build();
+        .add(MapAuthorizationStoreFactory.class)
+        .add(MapClientProviderFactory.class)
+        .add(MapClientScopeProviderFactory.class)
+        .add(MapGroupProviderFactory.class)
+        .add(MapRealmProviderFactory.class)
+        .add(MapRoleProviderFactory.class)
+        .add(MapRootAuthenticationSessionProviderFactory.class)
+        .add(MapDeploymentStateProviderFactory.class)
+        .add(MapUserProviderFactory.class)
+        .add(MapUserSessionProviderFactory.class)
+        .add(MapUserLoginFailureProviderFactory.class)
+        .add(NoLockingDBLockProviderFactory.class)
+        .add(MapEventStoreProviderFactory.class)
+        .add(SingleUseObjectProviderFactory.class)
+        .add(MapPublicKeyStorageProviderFactory.class)
+        .build();
 
     public Map() {
         super(ALLOWED_SPIS, ALLOWED_FACTORIES);
@@ -85,20 +84,20 @@ public class Map extends KeycloakModelParameters {
     @Override
     public void updateConfig(Config cf) {
         cf.spi(AuthenticationSessionSpi.PROVIDER_ID).defaultProvider(MapRootAuthenticationSessionProviderFactory.PROVIDER_ID)
-          .spi(SingleUseObjectSpi.NAME).defaultProvider(MapSingleUseObjectProviderFactory.PROVIDER_ID)
-          .spi("client").defaultProvider(MapClientProviderFactory.PROVIDER_ID)
-          .spi("clientScope").defaultProvider(MapClientScopeProviderFactory.PROVIDER_ID)
-          .spi("group").defaultProvider(MapGroupProviderFactory.PROVIDER_ID)
-          .spi("realm").defaultProvider(MapRealmProviderFactory.PROVIDER_ID)
-          .spi("role").defaultProvider(MapRoleProviderFactory.PROVIDER_ID)
-          .spi(DeploymentStateSpi.NAME).defaultProvider(MapDeploymentStateProviderFactory.PROVIDER_ID)
-          .spi(StoreFactorySpi.NAME).defaultProvider(MapAuthorizationStoreFactory.PROVIDER_ID)
-          .spi("user").defaultProvider(MapUserProviderFactory.PROVIDER_ID)
-          .spi(UserSessionSpi.NAME).defaultProvider(MapUserSessionProviderFactory.PROVIDER_ID)
-          .spi(UserLoginFailureSpi.NAME).defaultProvider(MapUserLoginFailureProviderFactory.PROVIDER_ID)
-          .spi("dblock").defaultProvider(NoLockingDBLockProviderFactory.PROVIDER_ID)
-          .spi(EventStoreSpi.NAME).defaultProvider(MapEventStoreProviderFactory.PROVIDER_ID)
-          .spi("publicKeyStorage").defaultProvider(MapPublicKeyStorageProviderFactory.PROVIDER_ID)
+            .spi(SingleUseObjectSpi.NAME).defaultProvider(MapSingleUseObjectProviderFactory.PROVIDER_ID)
+            .spi("client").defaultProvider(MapClientProviderFactory.PROVIDER_ID)
+            .spi("clientScope").defaultProvider(MapClientScopeProviderFactory.PROVIDER_ID)
+            .spi("group").defaultProvider(MapGroupProviderFactory.PROVIDER_ID)
+            .spi("realm").defaultProvider(MapRealmProviderFactory.PROVIDER_ID)
+            .spi("role").defaultProvider(MapRoleProviderFactory.PROVIDER_ID)
+            .spi(DeploymentStateSpi.NAME).defaultProvider(MapDeploymentStateProviderFactory.PROVIDER_ID)
+            .spi(StoreFactorySpi.NAME).defaultProvider(MapAuthorizationStoreFactory.PROVIDER_ID)
+            .spi("user").defaultProvider(MapUserProviderFactory.PROVIDER_ID)
+            .spi(UserSessionSpi.NAME).defaultProvider(MapUserSessionProviderFactory.PROVIDER_ID)
+            .spi(UserLoginFailureSpi.NAME).defaultProvider(MapUserLoginFailureProviderFactory.PROVIDER_ID)
+            .spi("dblock").defaultProvider(NoLockingDBLockProviderFactory.PROVIDER_ID)
+            .spi(EventStoreSpi.NAME).defaultProvider(MapEventStoreProviderFactory.PROVIDER_ID)
+            .spi("publicKeyStorage").defaultProvider(MapPublicKeyStorageProviderFactory.PROVIDER_ID)
         ;
         cf.spi(MapStorageSpi.NAME).provider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID).config("keyType.single-use-objects", "string");
     }

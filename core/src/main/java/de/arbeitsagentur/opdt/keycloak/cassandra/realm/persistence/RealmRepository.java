@@ -17,31 +17,31 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.List;
-import java.util.Set;
 
 public interface RealmRepository {
-  void insertOrUpdate(Realm realm);
-  Realm getRealmById(String id);
+    void insertOrUpdate(Realm realm);
 
-  List<Realm> getAllRealms();
+    Realm getRealmById(String id);
 
-  void createRealm(Realm realm);
+    List<Realm> getAllRealms();
 
-  void deleteRealm(Realm realm);
+    void createRealm(Realm realm);
 
-  void insertOrUpdate(ClientInitialAccess model);
+    void deleteRealm(Realm realm);
 
-  List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId);
+    void insertOrUpdate(ClientInitialAccess model);
 
-  List<ClientInitialAccess> getAllClientInitialAccesses();
+    List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId);
 
-  ClientInitialAccess getClientInitialAccess(String realmId, String id);
+    List<ClientInitialAccess> getAllClientInitialAccesses();
 
-  void deleteClientInitialAccess(ClientInitialAccess access);
-  void deleteClientInitialAccess(String realmId, String id);
+    ClientInitialAccess getClientInitialAccess(String realmId, String id);
 
-  Realm findRealmByName(String name);
+    void deleteClientInitialAccess(ClientInitialAccess access);
+
+    void deleteClientInitialAccess(String realmId, String id);
+
+    Realm findRealmByName(String name);
 }

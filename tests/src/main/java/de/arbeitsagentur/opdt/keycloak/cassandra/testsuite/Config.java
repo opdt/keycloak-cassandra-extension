@@ -29,7 +29,6 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 /**
- *
  * @author hmlnarik
  */
 public class Config implements ConfigProvider {
@@ -128,7 +127,7 @@ public class Config implements ConfigProvider {
             if (v == null || v.isEmpty()) {
                 v = System.getProperty("keycloak." + prefix + key, defaultValue);
             }
-            return v != null && ! v.isEmpty() ? v : null;
+            return v != null && !v.isEmpty() ? v : null;
         }
 
         @Override
@@ -173,8 +172,8 @@ public class Config implements ConfigProvider {
     @Override
     public String toString() {
         return getConfig().entrySet().stream()
-          .sorted((e1, e2) -> e1.getKey().compareTo(e2.getKey()))
-          .map(e -> e.getKey() + " = " + e.getValue())
-          .collect(Collectors.joining("\n    "));
+            .sorted((e1, e2) -> e1.getKey().compareTo(e2.getKey()))
+            .map(e -> e.getKey() + " = " + e.getValue())
+            .collect(Collectors.joining("\n    "));
     }
 }

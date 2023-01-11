@@ -23,40 +23,40 @@ import java.util.List;
 import java.util.Set;
 
 public interface UserSessionRepository {
-  void insertOrUpdate(UserSession session);
+    void insertOrUpdate(UserSession session);
 
-  void insertOrUpdate(UserSession session, String correspondingSessionId);
+    void insertOrUpdate(UserSession session, String correspondingSessionId);
 
-  UserSession findUserSessionById(String id);
+    UserSession findUserSessionById(String id);
 
-  List<UserSession> findAll();
+    List<UserSession> findAll();
 
-  List<UserSession> findUserSessionsByBrokerSession(String brokerSessionId);
+    List<UserSession> findUserSessionsByBrokerSession(String brokerSessionId);
 
-  List<UserSession> findUserSessionsByUserId(String userId);
+    List<UserSession> findUserSessionsByUserId(String userId);
 
-  List<UserSession> findUserSessionsByClientId(String clientId);
+    List<UserSession> findUserSessionsByClientId(String clientId);
 
-  List<UserSession> findUserSessionsByBrokerUserId(String brokerUserId);
+    List<UserSession> findUserSessionsByBrokerUserId(String brokerUserId);
 
-  void deleteUserSession(UserSession session);
+    void deleteUserSession(UserSession session);
 
-  void deleteUserSession(String id);
+    void deleteUserSession(String id);
 
-  void deleteCorrespondingUserSession(UserSession session);
+    void deleteCorrespondingUserSession(UserSession session);
 
-  // Attributes
-  Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult);
+    // Attributes
+    Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult);
 
-  List<UserSession> findUserSessionsByAttribute(String name, String value);
+    List<UserSession> findUserSessionsByAttribute(String name, String value);
 
-  UserSession findUserSessionByAttribute(String name, String value);
+    UserSession findUserSessionByAttribute(String name, String value);
 
-  MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
+    MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
 
-  UserSessionToAttributeMapping findUserSessionAttribute(String userSessionId, String attributeName);
+    UserSessionToAttributeMapping findUserSessionAttribute(String userSessionId, String attributeName);
 
-  void insertOrUpdate(UserSessionToAttributeMapping mapping);
+    void insertOrUpdate(UserSessionToAttributeMapping mapping);
 
-  boolean deleteUserSessionAttribute(String userSessionId, String attributeName);
+    boolean deleteUserSessionAttribute(String userSessionId, String attributeName);
 }

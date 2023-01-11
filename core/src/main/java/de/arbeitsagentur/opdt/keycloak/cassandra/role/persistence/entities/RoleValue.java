@@ -18,7 +18,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities;
 
 import lombok.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,31 +29,31 @@ import java.util.*;
 @Builder
 @Data
 public class RoleValue {
-  private String id;
-  private String name;
-  private String description;
-  private String clientId;
-  private String realmId;
+    private String id;
+    private String name;
+    private String description;
+    private String clientId;
+    private String realmId;
 
-  @Singular
-  private Map<String, List<String>> attributes = new HashMap<>();
+    @Singular
+    private Map<String, List<String>> attributes = new HashMap<>();
 
-  @Singular
-  private List<String> childRoles = new ArrayList<>();
+    @Singular
+    private List<String> childRoles = new ArrayList<>();
 
-  public Map<String, List<String>> getAttributes() {
-    if(attributes == null) {
-      attributes = new HashMap<>();
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        return attributes;
     }
 
-    return attributes;
-  }
+    public List<String> getChildRoles() {
+        if (childRoles == null) {
+            childRoles = new ArrayList<>();
+        }
 
-  public List<String> getChildRoles() {
-    if(childRoles == null) {
-      childRoles = new ArrayList<>();
+        return childRoles;
     }
-
-    return childRoles;
-  }
 }

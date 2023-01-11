@@ -16,7 +16,14 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
-import org.junit.Assert;
+import com.google.common.collect.ImmutableSet;
+import org.hamcrest.Matchers;
+import org.jboss.logging.Logger;
+import org.junit.*;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.keycloak.Config.Scope;
 import org.keycloak.authorization.AuthorizationSpi;
 import org.keycloak.authorization.DefaultAuthorizationProviderFactory;
@@ -29,19 +36,8 @@ import org.keycloak.component.ComponentFactorySpi;
 import org.keycloak.events.EventStoreSpi;
 import org.keycloak.executors.DefaultExecutorsProviderFactory;
 import org.keycloak.executors.ExecutorsSpi;
-import org.keycloak.models.AbstractKeycloakTransaction;
-import org.keycloak.models.ClientScopeSpi;
-import org.keycloak.models.ClientSpi;
-import org.keycloak.models.GroupSpi;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RealmSpi;
-import org.keycloak.models.RoleSpi;
-import org.keycloak.models.DeploymentStateSpi;
-import org.keycloak.models.UserLoginFailureSpi;
-import org.keycloak.models.UserSessionSpi;
-import org.keycloak.models.UserSpi;
+import org.keycloak.models.*;
+import org.keycloak.models.dblock.DBLockSpi;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.PostMigrationEvent;
 import org.keycloak.provider.Provider;
@@ -53,28 +49,12 @@ import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.keycloak.storage.DatastoreProviderFactory;
 import org.keycloak.storage.DatastoreSpi;
 import org.keycloak.timer.TimerSpi;
-import com.google.common.collect.ImmutableSet;
 
 import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -84,21 +64,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.hamcrest.Matchers;
-import org.jboss.logging.Logger;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.AssumptionViolatedException;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-import org.keycloak.models.DeploymentStateProviderFactory;
-import org.keycloak.models.dblock.DBLockSpi;
 
 /**
  * Base of testcases that operate on session level. The tests derived from this class
@@ -111,6 +76,7 @@ import org.keycloak.models.dblock.DBLockSpi;
  * that is offered to the tests.
  * <p>
  * If no parameters are set via this property, the tests derived from this class are skipped.
+ *
  * @author hmlnarik
  */
 public abstract class KeycloakModelTest {
@@ -131,11 +97,11 @@ public abstract class KeycloakModelTest {
                 testClass = testClass.getSuperclass();
             }
             List<Class<? extends Provider>> notFound = st
-              .filter(rp -> rp.only().length == 0 
-                ? getFactory().getProviderFactory(rp.value()) == null
-                : Stream.of(rp.only()).allMatch(provider -> getFactory().getProviderFactory(rp.value(), provider) == null))
-              .map(RequireProvider::value)
-              .collect(Collectors.toList());
+                .filter(rp -> rp.only().length == 0
+                    ? getFactory().getProviderFactory(rp.value()) == null
+                    : Stream.of(rp.only()).allMatch(provider -> getFactory().getProviderFactory(rp.value(), provider) == null))
+                .map(RequireProvider::value)
+                .collect(Collectors.toList());
             Assume.assumeThat("Some required providers not found", notFound, Matchers.empty());
 
             Statement res = base;
@@ -151,16 +117,16 @@ public abstract class KeycloakModelTest {
         @Override
         public Statement apply(Statement base, Description description) {
             Stream<RequireProvider> st = Optional.ofNullable(description.getAnnotation(RequireProviders.class))
-              .map(RequireProviders::value)
-              .map(Stream::of)
-              .orElseGet(Stream::empty);
+                .map(RequireProviders::value)
+                .map(Stream::of)
+                .orElseGet(Stream::empty);
 
             RequireProvider rp = description.getAnnotation(RequireProvider.class);
             if (rp != null) {
                 st = Stream.concat(st, Stream.of(rp));
             }
 
-            for (Iterator<RequireProvider> iterator = st.iterator(); iterator.hasNext();) {
+            for (Iterator<RequireProvider> iterator = st.iterator(); iterator.hasNext(); ) {
                 RequireProvider rpInner = iterator.next();
                 Class<? extends Provider> providerClass = rpInner.value();
                 String[] only = rpInner.only();
@@ -209,34 +175,34 @@ public abstract class KeycloakModelTest {
     };
 
     private static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
-      .add(AuthorizationSpi.class)
-      .add(PolicySpi.class)
-      .add(ClientScopeSpi.class)
-      .add(ClientSpi.class)
-      .add(ComponentFactorySpi.class)
-      .add(DBLockSpi.class)
-      .add(EventStoreSpi.class)
-      .add(ExecutorsSpi.class)
-      .add(GroupSpi.class)
-      .add(RealmSpi.class)
-      .add(RoleSpi.class)
-      .add(DeploymentStateSpi.class)
-      .add(StoreFactorySpi.class)
-      .add(TimerSpi.class)
-      .add(UserLoginFailureSpi.class)
-      .add(UserSessionSpi.class)
-      .add(UserSpi.class)
-      .add(DatastoreSpi.class)
-      .build();
+        .add(AuthorizationSpi.class)
+        .add(PolicySpi.class)
+        .add(ClientScopeSpi.class)
+        .add(ClientSpi.class)
+        .add(ComponentFactorySpi.class)
+        .add(DBLockSpi.class)
+        .add(EventStoreSpi.class)
+        .add(ExecutorsSpi.class)
+        .add(GroupSpi.class)
+        .add(RealmSpi.class)
+        .add(RoleSpi.class)
+        .add(DeploymentStateSpi.class)
+        .add(StoreFactorySpi.class)
+        .add(TimerSpi.class)
+        .add(UserLoginFailureSpi.class)
+        .add(UserSessionSpi.class)
+        .add(UserSpi.class)
+        .add(DatastoreSpi.class)
+        .build();
 
     private static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
-      .add(ComponentFactoryProviderFactory.class)
-      .add(DefaultAuthorizationProviderFactory.class)
-      .add(PolicyProviderFactory.class)
-      .add(DefaultExecutorsProviderFactory.class)
-      .add(DeploymentStateProviderFactory.class)
-      .add(DatastoreProviderFactory.class)
-      .build();
+        .add(ComponentFactoryProviderFactory.class)
+        .add(DefaultAuthorizationProviderFactory.class)
+        .add(PolicyProviderFactory.class)
+        .add(DefaultExecutorsProviderFactory.class)
+        .add(DeploymentStateProviderFactory.class)
+        .add(DatastoreProviderFactory.class)
+        .build();
 
     protected static final List<KeycloakModelParameters> MODEL_PARAMETERS;
     protected static final Config CONFIG = new Config(KeycloakModelTest::useDefaultFactory);
@@ -249,16 +215,30 @@ public abstract class KeycloakModelTest {
 
         KeycloakModelParameters basicParameters = new KeycloakModelParameters(ALLOWED_SPIS, ALLOWED_FACTORIES);
         MODEL_PARAMETERS = Stream.concat(
-          Stream.of(basicParameters),
-          Stream.of(System.getProperty("keycloak.model.parameters", "").split("\\s*,\\s*"))
-            .filter(s -> s != null && ! s.trim().isEmpty())
-            .map(cn -> { try { return Class.forName(cn.indexOf('.') >= 0 ? cn : ("de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters." + cn)); } catch (Exception e) { LOG.error("Cannot find " + cn); return null; }})
-            .filter(Objects::nonNull)
-            .map(c -> { try { return c.getDeclaredConstructor().newInstance(); } catch (Exception e) { LOG.error("Cannot instantiate " + c); return null; }} )
-            .filter(KeycloakModelParameters.class::isInstance)
-            .map(KeycloakModelParameters.class::cast)
-          )
-          .collect(Collectors.toList());
+                Stream.of(basicParameters),
+                Stream.of(System.getProperty("keycloak.model.parameters", "").split("\\s*,\\s*"))
+                    .filter(s -> s != null && !s.trim().isEmpty())
+                    .map(cn -> {
+                        try {
+                            return Class.forName(cn.indexOf('.') >= 0 ? cn : ("de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters." + cn));
+                        } catch (Exception e) {
+                            LOG.error("Cannot find " + cn);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .map(c -> {
+                        try {
+                            return c.getDeclaredConstructor().newInstance();
+                        } catch (Exception e) {
+                            LOG.error("Cannot instantiate " + c);
+                            return null;
+                        }
+                    })
+                    .filter(KeycloakModelParameters.class::isInstance)
+                    .map(KeycloakModelParameters.class::cast)
+            )
+            .collect(Collectors.toList());
 
 
         for (KeycloakModelParameters kmp : KeycloakModelTest.MODEL_PARAMETERS) {
@@ -281,7 +261,7 @@ public abstract class KeycloakModelTest {
         String threadName = Thread.currentThread().getName();
         CONFIG.reset();
         CONFIG.spi(ComponentFactorySpi.NAME)
-          .provider(DefaultComponentFactoryProviderFactory.PROVIDER_ID)
+            .provider(DefaultComponentFactoryProviderFactory.PROVIDER_ID)
             .config("cachingForced", "true");
         MODEL_PARAMETERS.forEach(m -> m.updateConfig(CONFIG));
 
@@ -295,7 +275,7 @@ public abstract class KeycloakModelTest {
 
             @Override
             protected Map<Class<? extends Provider>, Map<String, ProviderFactory>> loadFactories(ProviderManager pm) {
-                spis.removeIf(s -> ! isSpiAllowed(s));
+                spis.removeIf(s -> !isSpiAllowed(s));
                 return super.loadFactories(pm);
             }
 
@@ -341,7 +321,6 @@ public abstract class KeycloakModelTest {
      * Will throw an exception when the thread throws an exception or if the thread doesn't complete in time.
      *
      * @see #inIndependentFactory
-     *
      */
     public static void inIndependentFactories(int numThreads, int timeoutSeconds, Runnable task) throws InterruptedException {
         enabledContentionMonitoring();
@@ -349,6 +328,7 @@ public abstract class KeycloakModelTest {
         LinkedList<Thread> threads = new LinkedList<>();
         ExecutorService es = Executors.newFixedThreadPool(numThreads, new ThreadFactory() {
             final ThreadFactory tf = Executors.defaultThreadFactory();
+
             @Override
             public Thread newThread(Runnable r) {
                 {
@@ -383,8 +363,8 @@ public abstract class KeycloakModelTest {
 
             // submit tasks, and wait for the results without cancelling execution so that we'll be able to analyze the thread dump
             List<? extends Future<?>> tasks = IntStream.range(0, numThreads)
-                    .mapToObj(i -> independentTask)
-                    .map(es::submit).collect(Collectors.toList());
+                .mapToObj(i -> independentTask)
+                .map(es::submit).collect(Collectors.toList());
             long limit = System.currentTimeMillis() + timeoutSeconds * 1000L;
             for (Future<?> future : tasks) {
                 long limitForTask = limit - System.currentTimeMillis();
@@ -432,7 +412,7 @@ public abstract class KeycloakModelTest {
             if (lockInfo != null) {
                 sb.append(" locked on ").append(lockInfo);
                 if (thread.getWaitedTime() != -1) {
-                  sb.append(" waiting for ").append(thread.getWaitedTime()).append(" ms");
+                    sb.append(" waiting for ").append(thread.getWaitedTime()).append(" ms");
                 }
                 if (thread.getBlockedTime() != -1) {
                     sb.append(" blocked for ").append(thread.getBlockedTime()).append(" ms");
@@ -520,11 +500,14 @@ public abstract class KeycloakModelTest {
     }
 
     protected void inComittedTransaction(Consumer<KeycloakSession> what) {
-        inComittedTransaction(a -> { what.accept(a); return null; });
+        inComittedTransaction(a -> {
+            what.accept(a);
+            return null;
+        });
     }
 
     protected <R> R inComittedTransaction(Function<KeycloakSession, R> what) {
-        return inComittedTransaction(1, (a,b) -> what.apply(a), null);
+        return inComittedTransaction(1, (a, b) -> what.apply(a), null);
     }
 
     protected <T, R> R inComittedTransaction(T parameter, BiFunction<KeycloakSession, T, R> what, BiConsumer<KeycloakSession, T> onCommit) {
@@ -533,7 +516,9 @@ public abstract class KeycloakModelTest {
             session.getTransactionManager().enlistAfterCompletion(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {
-                    if (onCommit != null) { onCommit.accept(session, parameter); }
+                    if (onCommit != null) {
+                        onCommit.accept(session, parameter);
+                    }
                 }
 
                 @Override

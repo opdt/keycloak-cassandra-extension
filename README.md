@@ -5,7 +5,7 @@
 
 :warning: Work in progress! Do not use in production right now.
 
-Uses Apache Cassandra to store and retrieve entities of all storage areas shown below. 
+Uses Apache Cassandra to store and retrieve entities of all storage areas shown below.
 Requires Keycloak 20.0.x with enabled Map-Storage feature.
 
 ## Currently covered storage areas
@@ -25,11 +25,17 @@ Requires Keycloak 20.0.x with enabled Map-Storage feature.
 
 ## Integration guide
 
-In order to override some of the storage areas not currently present in `DatastoreProvider` (see https://github.com/keycloak/keycloak/issues/15490) we use maven shade to build a custom version of `org.keycloak:keycloak-model-map`. Keycloak needs to be patched with this version of the library, for example by building a custom distribution.
+In order to override some of the storage areas not currently present in `DatastoreProvider` (
+see https://github.com/keycloak/keycloak/issues/15490) we use maven shade to build a custom version
+of `org.keycloak:keycloak-model-map`. Keycloak needs to be patched with this version of the library, for example by
+building a custom distribution.
 
 ## Configuration
 
-In order to use all of the included providers, the `map_storage`-feature of Keycloak has to be enabled. Furthermore the included DatastoreProvider `cassandra-map` has to be activated (for example commandline argument `--spi-datastore-provider=cassandra-map`, for alternatives like env-variables see the [Keycloak configuration guide](https://www.keycloak.org/server/configuration)).
+In order to use all of the included providers, the `map_storage`-feature of Keycloak has to be enabled. Furthermore the
+included DatastoreProvider `cassandra-map` has to be activated (for example commandline
+argument `--spi-datastore-provider=cassandra-map`, for alternatives like env-variables see
+the [Keycloak configuration guide](https://www.keycloak.org/server/configuration)).
 
 ### Cassandra client configuration
 
@@ -46,17 +52,23 @@ In order to use all of the included providers, the `map_storage`-feature of Keyc
 ## Local development
 
 ### Private image registries
-If you use a private image registry, you can use the .testcontainers file in your user directory to override all image-registries used by the tests.
+
+If you use a private image registry, you can use the .testcontainers file in your user directory to override all
+image-registries used by the tests.
 See https://www.testcontainers.org/features/image_name_substitution/
 
 Example:
+
 ```properties
 docker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy
 hub.image.name.prefix=private-registry/3rd-party/
 ```
 
 ### Debugging
-Debugging can be enabled via `mvn -Dmaven.surefire.debug verify` (Port 5005). 
+
+Debugging can be enabled via `mvn -Dmaven.surefire.debug verify` (Port 5005).
 
 ### Using an external cassandra instance
-If you want to use an external cassandra instance on localhost (Port 9042) you can use `mvn -Dkeycloak.testsuite.start-cassandra-container=false verify`
+
+If you want to use an external cassandra instance on localhost (Port 9042) you can
+use `mvn -Dkeycloak.testsuite.start-cassandra-container=false verify`

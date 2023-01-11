@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,133 +42,133 @@ import static org.keycloak.models.utils.SessionExpiration.getAuthSessionLifespan
 @EqualsAndHashCode(of = "rootAuthenticationSession")
 @RequiredArgsConstructor
 public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessionModel {
-  private final KeycloakSession session;
-  private final RealmModel realm;
-  private final RootAuthenticationSession rootAuthenticationSession;
-  private final AuthSessionRepository authSessionRepository;
+    private final KeycloakSession session;
+    private final RealmModel realm;
+    private final RootAuthenticationSession rootAuthenticationSession;
+    private final AuthSessionRepository authSessionRepository;
 
-  private final int authSessionsLimit;
+    private final int authSessionsLimit;
 
-  private static final Comparator<AuthenticationSession> TIMESTAMP_COMPARATOR = Comparator.comparingLong(AuthenticationSession::getTimestamp);
+    private static final Comparator<AuthenticationSession> TIMESTAMP_COMPARATOR = Comparator.comparingLong(AuthenticationSession::getTimestamp);
 
 
-  @Override
-  public String getId() {
-    return rootAuthenticationSession.getId();
-  }
-
-  @Override
-  public RealmModel getRealm() {
-    return realm;
-  }
-
-  @Override
-  public int getTimestamp() {
-    return TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(rootAuthenticationSession.getTimestamp()));
-  }
-
-  @Override
-  public void setTimestamp(int timestamp) {
-    rootAuthenticationSession.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
-    rootAuthenticationSession.setExpiration(TimeAdapter.fromSecondsToMilliseconds(SessionExpiration.getAuthSessionExpiration(realm, timestamp)));
-
-    authSessionRepository.insertOrUpdate(rootAuthenticationSession);
-  }
-
-  @Override
-  public Map<String, AuthenticationSessionModel> getAuthenticationSessions() {
-    return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
-        .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
-        .collect(Collectors.toMap(CassandraAuthSessionAdapter::getTabId, Function.identity()));
-  }
-
-  @Override
-  public AuthenticationSessionModel getAuthenticationSession(ClientModel client, String tabId) {
-    if (client == null || tabId == null) {
-      return null;
+    @Override
+    public String getId() {
+        return rootAuthenticationSession.getId();
     }
 
-
-    return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
-        .filter(s -> Objects.equals(s.getClientId(), client.getId()))
-        .filter(s -> Objects.equals(s.getTabId(), tabId))
-        .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
-        .findFirst()
-        .orElse(null);
-  }
-
-  @Override
-  public AuthenticationSessionModel createAuthenticationSession(ClientModel client) {
-    Objects.requireNonNull(client, "The provided client can't be null!");
-
-    List<AuthenticationSession> authenticationSessions = authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId());
-    if (authenticationSessions != null && authenticationSessions.size() >= authSessionsLimit) {
-      Optional<AuthenticationSession> oldest = authenticationSessions.stream().min(TIMESTAMP_COMPARATOR);
-      String tabId = oldest.map(AuthenticationSession::getTabId).orElse(null);
-
-      if (tabId != null) {
-        log.debugf("Reached limit (%s) of active authentication sessions per a root authentication session. Removing oldest authentication session with TabId %s.", authSessionsLimit, tabId);
-
-        // remove the oldest authentication session
-        authSessionRepository.deleteAuthSession(oldest.get());
-      }
+    @Override
+    public RealmModel getRealm() {
+        return realm;
     }
 
-    long timestamp = Time.currentTimeMillis();
-    int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
+    @Override
+    public int getTimestamp() {
+        return TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(rootAuthenticationSession.getTimestamp()));
+    }
 
-    AuthenticationSession authSession = AuthenticationSession.builder()
-        .parentSessionId(rootAuthenticationSession.getId())
-        .clientId(client.getId())
-        .timestamp(timestamp)
-        .tabId(generateTabId())
-        .build();
+    @Override
+    public void setTimestamp(int timestamp) {
+        rootAuthenticationSession.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
+        rootAuthenticationSession.setExpiration(TimeAdapter.fromSecondsToMilliseconds(SessionExpiration.getAuthSessionExpiration(realm, timestamp)));
 
-    rootAuthenticationSession.setTimestamp(timestamp);
-    rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
+        authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+    }
 
-    authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession);
-    authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+    @Override
+    public Map<String, AuthenticationSessionModel> getAuthenticationSessions() {
+        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
+            .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
+            .collect(Collectors.toMap(CassandraAuthSessionAdapter::getTabId, Function.identity()));
+    }
 
-    CassandraAuthSessionAdapter cassandraAuthSessionAdapter = new CassandraAuthSessionAdapter(session, realm, this, authSession, authSessionRepository);
-    session.getContext().setAuthenticationSession(cassandraAuthSessionAdapter);
+    @Override
+    public AuthenticationSessionModel getAuthenticationSession(ClientModel client, String tabId) {
+        if (client == null || tabId == null) {
+            return null;
+        }
 
-    return cassandraAuthSessionAdapter;
-  }
 
-  @Override
-  public void removeAuthenticationSessionByTabId(String tabId) {
-    List<AuthenticationSession> allAuthSessions = authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId());
-    AuthenticationSession toDelete = allAuthSessions.stream()
-        .filter(s -> Objects.equals(s.getTabId(), tabId))
-        .findFirst()
-        .orElse(null);
+        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
+            .filter(s -> Objects.equals(s.getClientId(), client.getId()))
+            .filter(s -> Objects.equals(s.getTabId(), tabId))
+            .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
+            .findFirst()
+            .orElse(null);
+    }
 
-    authSessionRepository.deleteAuthSession(toDelete);
-    if (toDelete != null) {
-      if (allAuthSessions.size() == 1) {
-        session.authenticationSessions().removeRootAuthenticationSession(realm, this);
-      } else {
+    @Override
+    public AuthenticationSessionModel createAuthenticationSession(ClientModel client) {
+        Objects.requireNonNull(client, "The provided client can't be null!");
+
+        List<AuthenticationSession> authenticationSessions = authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId());
+        if (authenticationSessions != null && authenticationSessions.size() >= authSessionsLimit) {
+            Optional<AuthenticationSession> oldest = authenticationSessions.stream().min(TIMESTAMP_COMPARATOR);
+            String tabId = oldest.map(AuthenticationSession::getTabId).orElse(null);
+
+            if (tabId != null) {
+                log.debugf("Reached limit (%s) of active authentication sessions per a root authentication session. Removing oldest authentication session with TabId %s.", authSessionsLimit, tabId);
+
+                // remove the oldest authentication session
+                authSessionRepository.deleteAuthSession(oldest.get());
+            }
+        }
+
+        long timestamp = Time.currentTimeMillis();
+        int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
+
+        AuthenticationSession authSession = AuthenticationSession.builder()
+            .parentSessionId(rootAuthenticationSession.getId())
+            .clientId(client.getId())
+            .timestamp(timestamp)
+            .tabId(generateTabId())
+            .build();
+
+        rootAuthenticationSession.setTimestamp(timestamp);
+        rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
+
+        authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession);
+        authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+
+        CassandraAuthSessionAdapter cassandraAuthSessionAdapter = new CassandraAuthSessionAdapter(session, realm, this, authSession, authSessionRepository);
+        session.getContext().setAuthenticationSession(cassandraAuthSessionAdapter);
+
+        return cassandraAuthSessionAdapter;
+    }
+
+    @Override
+    public void removeAuthenticationSessionByTabId(String tabId) {
+        List<AuthenticationSession> allAuthSessions = authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId());
+        AuthenticationSession toDelete = allAuthSessions.stream()
+            .filter(s -> Objects.equals(s.getTabId(), tabId))
+            .findFirst()
+            .orElse(null);
+
+        authSessionRepository.deleteAuthSession(toDelete);
+        if (toDelete != null) {
+            if (allAuthSessions.size() == 1) {
+                session.authenticationSessions().removeRootAuthenticationSession(realm, this);
+            } else {
+                long timestamp = Time.currentTimeMillis();
+                rootAuthenticationSession.setTimestamp(timestamp);
+                int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
+                rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
+                authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+            }
+        }
+    }
+
+    @Override
+    public void restartSession(RealmModel realm) {
+        authSessionRepository.deleteAuthSessions(rootAuthenticationSession.getId());
         long timestamp = Time.currentTimeMillis();
         rootAuthenticationSession.setTimestamp(timestamp);
         int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
         rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
         authSessionRepository.insertOrUpdate(rootAuthenticationSession);
-      }
     }
-  }
 
-  @Override
-  public void restartSession(RealmModel realm) {
-    authSessionRepository.deleteAuthSessions(rootAuthenticationSession.getId());
-    long timestamp = Time.currentTimeMillis();
-    rootAuthenticationSession.setTimestamp(timestamp);
-    int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
-    rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
-    authSessionRepository.insertOrUpdate(rootAuthenticationSession);
-  }
-
-  private String generateTabId() {
-    return Base64Url.encode(SecretGenerator.getInstance().randomBytes(8));
-  }
+    private String generateTabId() {
+        return Base64Url.encode(SecretGenerator.getInstance().randomBytes(8));
+    }
 }

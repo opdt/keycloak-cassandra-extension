@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,20 +21,21 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entitie
 import java.util.List;
 
 public interface AuthSessionRepository {
-  void insertOrUpdate(RootAuthenticationSession session);
+    void insertOrUpdate(RootAuthenticationSession session);
 
-  void insertOrUpdate(AuthenticationSession session, RootAuthenticationSession parent);
+    void insertOrUpdate(AuthenticationSession session, RootAuthenticationSession parent);
 
-  void insertOrUpdate(AuthenticationSession session);
+    void insertOrUpdate(AuthenticationSession session);
 
-  void deleteRootAuthSession(String sessionId);
-  void deleteRootAuthSession(RootAuthenticationSession session);
+    void deleteRootAuthSession(String sessionId);
 
-  void deleteAuthSession(AuthenticationSession session);
+    void deleteRootAuthSession(RootAuthenticationSession session);
 
-  void deleteAuthSessions(String parentSessionId);
+    void deleteAuthSession(AuthenticationSession session);
 
-  List<AuthenticationSession> findAuthSessionsByParentSessionId(String parentSessionId);
+    void deleteAuthSessions(String parentSessionId);
 
-  RootAuthenticationSession findRootAuthSessionById(String id);
+    List<AuthenticationSession> findAuthSessionsByParentSessionId(String parentSessionId);
+
+    RootAuthenticationSession findRootAuthSessionById(String id);
 }

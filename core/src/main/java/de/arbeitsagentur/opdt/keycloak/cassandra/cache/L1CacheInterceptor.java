@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,61 +28,61 @@ import java.util.stream.Collectors;
 @JBossLog
 @RequiredArgsConstructor
 public class L1CacheInterceptor implements InvocationHandler {
-  private static final Set<String> CACHE_INVALIDATION_NAMES = new HashSet<>();
+    private static final Set<String> CACHE_INVALIDATION_NAMES = new HashSet<>();
 
-  static {
-    CACHE_INVALIDATION_NAMES.add("create");
-    CACHE_INVALIDATION_NAMES.add("update");
-    CACHE_INVALIDATION_NAMES.add("add");
-    CACHE_INVALIDATION_NAMES.add("delete");
-    CACHE_INVALIDATION_NAMES.add("remove");
-    CACHE_INVALIDATION_NAMES.add("insert");
-    CACHE_INVALIDATION_NAMES.add("make");
-  }
-
-  private final Object target;
-
-  @Override
-  public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-    Method classMethod = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-    L1Cached cacheAnnotation = classMethod.getAnnotation(L1Cached.class);
-    String cacheName = cacheAnnotation.cacheName();
-    boolean invalidateCache = classMethod.getAnnotation(InvalidateCache.class) != null;
-
-    if(invalidateCache) {
-      if(log.isTraceEnabled()) {
-        log.tracef("Cache wird invalidiert durch Methode %s (%s)", method.getName(),
-            Arrays.stream(args)
-                .map(Object::getClass)
-                .map(Object::toString)
-                .collect(Collectors.joining(", ")));
-      }
-
-      ThreadLocalCache.reset(cacheName);
-
-      return method.invoke(target, args);
-    } else if(CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> method.getName().toLowerCase().contains(name))) {
-      log.warnf("Method %s(%s) might need to invalidate cache but isnt annotated with @InvalidateCache",
-          method.getName(), Arrays.stream(args)
-              .map(Object::getClass)
-              .map(Object::toString)
-              .collect(Collectors.joining(", ")));
+    static {
+        CACHE_INVALIDATION_NAMES.add("create");
+        CACHE_INVALIDATION_NAMES.add("update");
+        CACHE_INVALIDATION_NAMES.add("add");
+        CACHE_INVALIDATION_NAMES.add("delete");
+        CACHE_INVALIDATION_NAMES.add("remove");
+        CACHE_INVALIDATION_NAMES.add("insert");
+        CACHE_INVALIDATION_NAMES.add("make");
     }
 
-    CacheInvocationContext cacheInvocationContext = CacheInvocationContext.create(target, method, args);
+    private final Object target;
 
-    Object result = ThreadLocalCache.get(cacheName, cacheInvocationContext);
-    if (ThreadLocalCache.NONE == result) {
-      long timestamp = System.currentTimeMillis();
-      result = method.invoke(target, args);
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        Method classMethod = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+        L1Cached cacheAnnotation = classMethod.getAnnotation(L1Cached.class);
+        String cacheName = cacheAnnotation.cacheName();
+        boolean invalidateCache = classMethod.getAnnotation(InvalidateCache.class) != null;
 
-      if(log.isTraceEnabled()) {
-        log.tracef("Uncached Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
-      }
+        if (invalidateCache) {
+            if (log.isTraceEnabled()) {
+                log.tracef("Cache wird invalidiert durch Methode %s (%s)", method.getName(),
+                    Arrays.stream(args)
+                        .map(Object::getClass)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", ")));
+            }
 
-      ThreadLocalCache.put(cacheName, cacheInvocationContext, result);
+            ThreadLocalCache.reset(cacheName);
+
+            return method.invoke(target, args);
+        } else if (CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> method.getName().toLowerCase().contains(name))) {
+            log.warnf("Method %s(%s) might need to invalidate cache but isnt annotated with @InvalidateCache",
+                method.getName(), Arrays.stream(args)
+                    .map(Object::getClass)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", ")));
+        }
+
+        CacheInvocationContext cacheInvocationContext = CacheInvocationContext.create(target, method, args);
+
+        Object result = ThreadLocalCache.get(cacheName, cacheInvocationContext);
+        if (ThreadLocalCache.NONE == result) {
+            long timestamp = System.currentTimeMillis();
+            result = method.invoke(target, args);
+
+            if (log.isTraceEnabled()) {
+                log.tracef("Uncached Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
+            }
+
+            ThreadLocalCache.put(cacheName, cacheInvocationContext, result);
+        }
+
+        return result;
     }
-
-    return result;
-  }
 }

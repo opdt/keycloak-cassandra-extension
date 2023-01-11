@@ -29,127 +29,127 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSes
 @EqualsAndHashCode(of = "userSession")
 @AllArgsConstructor
 public abstract class CassandraAuthenticatedClientSessionAdapter implements AuthenticatedClientSessionModel {
-  protected KeycloakSession session;
-  protected RealmModel realm;
-  protected CassandraUserSessionAdapter userSession;
-  protected AuthenticatedClientSessionValue clientSessionEntity;
-  protected UserSessionRepository userSessionRepository;
+    protected KeycloakSession session;
+    protected RealmModel realm;
+    protected CassandraUserSessionAdapter userSession;
+    protected AuthenticatedClientSessionValue clientSessionEntity;
+    protected UserSessionRepository userSessionRepository;
 
-  @Override
-  public String getId() {
-    return clientSessionEntity.getId();
-  }
-
-  @Override
-  public int getTimestamp() {
-    Long timestamp = clientSessionEntity.getTimestamp();
-    return timestamp != null ? TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(timestamp)) : 0;
-  }
-
-  @Override
-  public void setTimestamp(int timestamp) {
-    clientSessionEntity.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
-
-    // whenever the timestamp is changed recompute the expiration time
-    setClientSessionExpiration(clientSessionEntity, realm, getClient());
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
-
-  @Override
-  public UserSessionModel getUserSession() {
-    return userSession;
-  }
-
-  @Override
-  public String getCurrentRefreshToken() {
-    return clientSessionEntity.getCurrentRefreshToken();
-  }
-
-  @Override
-  public void setCurrentRefreshToken(String currentRefreshToken) {
-    clientSessionEntity.setCurrentRefreshToken(currentRefreshToken);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
-
-  @Override
-  public int getCurrentRefreshTokenUseCount() {
-    Integer currentRefreshTokenUseCount = clientSessionEntity.getCurrentRefreshTokenUseCount();
-    return currentRefreshTokenUseCount != null ? currentRefreshTokenUseCount : 0;
-  }
-
-  @Override
-  public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
-    clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
-
-  @Override
-  public String getNote(String name) {
-    return clientSessionEntity.getNotes().get(name);
-  }
-
-  @Override
-  public void setNote(String name, String value) {
-    if(value == null) {
-      removeNote(name);
-      return;
+    @Override
+    public String getId() {
+        return clientSessionEntity.getId();
     }
 
-    clientSessionEntity.getNotes().put(name, value);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
+    @Override
+    public int getTimestamp() {
+        Long timestamp = clientSessionEntity.getTimestamp();
+        return timestamp != null ? TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(timestamp)) : 0;
+    }
 
-  @Override
-  public void removeNote(String name) {
-    clientSessionEntity.getNotes().remove(name);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
+    @Override
+    public void setTimestamp(int timestamp) {
+        clientSessionEntity.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
 
-  @Override
-  public Map<String, String> getNotes() {
-    return clientSessionEntity.getNotes();
-  }
+        // whenever the timestamp is changed recompute the expiration time
+        setClientSessionExpiration(clientSessionEntity, realm, getClient());
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
 
-  @Override
-  public String getRedirectUri() {
-    return clientSessionEntity.getRedirectUri();
-  }
+    @Override
+    public UserSessionModel getUserSession() {
+        return userSession;
+    }
 
-  @Override
-  public void setRedirectUri(String uri) {
-    clientSessionEntity.setRedirectUri(uri);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
+    @Override
+    public String getCurrentRefreshToken() {
+        return clientSessionEntity.getCurrentRefreshToken();
+    }
 
-  @Override
-  public RealmModel getRealm() {
-    return realm;
-  }
+    @Override
+    public void setCurrentRefreshToken(String currentRefreshToken) {
+        clientSessionEntity.setCurrentRefreshToken(currentRefreshToken);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
 
-  @Override
-  public ClientModel getClient() {
-    return realm.getClientById(clientSessionEntity.getClientId());
-  }
+    @Override
+    public int getCurrentRefreshTokenUseCount() {
+        Integer currentRefreshTokenUseCount = clientSessionEntity.getCurrentRefreshTokenUseCount();
+        return currentRefreshTokenUseCount != null ? currentRefreshTokenUseCount : 0;
+    }
 
-  @Override
-  public String getAction() {
-    return clientSessionEntity.getAction();
-  }
+    @Override
+    public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
+        clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
 
-  @Override
-  public void setAction(String action) {
-    clientSessionEntity.setAction(action);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
+    @Override
+    public String getNote(String name) {
+        return clientSessionEntity.getNotes().get(name);
+    }
 
-  @Override
-  public String getProtocol() {
-    return clientSessionEntity.getAuthMethod();
-  }
+    @Override
+    public void setNote(String name, String value) {
+        if (value == null) {
+            removeNote(name);
+            return;
+        }
 
-  @Override
-  public void setProtocol(String method) {
-    clientSessionEntity.setAuthMethod(method);
-    userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
-  }
+        clientSessionEntity.getNotes().put(name, value);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
+
+    @Override
+    public void removeNote(String name) {
+        clientSessionEntity.getNotes().remove(name);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
+
+    @Override
+    public Map<String, String> getNotes() {
+        return clientSessionEntity.getNotes();
+    }
+
+    @Override
+    public String getRedirectUri() {
+        return clientSessionEntity.getRedirectUri();
+    }
+
+    @Override
+    public void setRedirectUri(String uri) {
+        clientSessionEntity.setRedirectUri(uri);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
+
+    @Override
+    public RealmModel getRealm() {
+        return realm;
+    }
+
+    @Override
+    public ClientModel getClient() {
+        return realm.getClientById(clientSessionEntity.getClientId());
+    }
+
+    @Override
+    public String getAction() {
+        return clientSessionEntity.getAction();
+    }
+
+    @Override
+    public void setAction(String action) {
+        clientSessionEntity.setAction(action);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
+
+    @Override
+    public String getProtocol() {
+        return clientSessionEntity.getAuthMethod();
+    }
+
+    @Override
+    public void setProtocol(String method) {
+        clientSessionEntity.setAuthMethod(method);
+        userSessionRepository.insertOrUpdate(userSession.getUserSessionEntity());
+    }
 }

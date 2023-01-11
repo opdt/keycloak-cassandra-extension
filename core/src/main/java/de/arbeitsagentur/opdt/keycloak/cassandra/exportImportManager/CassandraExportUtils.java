@@ -38,9 +38,9 @@ public class CassandraExportUtils {
         // Client Scopes
         rep.setClientScopes(realm.getClientScopesStream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList()));
         rep.setDefaultDefaultClientScopes(realm.getDefaultClientScopesStream(true)
-                .map(ClientScopeModel::getName).collect(Collectors.toList()));
+            .map(ClientScopeModel::getName).collect(Collectors.toList()));
         rep.setDefaultOptionalClientScopes(realm.getDefaultClientScopesStream(false)
-                .map(ClientScopeModel::getName).collect(Collectors.toList()));
+            .map(ClientScopeModel::getName).collect(Collectors.toList()));
 
         // Clients
         List<ClientModel> clients = new LinkedList<>();
@@ -137,7 +137,7 @@ public class CassandraExportUtils {
                     }
                     scopeMappingRep.role(scope.getName());
                 } else {
-                    ClientModel app = (ClientModel)scope.getContainer();
+                    ClientModel app = (ClientModel) scope.getContainer();
                     String appName = app.getClientId();
                     List<ScopeMappingRepresentation> currentAppScopes = clientScopeReps.get(appName);
                     if (currentAppScopes == null) {
@@ -169,8 +169,8 @@ public class CassandraExportUtils {
         // Finally users if needed
         if (options.isUsersIncluded()) {
             List<UserRepresentation> users = session.users().searchForUserStream(realm, Collections.emptyMap())
-                    .map(user -> exportUser(session, realm, user, options, internal))
-                    .collect(Collectors.toList());
+                .map(user -> exportUser(session, realm, user, options, internal))
+                .collect(Collectors.toList());
 
             if (users.size() > 0) {
                 rep.setUsers(users);
@@ -228,6 +228,7 @@ public class CassandraExportUtils {
 
     /**
      * Full export of application including claims and secret
+     *
      * @param client
      * @return full ApplicationRepresentation
      */
@@ -246,6 +247,7 @@ public class CassandraExportUtils {
 
     /**
      * Full export of role including composite roles
+     *
      * @param role
      * @return RoleRepresentation with all stuff filled (including composite roles)
      */
@@ -270,7 +272,7 @@ public class CassandraExportUtils {
                         compositeClientRoles = new HashMap<>();
                     }
 
-                    ClientModel app = (ClientModel)crContainer;
+                    ClientModel app = (ClientModel) crContainer;
                     String appName = app.getClientId();
                     List<String> currentAppComposites = compositeClientRoles.get(appName);
                     if (currentAppComposites == null) {
@@ -306,7 +308,7 @@ public class CassandraExportUtils {
 
         // Social links
         List<FederatedIdentityRepresentation> socialLinkReps = session.users().getFederatedIdentitiesStream(realm, user)
-                .map(CassandraExportUtils::exportSocialLink).collect(Collectors.toList());
+            .map(CassandraExportUtils::exportSocialLink).collect(Collectors.toList());
         if (socialLinkReps.size() > 0) {
             userRep.setFederatedIdentities(socialLinkReps);
         }
@@ -320,7 +322,7 @@ public class CassandraExportUtils {
                 if (role.getContainer() instanceof RealmModel) {
                     realmRoleNames.add(role.getName());
                 } else {
-                    ClientModel client = (ClientModel)role.getContainer();
+                    ClientModel client = (ClientModel) role.getContainer();
                     String clientId = client.getClientId();
                     List<String> currentClientRoles = clientRoleNames.get(clientId);
                     if (currentClientRoles == null) {
@@ -343,7 +345,7 @@ public class CassandraExportUtils {
         // Credentials - extra security, do not export credentials if service accounts
         if (internal) {
             List<CredentialRepresentation> credReps = user.credentialManager().getStoredCredentialsStream()
-                    .map(CassandraExportUtils::exportCredential).collect(Collectors.toList());
+                .map(CassandraExportUtils::exportCredential).collect(Collectors.toList());
             userRep.setCredentials(credReps);
         }
 
@@ -351,7 +353,7 @@ public class CassandraExportUtils {
 
         // Grants
         List<UserConsentRepresentation> consentReps = session.users().getConsentsStream(realm, user.getId())
-                .map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
+            .map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
         if (consentReps.size() > 0) {
             userRep.setClientConsents(consentReps);
         }

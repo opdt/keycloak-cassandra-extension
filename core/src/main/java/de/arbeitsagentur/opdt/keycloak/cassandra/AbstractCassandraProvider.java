@@ -22,11 +22,11 @@ import org.keycloak.provider.Provider;
 
 @JBossLog
 public abstract class AbstractCassandraProvider implements Provider {
-  @Override
-  public void close() {
-    log.debugf("Close provider %s", getClass().getName());
-    ThreadLocalCache.reset(getCacheName());
-  }
+    @Override
+    public void close() {
+        log.debugf("Close provider %s", getClass().getName());
+        ThreadLocalCache.reset(getCacheName());
+    }
 
-  protected abstract String getCacheName();
+    protected abstract String getCacheName();
 }
