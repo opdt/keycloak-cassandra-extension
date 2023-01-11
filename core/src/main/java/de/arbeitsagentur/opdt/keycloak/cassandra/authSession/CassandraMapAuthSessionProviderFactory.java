@@ -68,5 +68,4 @@ public class CassandraMapAuthSessionProviderFactory extends AbstractCassandraPro
     public boolean isSupported() {
         return true;
     }
-
 }
