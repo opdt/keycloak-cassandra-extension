@@ -19,15 +19,17 @@ import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProviderFactory;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.UserSessionProviderFactory;
+import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.InvalidationHandler;
+
+import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.REALM_BEFORE_REMOVE;
+import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.USER_BEFORE_REMOVE;
 
 // TODO: Remove as soon as DatastoreProvider covers user sessions
 @JBossLog
 @AutoService(UserSessionProviderFactory.class)
-public class CassandraMapUserSessionProviderFactory extends AbstractCassandraProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
+public class CassandraMapUserSessionProviderFactory extends AbstractCassandraProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory, InvalidationHandler {
     private static final String PROVIDER_ID = "map";
 
     @Override
@@ -62,5 +64,14 @@ public class CassandraMapUserSessionProviderFactory extends AbstractCassandraPro
     @Override
     public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
 
+    }
+
+    @Override
+    public void invalidate(KeycloakSession session, InvalidationHandler.InvalidableObjectType type, Object... params) {
+        if (type == USER_BEFORE_REMOVE) {
+            create(session).removeUserSessions((RealmModel) params[0], (UserModel) params[1]);
+        } else if (type == REALM_BEFORE_REMOVE) {
+            create(session).removeAllUserSessions((RealmModel) params[0]);
+        }
     }
 }

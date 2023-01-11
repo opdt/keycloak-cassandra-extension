@@ -39,6 +39,7 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSes
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setUserSessionExpiration;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
+import static org.keycloak.models.UserSessionModel.SessionPersistenceState.PERSISTENT;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.TRANSIENT;
 import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
@@ -92,7 +93,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         setClientSessionExpiration(entity, realm, client);
 
         userSessionEntity.getClientSessions().put(client.getId(), entity);
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+
+        if (PERSISTENT.equals(userSessionEntity.getPersistenceState())) {
+            userSessionRepository.insertOrUpdate(userSessionEntity);
+        }
 
         return userSession.getAuthenticatedClientSessionByClient(client.getId());
     }
@@ -101,7 +105,13 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public AuthenticatedClientSessionModel getClientSession(UserSessionModel userSession, ClientModel client, String clientSessionId, boolean offline) {
         log.tracef("getClientSession(%s, %s, %s, %s)%s", userSession, client, clientSessionId, offline, getShortStackTrace());
 
-        return userSession.getAuthenticatedClientSessionByClient(client.getId());
+        if(userSession == null) {
+            return null;
+        }
+
+        // Reload Session to filter out transient sessions
+        CassandraUserSessionAdapter currentSession = getUserSession(userSession.getRealm(), userSession.getId());
+        return currentSession == null ? null : currentSession.getAuthenticatedClientSessionByClient(client.getId());
     }
 
     @Override
@@ -274,6 +284,14 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         userSessionRepository.findUserSessionsByUserId(user.getId()).forEach(userSessionRepository::deleteUserSession);
     }
 
+    protected void removeAllUserSessions(RealmModel realm) {
+        log.tracef("removeAllUserSessions(%s)%s", realm, getShortStackTrace());
+
+        realm.getClientsStream()
+            .flatMap(c -> userSessionRepository.findUserSessionsByClientId(c.getId()).stream())
+            .forEach(userSessionRepository::deleteUserSession);
+    }
+
     @Override
     public void removeAllExpired() {
         log.tracef("removeAllExpired()%s", getShortStackTrace());
@@ -288,7 +306,9 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
     @Override
     public void removeUserSessions(RealmModel realm) {
-        userSessionRepository.findAll().stream().forEach(userSessionRepository::deleteUserSession);
+        userSessionRepository.findAll().stream()
+            .filter(s -> s.getRealmId().equals(realm.getId()))
+            .forEach(userSessionRepository::deleteUserSession);
     }
 
     @Override
@@ -299,7 +319,18 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
     @Override
     public void onClientRemoved(RealmModel realm, ClientModel client) {
-        // NOOP, let them expire
+        List<UserSession> relevantSessions = userSessionRepository.findAll().stream()
+            .filter(s -> s.getClientSessions().containsKey(client.getId()))
+            .collect(Collectors.toList());
+
+        for (UserSession session : relevantSessions) {
+            session.getClientSessions().remove(client.getId());
+            if(session.getClientSessions().isEmpty()) {
+                userSessionRepository.deleteUserSession(session);
+            } else {
+                userSessionRepository.insertOrUpdate(session);
+            }
+        }
     }
 
     @Override
@@ -411,6 +442,8 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         return userSessionRepository.findAll().stream()
             .filter(s -> s.getRealmId().equals(realm.getId()))
             .filter(s -> s.getOffline() != null && s.getOffline())
+            .flatMap(s -> s.getClientSessions().values().stream())
+            .filter(s -> s.getClientId().equals(client.getId()))
             .count();
     }
 
@@ -422,6 +455,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         return userSessionRepository.findAll().stream()
             .filter(s -> s.getRealmId().equals(realm.getId()))
             .filter(s -> s.getOffline() != null && s.getOffline())
+            .filter(s -> s.getClientSessions().containsKey(client.getId()))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
             .sorted(Comparator.comparing(UserSession::getLastSessionRefresh))
