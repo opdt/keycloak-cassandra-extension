@@ -35,47 +35,47 @@ import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 @Entity
 @CqlName("user_sessions")
 public class UserSession implements ExpirableEntity {
-  @PartitionKey
-  private String id;
+    @PartitionKey
+    private String id;
 
-  private String realmId;
-  private String userId;
-  private String loginUsername;
-  private String ipAddress;
-  private String authMethod;
-  private String brokerSessionId;
-  private String brokerUserId;
-  private Long timestamp;
-  private Long expiration;
-  private Boolean offline;
-  private Boolean rememberMe;
-  private Long lastSessionRefresh;
+    private String realmId;
+    private String userId;
+    private String loginUsername;
+    private String ipAddress;
+    private String authMethod;
+    private String brokerSessionId;
+    private String brokerUserId;
+    private Long timestamp;
+    private Long expiration;
+    private Boolean offline;
+    private Boolean rememberMe;
+    private Long lastSessionRefresh;
 
-  private UserSessionModel.State state;
+    private UserSessionModel.State state;
 
-  @Builder.Default
-  private Map<String, String> notes = new ConcurrentHashMap<>();
+    @Builder.Default
+    private Map<String, String> notes = new ConcurrentHashMap<>();
 
-  @Builder.Default
-  private Map<String, AuthenticatedClientSessionValue> clientSessions = new ConcurrentHashMap<>();
+    @Builder.Default
+    private Map<String, AuthenticatedClientSessionValue> clientSessions = new ConcurrentHashMap<>();
 
-  private UserSessionModel.SessionPersistenceState persistenceState;
+    private UserSessionModel.SessionPersistenceState persistenceState;
 
-  public boolean hasCorrespondingSession() {
-    return getNotes().containsKey(CORRESPONDING_SESSION_ID);
-  }
-
-  public Map<String, String> getNotes() {
-    if (notes == null) {
-      notes = new ConcurrentHashMap<>();
+    public boolean hasCorrespondingSession() {
+        return getNotes().containsKey(CORRESPONDING_SESSION_ID);
     }
-    return notes;
-  }
 
-  public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
-    if (clientSessions == null) {
-      clientSessions = new ConcurrentHashMap<>();
+    public Map<String, String> getNotes() {
+        if (notes == null) {
+            notes = new ConcurrentHashMap<>();
+        }
+        return notes;
     }
-    return clientSessions;
-  }
+
+    public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
+        if (clientSessions == null) {
+            clientSessions = new ConcurrentHashMap<>();
+        }
+        return clientSessions;
+    }
 }

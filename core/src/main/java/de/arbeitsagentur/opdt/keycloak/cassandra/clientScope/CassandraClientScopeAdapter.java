@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
@@ -23,7 +22,10 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entitie
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.models.*;
+import org.keycloak.models.ClientScopeModel;
+import org.keycloak.models.ProtocolMapperModel;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
@@ -111,16 +113,16 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     @Override
     public void removeProtocolMapper(ProtocolMapperModel mapping) {
         List<ProtocolMapperModel> protocolMappersWithoutMapping = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-                .filter(e -> !e.getId().equals(mapping.getId()))
-                .collect(Collectors.toList());
+            .filter(e -> !e.getId().equals(mapping.getId()))
+            .collect(Collectors.toList());
         setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
     }
 
     @Override
     public void updateProtocolMapper(ProtocolMapperModel mapping) {
         List<ProtocolMapperModel> protocolMappersWithoutMapping = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-                .filter(e -> !e.getId().equals(mapping.getId()))
-                .collect(Collectors.toList());
+            .filter(e -> !e.getId().equals(mapping.getId()))
+            .collect(Collectors.toList());
         protocolMappersWithoutMapping.add(mapping);
         setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
     }
@@ -128,25 +130,25 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     @Override
     public ProtocolMapperModel getProtocolMapperById(String id) {
         return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-                .filter(e -> e.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+            .filter(e -> e.getId().equals(id))
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
     public ProtocolMapperModel getProtocolMapperByName(String protocol, String name) {
         return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-                .filter(e -> Objects.equals(e.getProtocol(), protocol))
-                .filter(e -> Objects.equals(e.getName(), name))
-                .findFirst()
-                .orElse(null);
+            .filter(e -> Objects.equals(e.getProtocol(), protocol))
+            .filter(e -> Objects.equals(e.getName(), name))
+            .findFirst()
+            .orElse(null);
     }
 
     public Stream<RoleModel> getScopeMappingsStream() {
         List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
         return scopeMappings == null ? Stream.empty() : scopeMappings.stream()
-                .map(getRealm()::getRoleById)
-                .filter(Objects::nonNull);
+            .map(getRealm()::getRoleById)
+            .filter(Objects::nonNull);
     }
 
     @Override
@@ -156,7 +158,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void addScopeMapping(RoleModel role) {
-        if(role == null) {
+        if (role == null) {
             return;
         }
 
@@ -167,7 +169,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void deleteScopeMapping(RoleModel role) {
-        if(role == null) {
+        if (role == null) {
             return;
         }
 
@@ -183,7 +185,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void setAttribute(String name, String value) {
-        if(name == null || value == null) {
+        if (name == null || value == null) {
             return;
         }
 
@@ -192,7 +194,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void removeAttribute(String name) {
-        if(name == null) {
+        if (name == null) {
             return;
         }
         updateAndRefresh(s -> s.getAttributes().remove(name));
@@ -213,7 +215,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     }
 
     public void setAttributeValues(String name, List<String> values) {
-        if(name == null || values == null) {
+        if (name == null || values == null) {
             return;
         }
 

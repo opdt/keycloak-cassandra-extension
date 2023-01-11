@@ -19,12 +19,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 import org.junit.Test;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.ResourceServer;
-import org.keycloak.models.ClientModel;
-import org.keycloak.models.Constants;
-import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RealmProvider;
+import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.provider.ProviderEventListener;
 
@@ -34,12 +29,7 @@ import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.anEmptyMap;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 @RequireProvider(RealmProvider.class)
 public class RealmModelTest extends KeycloakModelTest {
@@ -76,8 +66,8 @@ public class RealmModelTest extends KeycloakModelTest {
             // Assert the map contains the added value
             assertThat(realm.getRealmLocalizationTexts(), aMapWithSize(1));
             assertThat(realm.getRealmLocalizationTexts(),
-                    hasEntry(equalTo("en"), allOf(aMapWithSize(1),
-                            hasEntry(equalTo("key-a"), equalTo("text-a_en")))));
+                hasEntry(equalTo("en"), allOf(aMapWithSize(1),
+                    hasEntry(equalTo("key-a"), equalTo("text-a_en")))));
 
             // Add another localization text to previous locale
             session.realms().saveLocalizationText(realm, "en", "key-b", "text-b_en");
@@ -87,9 +77,9 @@ public class RealmModelTest extends KeycloakModelTest {
         withRealm(realmId, (session, realm) -> {
             assertThat(realm.getRealmLocalizationTexts(), aMapWithSize(1));
             assertThat(realm.getRealmLocalizationTexts(),
-                    hasEntry(equalTo("en"), allOf(aMapWithSize(2),
-                            hasEntry(equalTo("key-a"), equalTo("text-a_en")),
-                            hasEntry(equalTo("key-b"), equalTo("text-b_en")))));
+                hasEntry(equalTo("en"), allOf(aMapWithSize(2),
+                    hasEntry(equalTo("key-a"), equalTo("text-a_en")),
+                    hasEntry(equalTo("key-b"), equalTo("text-b_en")))));
 
             // Add new locale
             session.realms().saveLocalizationText(realm, "de", "key-a", "text-a_de");
@@ -100,12 +90,12 @@ public class RealmModelTest extends KeycloakModelTest {
             // Check everything created successfully
             assertThat(realm.getRealmLocalizationTexts(), aMapWithSize(2));
             assertThat(realm.getRealmLocalizationTexts(),
-                    hasEntry(equalTo("en"), allOf(aMapWithSize(2),
-                            hasEntry(equalTo("key-a"), equalTo("text-a_en")),
-                            hasEntry(equalTo("key-b"), equalTo("text-b_en")))));
+                hasEntry(equalTo("en"), allOf(aMapWithSize(2),
+                    hasEntry(equalTo("key-a"), equalTo("text-a_en")),
+                    hasEntry(equalTo("key-b"), equalTo("text-b_en")))));
             assertThat(realm.getRealmLocalizationTexts(),
-                    hasEntry(equalTo("de"), allOf(aMapWithSize(1),
-                            hasEntry(equalTo("key-a"), equalTo("text-a_de")))));
+                hasEntry(equalTo("de"), allOf(aMapWithSize(1),
+                    hasEntry(equalTo("key-a"), equalTo("text-a_de")))));
 
             return null;
         });
@@ -134,7 +124,7 @@ public class RealmModelTest extends KeycloakModelTest {
         });
 
         // Remove realm 2
-        inComittedTransaction( (Consumer<KeycloakSession>)  keycloakSession -> keycloakSession.realms().removeRealm(realm2Id));
+        inComittedTransaction((Consumer<KeycloakSession>) keycloakSession -> keycloakSession.realms().removeRealm(realm2Id));
 
 
         // ResourceServer in realm1 must still exist

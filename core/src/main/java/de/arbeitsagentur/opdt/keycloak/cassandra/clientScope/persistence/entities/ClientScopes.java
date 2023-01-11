@@ -24,7 +24,7 @@ public class ClientScopes {
     private Set<ClientScopeValue> clientScopes = new HashSet<>();
 
     public Set<ClientScopeValue> getClientScopes() {
-        if(clientScopes == null) {
+        if (clientScopes == null) {
             return new HashSet<>();
         }
         return clientScopes;
@@ -32,7 +32,7 @@ public class ClientScopes {
 
     public ClientScopeValue getClientScopeById(String id) {
         ClientScopeValue clientScope = clientScopes.stream().filter(s -> s.getId().equals(id)).findFirst().orElse(null);
-        if(clientScope == null) {
+        if (clientScope == null) {
             return clientScopes.stream().filter(r -> r.getId().equals(id)).findFirst().orElse(null);
         }
         return clientScope;

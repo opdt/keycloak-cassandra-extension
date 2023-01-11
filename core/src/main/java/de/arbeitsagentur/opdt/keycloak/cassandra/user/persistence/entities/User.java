@@ -19,7 +19,6 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
-import org.keycloak.credential.CredentialModel;
 
 import java.time.Instant;
 import java.util.*;
@@ -34,91 +33,91 @@ import java.util.stream.Collectors;
 @Entity
 @CqlName("users")
 public class User {
-  @PartitionKey(0)
-  private String realmId;
-  @PartitionKey(1)
-  private String id;
+    @PartitionKey(0)
+    private String realmId;
+    @PartitionKey(1)
+    private String id;
 
-  private String username;
-  private String email;
-  private String firstName;
-  private String lastName;
-  private String usernameCaseInsensitive;
-  private String serviceAccountClientLink;
-  private String federationLink;
+    private String username;
+    private String email;
+    private String firstName;
+    private String lastName;
+    private String usernameCaseInsensitive;
+    private String serviceAccountClientLink;
+    private String federationLink;
 
-  @Builder.Default
-  private Boolean enabled = true;
-  @Builder.Default
-  private Boolean emailVerified = false;
+    @Builder.Default
+    private Boolean enabled = true;
+    @Builder.Default
+    private Boolean emailVerified = false;
 
-  @Builder.Default
-  private boolean serviceAccount = false;
+    @Builder.Default
+    private boolean serviceAccount = false;
 
-  @Builder.Default
-  private Instant createdTimestamp = Instant.now();
+    @Builder.Default
+    private Instant createdTimestamp = Instant.now();
 
-  @Builder.Default
-  private Set<CredentialValue> credentials = new HashSet<>();
+    @Builder.Default
+    private Set<CredentialValue> credentials = new HashSet<>();
 
-  @Builder.Default
-  private Set<String> requiredActions = new HashSet<>();
+    @Builder.Default
+    private Set<String> requiredActions = new HashSet<>();
 
-  @Builder.Default
-  private Set<String> realmRoles = new HashSet<>();
+    @Builder.Default
+    private Set<String> realmRoles = new HashSet<>();
 
-  @Builder.Default
-  private Map<String, Set<String>> clientRoles = new HashMap<>();
+    @Builder.Default
+    private Map<String, Set<String>> clientRoles = new HashMap<>();
 
-  @Builder.Default
-  private Map<String, List<String>> attributes = new ConcurrentHashMap<>();
+    @Builder.Default
+    private Map<String, List<String>> attributes = new ConcurrentHashMap<>();
 
-  public Map<String, List<String>> getAttributes() {
-    if (attributes == null) {
-      attributes = new ConcurrentHashMap<>();
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new ConcurrentHashMap<>();
+        }
+        return attributes;
     }
-    return attributes;
-  }
 
-  public List<String> getAttribute(String name) {
-    return attributes.getOrDefault(name, new ArrayList<>());
-  }
-
-  public Set<String> getRealmRoles() {
-    if (realmRoles == null) {
-      realmRoles = new HashSet<>();
+    public List<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new ArrayList<>());
     }
-    return realmRoles;
-  }
 
-  public Map<String, Set<String>> getClientRoles() {
-    if (clientRoles == null) {
-      clientRoles = new HashMap<>();
+    public Set<String> getRealmRoles() {
+        if (realmRoles == null) {
+            realmRoles = new HashSet<>();
+        }
+        return realmRoles;
     }
-    return clientRoles;
-  }
 
-  public Set<String> getRequiredActions() {
-    if (requiredActions == null) {
-      requiredActions = new HashSet<>();
+    public Map<String, Set<String>> getClientRoles() {
+        if (clientRoles == null) {
+            clientRoles = new HashMap<>();
+        }
+        return clientRoles;
     }
-    return requiredActions;
-  }
 
-  public Set<CredentialValue> getCredentials() {
-    if (credentials == null) {
-      credentials = new HashSet<>();
+    public Set<String> getRequiredActions() {
+        if (requiredActions == null) {
+            requiredActions = new HashSet<>();
+        }
+        return requiredActions;
     }
-    return credentials;
-  }
 
-  public List<CredentialValue> getSortedCredentials() {
-    return getCredentials().stream()
-        .sorted(Comparator.comparing(CredentialValue::getPriority))
-        .collect(Collectors.toList());
-  }
+    public Set<CredentialValue> getCredentials() {
+        if (credentials == null) {
+            credentials = new HashSet<>();
+        }
+        return credentials;
+    }
 
-  public boolean hasCredential(String id) {
-    return getCredentials().stream().anyMatch(c -> c.getId().equals(id));
-  }
+    public List<CredentialValue> getSortedCredentials() {
+        return getCredentials().stream()
+            .sorted(Comparator.comparing(CredentialValue::getPriority))
+            .collect(Collectors.toList());
+    }
+
+    public boolean hasCredential(String id) {
+        return getCredentials().stream().anyMatch(c -> c.getId().equals(id));
+    }
 }

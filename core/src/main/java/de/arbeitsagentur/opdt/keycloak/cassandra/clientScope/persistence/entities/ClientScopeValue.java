@@ -2,7 +2,9 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entiti
 
 import lombok.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,7 +19,7 @@ public class ClientScopeValue {
     private Map<String, List<String>> attributes = new HashMap<>();
 
     public Map<String, List<String>> getAttributes() {
-        if(attributes == null) {
+        if (attributes == null) {
             attributes = new HashMap<>();
         }
 

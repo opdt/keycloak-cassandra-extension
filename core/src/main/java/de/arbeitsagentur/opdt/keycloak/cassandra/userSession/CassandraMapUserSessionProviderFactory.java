@@ -17,53 +17,50 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.UserSessionProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
-import org.keycloak.storage.DatastoreProvider;
-import org.keycloak.storage.DatastoreProviderFactory;
 
 // TODO: Remove as soon as DatastoreProvider covers user sessions
 @JBossLog
 @AutoService(UserSessionProviderFactory.class)
 public class CassandraMapUserSessionProviderFactory extends AbstractCassandraProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
-  private static final String PROVIDER_ID = "map";
+    private static final String PROVIDER_ID = "map";
 
-  @Override
-  public String getId() {
-    return PROVIDER_ID;
-  }
+    @Override
+    public String getId() {
+        return PROVIDER_ID;
+    }
 
-  @Override
-  public CassandraUserSessionProvider create(KeycloakSession session) {
-    return new CassandraUserSessionProvider(session, createRepository(session));
-  }
+    @Override
+    public CassandraUserSessionProvider create(KeycloakSession session) {
+        return new CassandraUserSessionProvider(session, createRepository(session));
+    }
 
-  @Override
-  public void init(Config.Scope scope) {
+    @Override
+    public void init(Config.Scope scope) {
 
-  }
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-  }
+    @Override
+    public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
+    }
 
-  @Override
-  public void close() {
+    @Override
+    public void close() {
 
-  }
+    }
 
-  @Override
-  public boolean isSupported() {
-    return true;
-  }
+    @Override
+    public boolean isSupported() {
+        return true;
+    }
 
-  @Override
-  public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
+    @Override
+    public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
 
-  }
+    }
 }

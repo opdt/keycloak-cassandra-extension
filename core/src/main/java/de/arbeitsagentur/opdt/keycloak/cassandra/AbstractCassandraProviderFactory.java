@@ -53,78 +53,78 @@ import java.lang.reflect.Proxy;
 @JBossLog
 public abstract class AbstractCassandraProviderFactory {
 
-  CassandraUserRepository userRepository;
-  CassandraRoleRepository roleRepository;
-  CassandraRealmRepository realmRepository;
-  CassandraUserSessionRepository userSessionRepository;
-  CassandraAuthSessionRepository authSessionRepository;
-  CassandraLoginFailureRepository loginFailureRepository;
-  CassandraSingleUseObjectRepository singleUseObjectRepository;
-  CassandraClientRepository clientRepository;
-  CassandraClientScopeRepository clientScopeRepository;
+    CassandraUserRepository userRepository;
+    CassandraRoleRepository roleRepository;
+    CassandraRealmRepository realmRepository;
+    CassandraUserSessionRepository userSessionRepository;
+    CassandraAuthSessionRepository authSessionRepository;
+    CassandraLoginFailureRepository loginFailureRepository;
+    CassandraSingleUseObjectRepository singleUseObjectRepository;
+    CassandraClientRepository clientRepository;
+    CassandraClientScopeRepository clientScopeRepository;
 
 
-  protected CompositeRepository createRepository(KeycloakSession session) {
-    CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
-    CqlSession cqlSession = connectionProvider.getCqlSession();
+    protected CompositeRepository createRepository(KeycloakSession session) {
+        CassandraConnectionProvider connectionProvider = session.getProvider(CassandraConnectionProvider.class);
+        CqlSession cqlSession = connectionProvider.getCqlSession();
 
-    if (userRepository == null) {
-      UserMapper userMapper = new UserMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      userRepository = new CassandraUserRepository(userMapper.userDao());
+        if (userRepository == null) {
+            UserMapper userMapper = new UserMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            userRepository = new CassandraUserRepository(userMapper.userDao());
+        }
+
+        if (roleRepository == null) {
+            RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
+        }
+
+        if (realmRepository == null) {
+            RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
+        }
+
+        if (userSessionRepository == null) {
+            UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            userSessionRepository = new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
+        }
+
+        if (authSessionRepository == null) {
+            AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            authSessionRepository = new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
+        }
+
+        if (loginFailureRepository == null) {
+            LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            loginFailureRepository = new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
+        }
+
+        if (singleUseObjectRepository == null) {
+            SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
+        }
+
+        if (clientRepository == null) {
+            ClientMapper clientMapper = new ClientMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            clientRepository = new CassandraClientRepository(clientMapper.clientDao());
+        }
+
+        if (clientScopeRepository == null) {
+            ClientScopeMapper clientScopeMapper = new ClientScopeMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            clientScopeRepository = new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
+        }
+
+        ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
+        cassandraRepository.setRoleRepository(roleRepository);
+        cassandraRepository.setUserRepository(userRepository);
+        cassandraRepository.setRealmRepository(realmRepository);
+        cassandraRepository.setUserSessionRepository(userSessionRepository);
+        cassandraRepository.setAuthSessionRepository(authSessionRepository);
+        cassandraRepository.setLoginFailureRepository(loginFailureRepository);
+        cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
+        cassandraRepository.setClientRepository(clientRepository);
+        cassandraRepository.setClientScopeRepository(clientScopeRepository);
+
+        L1CacheInterceptor intercepted = new L1CacheInterceptor(cassandraRepository);
+        return (CompositeRepository) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{CompositeRepository.class}, intercepted);
     }
-
-    if (roleRepository == null) {
-      RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
-    }
-
-    if (realmRepository == null) {
-      RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
-    }
-
-    if (userSessionRepository == null) {
-      UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      userSessionRepository = new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
-    }
-
-    if (authSessionRepository == null) {
-      AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      authSessionRepository = new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
-    }
-
-    if (loginFailureRepository == null) {
-      LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      loginFailureRepository = new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
-    }
-
-    if (singleUseObjectRepository == null) {
-      SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
-    }
-
-    if (clientRepository == null) {
-      ClientMapper clientMapper = new ClientMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      clientRepository = new CassandraClientRepository(clientMapper.clientDao());
-    }
-
-    if (clientScopeRepository == null) {
-      ClientScopeMapper clientScopeMapper = new ClientScopeMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-      clientScopeRepository = new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
-    }
-
-    ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
-    cassandraRepository.setRoleRepository(roleRepository);
-    cassandraRepository.setUserRepository(userRepository);
-    cassandraRepository.setRealmRepository(realmRepository);
-    cassandraRepository.setUserSessionRepository(userSessionRepository);
-    cassandraRepository.setAuthSessionRepository(authSessionRepository);
-    cassandraRepository.setLoginFailureRepository(loginFailureRepository);
-    cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
-    cassandraRepository.setClientRepository(clientRepository);
-    cassandraRepository.setClientScopeRepository(clientScopeRepository);
-
-    L1CacheInterceptor intercepted = new L1CacheInterceptor(cassandraRepository);
-    return (CompositeRepository) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{CompositeRepository.class}, intercepted);
-  }
 }

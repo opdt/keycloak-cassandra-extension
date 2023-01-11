@@ -1,12 +1,12 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit 
- * 
+ * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,32 +25,33 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entitie
 
 @Dao
 public interface AuthSessionDao {
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(RootAuthenticationSession session, int ttl);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(RootAuthenticationSession session, int ttl);
 
-  @Update
-  void insertOrUpdate(RootAuthenticationSession session);
+    @Update
+    void insertOrUpdate(RootAuthenticationSession session);
 
-  @Update
-  void insertOrUpdate(AuthenticationSession session);
+    @Update
+    void insertOrUpdate(AuthenticationSession session);
 
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(AuthenticationSession session, int ttl);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(AuthenticationSession session, int ttl);
 
-  @Delete(entityClass = RootAuthenticationSession.class)
-  void deleteRootAuthSession(String id);
-  @Delete
-  void delete(RootAuthenticationSession session);
+    @Delete(entityClass = RootAuthenticationSession.class)
+    void deleteRootAuthSession(String id);
 
-  @Delete
-  void delete(AuthenticationSession session);
+    @Delete
+    void delete(RootAuthenticationSession session);
 
-  @Delete(entityClass = AuthenticationSession.class, customWhereClause = "parent_session_id = :parentSessionId")
-  void deleteAuthSessions(String parentSessionId);
+    @Delete
+    void delete(AuthenticationSession session);
 
-  @Select(customWhereClause = "parent_session_id = :parentSessionId")
-  PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
+    @Delete(entityClass = AuthenticationSession.class, customWhereClause = "parent_session_id = :parentSessionId")
+    void deleteAuthSessions(String parentSessionId);
 
-  @Select(customWhereClause = "id = :id")
-  RootAuthenticationSession findById(String id);
+    @Select(customWhereClause = "parent_session_id = :parentSessionId")
+    PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
+
+    @Select(customWhereClause = "id = :id")
+    RootAuthenticationSession findById(String id);
 }

@@ -17,13 +17,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraAuthSessionProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.UserSessionProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.AuthenticationSessionProviderFactory;
 
@@ -31,45 +28,45 @@ import org.keycloak.sessions.AuthenticationSessionProviderFactory;
 @JBossLog
 @AutoService(AuthenticationSessionProviderFactory.class)
 public class CassandraMapAuthSessionProviderFactory extends AbstractCassandraProviderFactory implements AuthenticationSessionProviderFactory<CassandraAuthSessionProvider>, EnvironmentDependentProviderFactory {
-  private static final String PROVIDER_ID = "map";
+    private static final String PROVIDER_ID = "map";
 
-  public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
+    public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
 
-  public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
+    public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
 
-  private int authSessionsLimit;
+    private int authSessionsLimit;
 
-  @Override
-  public String getId() {
-    return PROVIDER_ID;
-  }
+    @Override
+    public String getId() {
+        return PROVIDER_ID;
+    }
 
-  @Override
-  public CassandraAuthSessionProvider create(KeycloakSession session) {
-    return new CassandraAuthSessionProvider(session, createRepository(session), authSessionsLimit);
-  }
+    @Override
+    public CassandraAuthSessionProvider create(KeycloakSession session) {
+        return new CassandraAuthSessionProvider(session, createRepository(session), authSessionsLimit);
+    }
 
-  @Override
-  public void init(Config.Scope scope) {
-    // get auth sessions limit from config or use default if not provided
-    int configInt = scope.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
-    // use default if provided value is not a positive number
-    authSessionsLimit = (configInt <= 0) ? DEFAULT_AUTH_SESSIONS_LIMIT : configInt;
+    @Override
+    public void init(Config.Scope scope) {
+        // get auth sessions limit from config or use default if not provided
+        int configInt = scope.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
+        // use default if provided value is not a positive number
+        authSessionsLimit = (configInt <= 0) ? DEFAULT_AUTH_SESSIONS_LIMIT : configInt;
 
-  }
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-  }
+    @Override
+    public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
+    }
 
-  @Override
-  public void close() {
+    @Override
+    public void close() {
 
-  }
+    }
 
-  @Override
-  public boolean isSupported() {
-    return true;
-  }
+    @Override
+    public boolean isSupported() {
+        return true;
+    }
 
 }

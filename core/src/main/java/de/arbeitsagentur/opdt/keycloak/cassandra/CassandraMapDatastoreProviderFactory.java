@@ -27,34 +27,34 @@ import org.keycloak.storage.DatastoreProviderFactory;
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
 public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, EnvironmentDependentProviderFactory {
-  private static final String PROVIDER_ID = "cassandra-map";
+    private static final String PROVIDER_ID = "cassandra-map";
 
-  @Override
-  public String getId() {
-    return PROVIDER_ID;
-  }
+    @Override
+    public String getId() {
+        return PROVIDER_ID;
+    }
 
-  @Override
-  public DatastoreProvider create(KeycloakSession session) {
-    return new CassandraMapDatastoreProvider(session, createRepository(session));
-  }
+    @Override
+    public DatastoreProvider create(KeycloakSession session) {
+        return new CassandraMapDatastoreProvider(session, createRepository(session));
+    }
 
-  @Override
-  public void init(Config.Scope scope) {
+    @Override
+    public void init(Config.Scope scope) {
 
-  }
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-  }
+    @Override
+    public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
+    }
 
-  @Override
-  public void close() {
+    @Override
+    public void close() {
 
-  }
+    }
 
-  @Override
-  public boolean isSupported() {
-    return true;
-  }
+    @Override
+    public boolean isSupported() {
+        return true;
+    }
 }

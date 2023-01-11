@@ -20,7 +20,9 @@
         <surefire.memory.Xmx>2048m</surefire.memory.Xmx>
         <surefire.memory.metaspace>96m</surefire.memory.metaspace>
         <surefire.memory.metaspace.max>512m</surefire.memory.metaspace.max>
-        <surefire.memory.settings>-Xms${surefire.memory.Xms} -Xmx${surefire.memory.Xmx} -XX:MetaspaceSize=${surefire.memory.metaspace} -XX:MaxMetaspaceSize=${surefire.memory.metaspace.max}</surefire.memory.settings>
+        <surefire.memory.settings>-Xms${surefire.memory.Xms} -Xmx${surefire.memory.Xmx}
+            -XX:MetaspaceSize=${surefire.memory.metaspace} -XX:MaxMetaspaceSize=${surefire.memory.metaspace.max}
+        </surefire.memory.settings>
         <surefire.system.args></surefire.system.args>
     </properties>
 
@@ -121,11 +123,14 @@
                         <!-- keycloak.model.parameters lists parameter classes from
                              org.keycloak.model.parameters package and determine enabled providers -->
                         <keycloak.model.parameters>Map,CassandraMapStorage</keycloak.model.parameters>
-                        <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration> <!-- for the logging to properly work with tests in the 'other' module -->
+                        <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties
+                        </log4j.configuration> <!-- for the logging to properly work with tests in the 'other' module -->
                         <keycloak.profile.feature.map_storage>enabled</keycloak.profile.feature.map_storage>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <org.jboss.logging.provider>log4j</org.jboss.logging.provider>
-                        <argLine>-Djava.awt.headless=true ${surefire.memory.settings} ${surefire.system.args} -Duser.language=en -Duser.region=US</argLine>
+                        <argLine>-Djava.awt.headless=true ${surefire.memory.settings} ${surefire.system.args}
+                            -Duser.language=en -Duser.region=US
+                        </argLine>
                     </systemPropertyVariables>
                     <properties>
                         <property>

@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities;
 
-import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
-import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 import org.keycloak.models.map.common.ExpirableEntity;
 
@@ -29,25 +27,25 @@ import java.util.concurrent.ConcurrentHashMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthenticatedClientSessionValue implements ExpirableEntity {
-  private String id;
-  private String clientId;
-  private Long timestamp;
-  private Long expiration;
+    private String id;
+    private String clientId;
+    private Long timestamp;
+    private Long expiration;
 
-  private String authMethod;
-  private String redirectUri;
-  private String action;
-  private String currentRefreshToken;
-  private Integer currentRefreshTokenUseCount;
-  private boolean offline;
+    private String authMethod;
+    private String redirectUri;
+    private String action;
+    private String currentRefreshToken;
+    private Integer currentRefreshTokenUseCount;
+    private boolean offline;
 
-  @Builder.Default
-  private Map<String ,String> notes = new ConcurrentHashMap<>();
+    @Builder.Default
+    private Map<String, String> notes = new ConcurrentHashMap<>();
 
-  public Map<String, String> getNotes() {
-    if(notes == null) {
-      notes = new ConcurrentHashMap<>();
+    public Map<String, String> getNotes() {
+        if (notes == null) {
+            notes = new ConcurrentHashMap<>();
+        }
+        return notes;
     }
-    return notes;
-  }
 }
