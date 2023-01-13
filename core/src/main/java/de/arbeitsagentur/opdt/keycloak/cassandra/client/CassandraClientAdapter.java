@@ -548,15 +548,21 @@ public class CassandraClientAdapter implements ClientModel {
         Map<String, Boolean> clientScopeIds = getDeserializedAttribute(CLIENT_SCOPES, new TypeReference<>() {
         });
 
-        if (clientScopeIds == null) {
-            return Collections.emptyMap();
+        Set<ClientScopeModel> result = new HashSet<>();
+        if (clientScopeIds != null) {
+            Set<ClientScopeModel> directScopes = clientScopeIds.entrySet().stream()
+                .filter(e -> e.getValue() == defaultScope)
+                .map(e -> session.clientScopes().getClientScopeById(getRealm(), e.getKey()))
+                .filter(Objects::nonNull)
+                .filter(clientScope -> Objects.equals(clientScope.getProtocol(), safeGetProtocol()))
+                .collect(Collectors.toSet());
+
+            result.addAll(directScopes);
         }
 
-        return clientScopeIds.entrySet().stream()
-            .filter(e -> e.getValue() == defaultScope)
-            .map(e -> session.clientScopes().getClientScopeById(getRealm(), e.getKey()))
-            .filter(Objects::nonNull)
-            .filter(clientScope -> Objects.equals(clientScope.getProtocol(), safeGetProtocol()))
+        result.addAll(realm.getDefaultClientScopesStream(defaultScope).collect(Collectors.toSet()));
+
+        return result.stream()
             .collect(Collectors.toMap(ClientScopeModel::getName, Function.identity()));
     }
 

@@ -156,6 +156,7 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
         return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
             .map(e -> entityToAdapter(realm, e))
             .filter(ClientModel::isEnabled)
+            .filter(c -> !c.getRedirectUris().isEmpty())
             .collect(Collectors.toMap(Function.identity(), ClientModel::getRedirectUris));
     }
 
@@ -178,9 +179,13 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
 
     @Override
     public Stream<ClientModel> searchClientsByClientIdStream(RealmModel realm, String clientId, Integer firstResult, Integer maxResults) {
+        if (clientId == null) {
+            return Stream.empty();
+        }
+
         return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+            .filter(e -> "%".equals(clientId) || e.getAttribute(CassandraClientAdapter.CLIENT_ID).stream().anyMatch(id -> id.toLowerCase().contains(clientId.toLowerCase())))
             .map(e -> entityToAdapter(realm, e))
-            .filter(e -> Objects.equals(e.getClientId(), clientId))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }
