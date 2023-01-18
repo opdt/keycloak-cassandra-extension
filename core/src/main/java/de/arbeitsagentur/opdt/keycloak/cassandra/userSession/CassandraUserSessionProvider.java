@@ -59,20 +59,22 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
                 return null;
             }
 
-            if(sessionModels.containsKey(origEntity.getId())) {
-                return sessionModels.get(origEntity.getId());
-            }
-
             if (isExpired(origEntity, false)) {
                 if (TRANSIENT == origEntity.getPersistenceState()) {
                     transientUserSessions.remove(origEntity.getId());
                 } else {
                     userSessionRepository.deleteUserSession(origEntity);
                 }
+                sessionModels.remove(origEntity.getId());
                 return null;
             } else {
+                if (sessionModels.containsKey(origEntity.getId())) {
+                    return sessionModels.get(origEntity.getId());
+                }
+
                 CassandraUserSessionAdapter cassandraUserSessionAdapter = new CassandraUserSessionAdapter(session, realm, origEntity, userSessionRepository);
                 session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) cassandraUserSessionAdapter::flush);
+                sessionModels.put(cassandraUserSessionAdapter.getId(), cassandraUserSessionAdapter);
 
                 return cassandraUserSessionAdapter;
             }
@@ -149,7 +151,6 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         }
 
         CassandraUserSessionAdapter userSession = entityToAdapterFunc(realm).apply(entity);
-        sessionModels.put(userSession.getId(), userSession);
 
         if (userSession != null) {
             DeviceActivityManager.attachDevice(userSession, session);
@@ -167,7 +168,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         if (id == null) return null;
 
         CassandraUserSessionAdapter loadedSession = sessionModels.get(id);
-        if(loadedSession == null) {
+        if (loadedSession == null) {
             UserSession session = userSessionRepository.findUserSessionById(id);
             return entityToAdapterFunc(realm).apply(session);
         } else {
@@ -362,9 +363,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
         userSessionRepository.update(userSessionEntity, offlineUserSession.getId());
 
-        CassandraUserSessionAdapter offlineSessionModel = entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
-        sessionModels.put(offlineSessionModel.getId(), offlineSessionModel);
-        return offlineSessionModel;
+        return entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
     }
 
     @Override
