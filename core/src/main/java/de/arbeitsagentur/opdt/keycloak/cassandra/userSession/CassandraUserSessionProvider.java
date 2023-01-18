@@ -39,7 +39,6 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSes
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setUserSessionExpiration;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
-import static org.keycloak.models.UserSessionModel.SessionPersistenceState.PERSISTENT;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.TRANSIENT;
 import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
@@ -92,11 +91,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         entity.getNotes().put(AuthenticatedClientSessionModel.STARTED_AT_NOTE, started);
         setClientSessionExpiration(entity, realm, client);
 
-        userSessionEntity.getClientSessions().put(client.getId(), entity);
-
-        if (PERSISTENT.equals(userSessionEntity.getPersistenceState())) {
-            userSessionRepository.insertOrUpdate(userSessionEntity);
-        }
+        userSessionRepository.addClientSession(userSessionEntity, entity);
 
         return userSession.getAuthenticatedClientSessionByClient(client.getId());
     }
@@ -105,7 +100,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public AuthenticatedClientSessionModel getClientSession(UserSessionModel userSession, ClientModel client, String clientSessionId, boolean offline) {
         log.tracef("getClientSession(%s, %s, %s, %s)%s", userSession, client, clientSessionId, offline, getShortStackTrace());
 
-        if(userSession == null) {
+        if (userSession == null) {
             return null;
         }
 
@@ -138,7 +133,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             if (id != null && userSessionRepository.findUserSessionById(id) != null) {
                 throw new ModelDuplicateException("User session exists: " + id);
             }
-            userSessionRepository.insertOrUpdate(entity);
+            userSessionRepository.insert(entity);
         }
 
         UserSessionModel userSession = entityToAdapterFunc(realm).apply(entity);
@@ -248,7 +243,6 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public long getActiveUserSessions(RealmModel realm, ClientModel client) {
         log.tracef("getActiveUserSessions(%s, %s)%s", realm, client, getShortStackTrace());
 
-        // TODO: perf?!
         return userSessionRepository.findUserSessionsByClientId(client.getId()).size();
     }
 
@@ -256,7 +250,6 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public Map<String, Long> getActiveClientSessionStats(RealmModel realm, boolean offline) {
         log.tracef("getActiveClientSessionStats(%s, %s)%s", realm, offline, getShortStackTrace());
 
-        // TODO: perf?!
         return userSessionRepository.findAll().stream()
             .filter(s -> s.getRealmId().equals(realm.getId()))
             .filter(s -> s.getOffline() == offline)
@@ -325,10 +318,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
         for (UserSession session : relevantSessions) {
             session.getClientSessions().remove(client.getId());
-            if(session.getClientSessions().isEmpty()) {
+            if (session.getClientSessions().isEmpty()) {
                 userSessionRepository.deleteUserSession(session);
             } else {
-                userSessionRepository.insertOrUpdate(session);
+                userSessionRepository.update(session);
             }
         }
     }
@@ -343,11 +336,11 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         offlineUserSession.setLastSessionRefresh(currentTime);
         setUserSessionExpiration(offlineUserSession, userSession.getRealm());
 
-        userSessionRepository.insertOrUpdate(offlineUserSession, userSession.getId());
+        userSessionRepository.insert(offlineUserSession, userSession.getId());
 
         // set a reference for the offline user session to the original online user session
         UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
-        userSessionRepository.insertOrUpdate(userSessionEntity, offlineUserSession.getId());
+        userSessionRepository.update(userSessionEntity, offlineUserSession.getId());
 
         return entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
     }
@@ -392,8 +385,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             UserSession userSession = userSessionEntity.get();
             String clientId = clientSession.getClient().getId();
 
-            userSession.getClientSessions().put(clientId, clientSessionEntity);
-            userSessionRepository.insertOrUpdate(userSession);
+            userSessionRepository.addClientSession(userSession, clientSessionEntity);
 
             UserSessionModel userSessionModel = entityToAdapterFunc(realm).apply(userSession);
             return userSessionModel == null ? null : userSessionModel.getAuthenticatedClientSessionByClient(clientId);
@@ -438,7 +430,6 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public long getOfflineSessionsCount(RealmModel realm, ClientModel client) {
         log.tracef("getOfflineSessionsCount(%s, %s)%s", realm, client, getShortStackTrace());
 
-        // TODO: perf
         return userSessionRepository.findAll().stream()
             .filter(s -> s.getRealmId().equals(realm.getId()))
             .filter(s -> s.getOffline() != null && s.getOffline())
@@ -480,12 +471,13 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
                     // Update timestamp to same value as userSession. LastSessionRefresh of userSession from DB will have correct value
                     clientSession.setTimestamp(userSessionEntity.getLastSessionRefresh());
 
-                    userSessionRepository.insertOrUpdate(userSessionEntity);
+                    userSessionRepository.insert(userSessionEntity);
+                    userSessionRepository.addClientSession(userSessionEntity, clientSession);
                 }
 
                 return userSessionEntity;
             })
-            .forEach(userSessionRepository::insertOrUpdate);
+            .forEach(userSessionRepository::insert);
     }
 
     @Override

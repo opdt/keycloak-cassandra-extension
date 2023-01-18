@@ -44,7 +44,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
-    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
+    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "false"));
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
         .add(CassandraConnectionSpi.class)

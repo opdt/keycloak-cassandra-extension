@@ -37,6 +37,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserR
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import lombok.Setter;
@@ -268,14 +269,32 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     @L1Cached(cacheName = USER_SESSION_CACHE)
     @InvalidateCache
-    public void insertOrUpdate(UserSession session) {
-        this.userSessionRepository.insertOrUpdate(session);
+    public void insert(UserSession session) {
+        this.userSessionRepository.insert(session);
     }
 
     @L1Cached(cacheName = USER_SESSION_CACHE)
     @InvalidateCache
-    public void insertOrUpdate(UserSession session, String correspondingSessionId) {
-        this.userSessionRepository.insertOrUpdate(session, correspondingSessionId);
+    public void insert(UserSession session, String correspondingSessionId) {
+        this.userSessionRepository.insert(session, correspondingSessionId);
+    }
+
+    @L1Cached(cacheName = USER_SESSION_CACHE)
+    @InvalidateCache
+    public void update(UserSession session) {
+        this.userSessionRepository.update(session);
+    }
+
+    @L1Cached(cacheName = USER_SESSION_CACHE)
+    @InvalidateCache
+    public void update(UserSession session, String correspondingSessionId) {
+        this.userSessionRepository.update(session, correspondingSessionId);
+    }
+
+    @L1Cached(cacheName = USER_SESSION_CACHE)
+    @InvalidateCache
+    public void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession) {
+        this.userSessionRepository.addClientSession(session, clientSession);
     }
 
     @L1Cached(cacheName = USER_SESSION_CACHE)

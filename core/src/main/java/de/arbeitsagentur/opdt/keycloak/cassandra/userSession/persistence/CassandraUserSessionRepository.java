@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
+import static org.keycloak.models.UserSessionModel.SessionPersistenceState.PERSISTENT;
 
 @RequiredArgsConstructor
 public class CassandraUserSessionRepository implements UserSessionRepository {
@@ -41,22 +43,29 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     private final UserSessionDao dao;
 
     @Override
-    public void insertOrUpdate(UserSession session) {
-        insertOrUpdate(session, null);
+    public void insert(UserSession session) {
+        insert(session, null);
     }
 
     @Override
-    public void insertOrUpdate(UserSession session, String correspondingSessionId) {
+    public void update(UserSession session) {
+        update(session, null);
+    }
+
+    @Override
+    public void insert(UserSession session, String correspondingSessionId) {
         if (correspondingSessionId != null) {
             insertOrUpdate(new UserSessionToAttributeMapping(session.getId(), CORRESPONDING_SESSION_ID, Arrays.asList(correspondingSessionId)));
             session.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId); // compatibility
         }
 
-        if (session.getExpiration() == null) {
-            dao.insertOrUpdate(session);
-        } else {
-            int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
-            dao.insertOrUpdate(session, ttl);
+        if ((session.getOffline() != null && session.getOffline()) || PERSISTENT.equals(session.getPersistenceState())) {
+            if (session.getExpiration() == null) {
+                dao.insertOrUpdate(session);
+            } else {
+                int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
+                dao.insertOrUpdate(session, ttl);
+            }
         }
 
         if (session.getUserId() != null) {
@@ -70,6 +79,28 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
         if (session.getBrokerSessionId() != null) {
             insertOrUpdate(new UserSessionToAttributeMapping(session.getId(), BROKER_SESSION_ID, Arrays.asList(session.getBrokerSessionId())));
         }
+    }
+
+    @Override
+    public void update(UserSession session, String correspondingSessionId) {
+        if (correspondingSessionId != null) {
+            insertOrUpdate(new UserSessionToAttributeMapping(session.getId(), CORRESPONDING_SESSION_ID, Arrays.asList(correspondingSessionId)));
+            session.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId); // compatibility
+        }
+
+        if ((session.getOffline() != null && session.getOffline()) || PERSISTENT.equals(session.getPersistenceState())) {
+            if (session.getExpiration() == null) {
+                dao.insertOrUpdate(session);
+            } else {
+                int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
+                dao.insertOrUpdate(session, ttl);
+            }
+        }
+    }
+
+    @Override
+    public void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession) {
+        session.getClientSessions().put(clientSession.getClientId(), clientSession);
 
         UserSessionToAttributeMapping clientIdsAttribute = new UserSessionToAttributeMapping(session.getId(), CLIENT_IDS, new ArrayList<>());
 
@@ -79,6 +110,10 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
         if (!clientIdsAttribute.getAttributeValues().isEmpty()) {
             insertOrUpdate(clientIdsAttribute);
+        }
+
+        if ((session.getOffline() != null && session.getOffline()) || PERSISTENT.equals(session.getPersistenceState())) {
+            dao.insertOrUpdate(session);
         }
     }
 
@@ -140,7 +175,7 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
         deleteUserSession(correspondingIdAttribute.getUserSessionId());
         session.getNotes().remove(CORRESPONDING_SESSION_ID);
-        insertOrUpdate(session);
+        update(session);
         deleteUserSessionAttribute(session.getId(), CORRESPONDING_SESSION_ID);
     }
 
