@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -49,11 +50,19 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     private final UserSessionRepository userSessionRepository;
 
     private final Map<String, UserSession> transientUserSessions = new HashMap<>();
+    private final Map<String, CassandraUserSessionAdapter> sessionModels = new HashMap<>();
 
     private Function<UserSession, CassandraUserSessionAdapter> entityToAdapterFunc(RealmModel realm) {
         // Clone entity before returning back, to avoid giving away a reference to the live object to the caller
         return (origEntity) -> {
-            if (origEntity == null) return null;
+            if (origEntity == null) {
+                return null;
+            }
+
+            if(sessionModels.containsKey(origEntity.getId())) {
+                return sessionModels.get(origEntity.getId());
+            }
+
             if (isExpired(origEntity, false)) {
                 if (TRANSIENT == origEntity.getPersistenceState()) {
                     transientUserSessions.remove(origEntity.getId());
@@ -62,7 +71,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
                 }
                 return null;
             } else {
-                return new CassandraUserSessionAdapter(session, realm, origEntity, userSessionRepository);
+                CassandraUserSessionAdapter cassandraUserSessionAdapter = new CassandraUserSessionAdapter(session, realm, origEntity, userSessionRepository);
+                session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) cassandraUserSessionAdapter::flush);
+
+                return cassandraUserSessionAdapter;
             }
         };
     }
@@ -136,7 +148,8 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             userSessionRepository.insert(entity);
         }
 
-        UserSessionModel userSession = entityToAdapterFunc(realm).apply(entity);
+        CassandraUserSessionAdapter userSession = entityToAdapterFunc(realm).apply(entity);
+        sessionModels.put(userSession.getId(), userSession);
 
         if (userSession != null) {
             DeviceActivityManager.attachDevice(userSession, session);
@@ -153,17 +166,13 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
         if (id == null) return null;
 
-        UserSession userSessionEntity = transientUserSessions.get(id);
-        if (userSessionEntity != null) {
-            return entityToAdapterFunc(realm).apply(userSessionEntity);
+        CassandraUserSessionAdapter loadedSession = sessionModels.get(id);
+        if(loadedSession == null) {
+            UserSession session = userSessionRepository.findUserSessionById(id);
+            return entityToAdapterFunc(realm).apply(session);
+        } else {
+            return loadedSession;
         }
-
-        UserSession userSessionById = userSessionRepository.findUserSessionById(id);
-        if (userSessionById == null) {
-            return null;
-        }
-
-        return entityToAdapterFunc(realm).apply(userSessionById);
     }
 
     @Override
@@ -268,13 +277,17 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         log.tracef("removeUserSession(%s, %s)%s", realm, session, getShortStackTrace());
 
         userSessionRepository.deleteUserSession(session.getId());
+        sessionModels.remove(session.getId());
     }
 
     @Override
     public void removeUserSessions(RealmModel realm, UserModel user) {
         log.tracef("removeUserSessions(%s, %s)%s", realm, user, getShortStackTrace());
 
-        userSessionRepository.findUserSessionsByUserId(user.getId()).forEach(userSessionRepository::deleteUserSession);
+        userSessionRepository.findUserSessionsByUserId(user.getId()).forEach(session -> {
+            userSessionRepository.deleteUserSession(session.getId());
+            sessionModels.remove(session.getId());
+        });
     }
 
     protected void removeAllUserSessions(RealmModel realm) {
@@ -282,7 +295,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
         realm.getClientsStream()
             .flatMap(c -> userSessionRepository.findUserSessionsByClientId(c.getId()).stream())
-            .forEach(userSessionRepository::deleteUserSession);
+            .forEach(session -> {
+                userSessionRepository.deleteUserSession(session.getId());
+                sessionModels.remove(session.getId());
+            });
     }
 
     @Override
@@ -301,7 +317,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public void removeUserSessions(RealmModel realm) {
         userSessionRepository.findAll().stream()
             .filter(s -> s.getRealmId().equals(realm.getId()))
-            .forEach(userSessionRepository::deleteUserSession);
+            .forEach(session -> {
+                userSessionRepository.deleteUserSession(session.getId());
+                sessionModels.remove(session.getId());
+            });
     }
 
     @Override
@@ -320,6 +339,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             session.getClientSessions().remove(client.getId());
             if (session.getClientSessions().isEmpty()) {
                 userSessionRepository.deleteUserSession(session);
+                sessionModels.remove(session.getId());
             } else {
                 userSessionRepository.update(session);
             }
@@ -342,7 +362,9 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
         userSessionRepository.update(userSessionEntity, offlineUserSession.getId());
 
-        return entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
+        CassandraUserSessionAdapter offlineSessionModel = entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
+        sessionModels.put(offlineSessionModel.getId(), offlineSessionModel);
+        return offlineSessionModel;
     }
 
     @Override
@@ -364,8 +386,11 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
         if (userSessionEntity.getOffline() != null && userSessionEntity.getOffline()) {
             userSessionRepository.deleteUserSession(userSessionEntity);
+            sessionModels.remove(userSessionEntity.getId());
         } else if (userSessionEntity.hasCorrespondingSession()) {
+            String correspondingSessionId = userSessionEntity.getNotes().get(CORRESPONDING_SESSION_ID);
             userSessionRepository.deleteCorrespondingUserSession(userSessionEntity);
+            sessionModels.remove(correspondingSessionId);
         }
     }
 
@@ -473,6 +498,9 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
                     userSessionRepository.insert(userSessionEntity);
                     userSessionRepository.addClientSession(userSessionEntity, clientSession);
+
+                    CassandraUserSessionAdapter adapter = entityToAdapterFunc(pus.getRealm()).apply(userSessionEntity);
+                    sessionModels.put(adapter.getId(), adapter);
                 }
 
                 return userSessionEntity;

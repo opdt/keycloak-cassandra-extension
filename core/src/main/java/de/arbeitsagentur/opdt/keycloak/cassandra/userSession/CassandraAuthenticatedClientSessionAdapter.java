@@ -33,7 +33,6 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     protected RealmModel realm;
     protected CassandraUserSessionAdapter userSession;
     protected AuthenticatedClientSessionValue clientSessionEntity;
-    protected UserSessionRepository userSessionRepository;
 
     @Override
     public String getId() {
@@ -52,7 +51,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
 
         // whenever the timestamp is changed recompute the expiration time
         setClientSessionExpiration(clientSessionEntity, realm, getClient());
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -68,7 +67,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     @Override
     public void setCurrentRefreshToken(String currentRefreshToken) {
         clientSessionEntity.setCurrentRefreshToken(currentRefreshToken);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -80,7 +79,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     @Override
     public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
         clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -96,13 +95,13 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
         }
 
         clientSessionEntity.getNotes().put(name, value);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
     public void removeNote(String name) {
         clientSessionEntity.getNotes().remove(name);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -118,7 +117,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     @Override
     public void setRedirectUri(String uri) {
         clientSessionEntity.setRedirectUri(uri);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -139,7 +138,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     @Override
     public void setAction(String action) {
         clientSessionEntity.setAction(action);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 
     @Override
@@ -150,6 +149,6 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
     @Override
     public void setProtocol(String method) {
         clientSessionEntity.setAuthMethod(method);
-        userSessionRepository.update(userSession.getUserSessionEntity());
+        userSession.markAsUpdated();
     }
 }
