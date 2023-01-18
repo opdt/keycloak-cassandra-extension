@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import org.keycloak.common.util.MultivaluedHashMap;
@@ -23,9 +24,14 @@ import java.util.List;
 import java.util.Set;
 
 public interface UserSessionRepository {
-    void insertOrUpdate(UserSession session);
+    void insert(UserSession session);
 
-    void insertOrUpdate(UserSession session, String correspondingSessionId);
+    void update(UserSession session);
+
+    void insert(UserSession session, String correspondingSessionId);
+    void update(UserSession session, String correspondingSessionId);
+
+    void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession);
 
     UserSession findUserSessionById(String id);
 

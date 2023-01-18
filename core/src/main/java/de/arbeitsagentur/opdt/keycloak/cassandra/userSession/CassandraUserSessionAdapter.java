@@ -108,7 +108,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
         // whenever the lastSessionRefresh is changed recompute the expiration time
         setUserSessionExpiration(userSessionEntity, realm);
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     @Override
@@ -133,7 +133,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
     @Override
     public void removeAuthenticatedClientSessions(Collection<String> removedClientUUIDS) {
         removedClientUUIDS.forEach(clientId -> userSessionEntity.getClientSessions().remove(clientId));
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     @Override
@@ -149,13 +149,13 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
         }
 
         userSessionEntity.getNotes().put(name, value);
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     @Override
     public void removeNote(String name) {
         userSessionEntity.getNotes().remove(name);
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     @Override
@@ -171,7 +171,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
     @Override
     public void setState(State state) {
         userSessionEntity.setState(state);
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     @Override
@@ -196,19 +196,19 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
             userSessionEntity.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId);
         }
 
-        userSessionRepository.insertOrUpdate(userSessionEntity);
+        userSessionRepository.update(userSessionEntity);
     }
 
     private boolean filterAndRemoveExpiredClientSessions(AuthenticatedClientSessionValue clientSession) {
         try {
             if (isExpired(clientSession, false)) {
                 userSessionEntity.getClientSessions().remove(clientSession.getClientId());
-                userSessionRepository.insertOrUpdate(userSessionEntity);
+                userSessionRepository.update(userSessionEntity);
                 return false;
             }
         } catch (ModelIllegalStateException ex) {
             userSessionEntity.getClientSessions().remove(clientSession.getClientId());
-            userSessionRepository.insertOrUpdate(userSessionEntity);
+            userSessionRepository.update(userSessionEntity);
             return false;
         }
 
@@ -229,7 +229,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
         if (client == null) {
             userSessionEntity.getClientSessions().remove(clientSession.getClientId());
-            userSessionRepository.insertOrUpdate(userSessionEntity);
+            userSessionRepository.update(userSessionEntity);
 
             // Filter out entities that doesn't have client
             return false;
@@ -245,7 +245,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
             public void detachFromUserSession() {
                 // TODO: what are the intended semantics of "detach"?
                 userSessionEntity.getClientSessions().remove(clientSessionEntity.getClientId());
-                userSessionRepository.insertOrUpdate(userSessionEntity);
+                userSessionRepository.update(userSessionEntity);
 
                 this.userSession = null;
             }
