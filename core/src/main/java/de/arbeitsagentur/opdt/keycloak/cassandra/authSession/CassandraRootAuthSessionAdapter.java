@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -49,8 +50,28 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
 
     private final int authSessionsLimit;
 
+    private Map<String, CassandraAuthSessionAdapter> sessionModels = new HashMap<>();
+    private boolean updated = false;
+
     private static final Comparator<AuthenticationSession> TIMESTAMP_COMPARATOR = Comparator.comparingLong(AuthenticationSession::getTimestamp);
 
+    private Function<AuthenticationSession, CassandraAuthSessionAdapter> entityToAdapterFunc(RealmModel realm) {
+        return (origEntity) -> {
+            if (origEntity == null) {
+                return null;
+            }
+
+            if (sessionModels.containsKey(origEntity.getTabId())) {
+                return sessionModels.get(origEntity.getTabId());
+            }
+
+            CassandraAuthSessionAdapter adapter = new CassandraAuthSessionAdapter(session, realm, this, origEntity, authSessionRepository);
+            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+            sessionModels.put(adapter.getTabId(), adapter);
+
+            return adapter;
+        };
+    }
 
     @Override
     public String getId() {
@@ -72,13 +93,13 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         rootAuthenticationSession.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
         rootAuthenticationSession.setExpiration(TimeAdapter.fromSecondsToMilliseconds(SessionExpiration.getAuthSessionExpiration(realm, timestamp)));
 
-        authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+        updated = true;
     }
 
     @Override
     public Map<String, AuthenticationSessionModel> getAuthenticationSessions() {
         return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
-            .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
+            .map(entityToAdapterFunc(realm))
             .collect(Collectors.toMap(CassandraAuthSessionAdapter::getTabId, Function.identity()));
     }
 
@@ -92,7 +113,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
             .filter(s -> Objects.equals(s.getClientId(), client.getId()))
             .filter(s -> Objects.equals(s.getTabId(), tabId))
-            .map(s -> new CassandraAuthSessionAdapter(session, realm, this, s, authSessionRepository))
+            .map(entityToAdapterFunc(realm))
             .findFirst()
             .orElse(null);
     }
@@ -127,10 +148,10 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         rootAuthenticationSession.setTimestamp(timestamp);
         rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
 
-        authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession);
-        authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+        authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession); // Set TTL from parent, TODO: this means an additional update-op...
+        updated = true;
 
-        CassandraAuthSessionAdapter cassandraAuthSessionAdapter = new CassandraAuthSessionAdapter(session, realm, this, authSession, authSessionRepository);
+        CassandraAuthSessionAdapter cassandraAuthSessionAdapter = entityToAdapterFunc(realm).apply(authSession);
         session.getContext().setAuthenticationSession(cassandraAuthSessionAdapter);
 
         return cassandraAuthSessionAdapter;
@@ -145,6 +166,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
             .orElse(null);
 
         authSessionRepository.deleteAuthSession(toDelete);
+        sessionModels.remove(tabId);
         if (toDelete != null) {
             if (allAuthSessions.size() == 1) {
                 session.authenticationSessions().removeRootAuthenticationSession(realm, this);
@@ -153,7 +175,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
                 rootAuthenticationSession.setTimestamp(timestamp);
                 int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
                 rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
-                authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+                updated = true;
             }
         }
     }
@@ -161,14 +183,22 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
     @Override
     public void restartSession(RealmModel realm) {
         authSessionRepository.deleteAuthSessions(rootAuthenticationSession.getId());
+        sessionModels.clear();
         long timestamp = Time.currentTimeMillis();
         rootAuthenticationSession.setTimestamp(timestamp);
         int authSessionLifespanSeconds = getAuthSessionLifespan(realm);
         rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
-        authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+        updated = true;
     }
 
     private String generateTabId() {
         return Base64Url.encode(SecretGenerator.getInstance().randomBytes(8));
+    }
+
+    public void flush() {
+        if (updated) {
+            authSessionRepository.insertOrUpdate(rootAuthenticationSession);
+            updated = false;
+        }
     }
 }

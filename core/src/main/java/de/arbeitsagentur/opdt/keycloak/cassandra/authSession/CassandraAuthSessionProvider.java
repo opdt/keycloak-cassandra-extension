@@ -20,6 +20,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.Time;
@@ -33,6 +34,7 @@ import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -49,6 +51,8 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
     private final AuthSessionRepository authSessionRepository;
     private final int authSessionsLimit;
 
+    private Map<String, CassandraRootAuthSessionAdapter> sessionModels = new HashMap<>();
+
     private Function<RootAuthenticationSession, RootAuthenticationSessionModel> entityToAdapterFunc(RealmModel realm) {
         return origEntity -> {
             if (origEntity == null) {
@@ -57,9 +61,17 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
 
             if (isExpired(origEntity, true)) {
                 authSessionRepository.deleteRootAuthSession(origEntity);
+                sessionModels.remove(origEntity.getId());
                 return null;
             } else {
-                return new CassandraRootAuthSessionAdapter(session, realm, origEntity, authSessionRepository, authSessionsLimit);
+                if (sessionModels.containsKey(origEntity.getId())) {
+                    return sessionModels.get(origEntity.getId());
+                }
+
+                CassandraRootAuthSessionAdapter adapter = new CassandraRootAuthSessionAdapter(session, realm, origEntity, authSessionRepository, authSessionsLimit);
+                session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+                sessionModels.put(origEntity.getId(), adapter);
+                return adapter;
             }
         };
     }
@@ -120,6 +132,7 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
     public void removeRootAuthenticationSession(RealmModel realm, RootAuthenticationSessionModel authenticationSession) {
         Objects.requireNonNull(authenticationSession, "The provided root authentication session can't be null!");
         authSessionRepository.deleteRootAuthSession(authenticationSession.getId());
+        sessionModels.remove(authenticationSession.getId());
     }
 
     @Override
@@ -158,7 +171,6 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
 
         if (authenticationSession != null) {
             authenticationSession.setAuthNotes(authNotesFragment);
-            authSessionRepository.insertOrUpdate(authenticationSession);
         }
     }
 

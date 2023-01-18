@@ -38,6 +38,8 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     private final AuthenticationSession authenticationSession;
     private final AuthSessionRepository authSessionRepository;
 
+    private boolean updated = false;
+
     @Override
     public String getTabId() {
         return authenticationSession.getTabId();
@@ -58,13 +60,13 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
         Objects.requireNonNull(authenticator, "The provided authenticator can't be null!");
         Objects.requireNonNull(status, "The provided execution status can't be null!");
         authenticationSession.getExecutionStatus().put(authenticator, status);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void clearExecutionStatus() {
         authenticationSession.getExecutionStatus().clear();
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -76,7 +78,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     public void setAuthenticatedUser(UserModel user) {
         String userId = (user == null) ? null : user.getId();
         authenticationSession.setUserId(userId);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -88,28 +90,28 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     public void addRequiredAction(String action) {
         Objects.requireNonNull(action, "The provided action can't be null!");
         authenticationSession.getRequiredActions().add(action);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void removeRequiredAction(String action) {
         Objects.requireNonNull(action, "The provided action can't be null!");
         authenticationSession.getRequiredActions().remove(action);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void addRequiredAction(UserModel.RequiredAction action) {
         Objects.requireNonNull(action, "The provided action can't be null!");
         authenticationSession.getRequiredActions().add(action.name());
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void removeRequiredAction(UserModel.RequiredAction action) {
         Objects.requireNonNull(action, "The provided action can't be null!");
         authenticationSession.getRequiredActions().remove(action.name());
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -120,7 +122,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
             authenticationSession.getUserNotes().put(name, value);
         }
 
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -131,7 +133,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     @Override
     public void clearUserSessionNotes() {
         authenticationSession.getUserNotes().clear();
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -147,19 +149,19 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
         }
 
         authenticationSession.getAuthNotes().put(name, value);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void removeAuthNote(String name) {
         authenticationSession.getAuthNotes().remove(name);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void clearAuthNotes() {
         authenticationSession.getAuthNotes().clear();
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -175,13 +177,13 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
         }
 
         authenticationSession.getClientNotes().put(name, value);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
     public void removeClientNote(String name) {
         authenticationSession.getClientNotes().remove(name);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -203,7 +205,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     public void setClientScopes(Set<String> clientScopes) {
         Objects.requireNonNull(clientScopes, "The provided client scopes set can't be null!");
         authenticationSession.setClientScopes(clientScopes);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -214,7 +216,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     @Override
     public void setRedirectUri(String uri) {
         authenticationSession.setRedirectUri(uri);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -235,7 +237,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     @Override
     public void setAction(String action) {
         authenticationSession.setAction(action);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
     }
 
     @Override
@@ -246,6 +248,13 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     @Override
     public void setProtocol(String method) {
         authenticationSession.setProtocol(method);
-        authSessionRepository.insertOrUpdate(authenticationSession);
+        updated = true;
+    }
+
+    public void flush() {
+        if(updated) {
+            authSessionRepository.insertOrUpdate(authenticationSession);
+            updated = false;
+        }
     }
 }
