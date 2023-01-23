@@ -47,7 +47,7 @@
 
         <!-- keycloak -->
         <keycloak.version>20.0.3</keycloak.version>
-        <quarkus.version>2.13.3.Final</quarkus.version>
+        <quarkus.version>2.16.0.Final</quarkus.version>
 
         <!-- testing -->
         <assertj-core.version>3.22.0</assertj-core.version>
