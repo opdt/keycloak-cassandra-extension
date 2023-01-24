@@ -93,7 +93,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
                     .withAuthCredentials(username, password)
                     .withLocalDatacenter(localDatacenter)
                     .build()) {
-            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);   
+            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
         }
 
         log.info("Create schema...");
@@ -106,7 +106,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
                     .build()) {
             createTables(createKeyspaceSession, keyspace);
         }
-        
+
         cqlSession = CqlSession.builder()
             .addContactPoints(contactPointsList)
             .withAuthCredentials(username, password)

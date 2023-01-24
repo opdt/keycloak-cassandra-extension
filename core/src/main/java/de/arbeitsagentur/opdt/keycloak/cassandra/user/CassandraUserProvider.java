@@ -20,6 +20,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserConsent;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.*;
@@ -58,13 +59,14 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
                 return getUserByUsername(realm, username) != null;
             }
 
-
             @Override
             public SubjectCredentialManager credentialManager() {
                 return new CassandraCredentialManager(session, realm, userRepository, this, origEntity);
             }
         };
     }
+
+
 
     @Override
     public UserModel addUser(RealmModel realm, String username) {
@@ -155,30 +157,49 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
     @Override
     public void addConsent(RealmModel realm, String userId, UserConsentModel consent) {
-        // TODO: Implement
+        log.debugv("addConsent({0}, {1}, {2})", realm, userId, consent);
+        userRepository.createOrUpdateUserConsent(fromModel(realm, userId, consent));
     }
 
     @Override
     public UserConsentModel getConsentByClient(RealmModel realm, String userId, String clientInternalId) {
-        // TODO: Implement
-        return null;
+        log.debugv("getConsentByClient({0}, {1}, {2})", realm, userId, clientInternalId);
+        UserConsent userConsent = userRepository.findUserConsent(realm.getId(), userId, clientInternalId);
+
+        return toModel(realm, userConsent);
     }
 
     @Override
     public Stream<UserConsentModel> getConsentsStream(RealmModel realm, String userId) {
-        // TODO: Implement
-        return null;
+        log.debugv("getConsentByClientStream({0}, {1})", realm, userId);
+
+        return userRepository.findUserConsentsByUserId(realm.getId(), userId)
+            .stream()
+            .map(userConsent -> toModel(realm, userConsent));
     }
+
 
     @Override
     public void updateConsent(RealmModel realm, String userId, UserConsentModel consent) {
-        // TODO: Implement
+        log.debugv("updateConsent({0}, {1}, {2})", realm, userId, consent);
+
+        UserConsent userConsent = userRepository.findUserConsent(realm.getId(), userId, consent.getClient().getId());
+
+        userConsent.setGrantedClientScopesId(
+            consent.getGrantedClientScopes().stream()
+                .map(ClientScopeModel::getId)
+                .collect(Collectors.toSet())
+        );
+        userConsent.setLastUpdatedTimestamp(Instant.now());
+
+        userRepository.createOrUpdateUserConsent(userConsent);
     }
 
     @Override
     public boolean revokeConsentForClient(RealmModel realm, String userId, String clientInternalId) {
-        // TODO: Implement
-        return false;
+        log.debugv("revokeConsentForClient({0}, {1}, {2})", realm, userId, clientInternalId);
+
+        return userRepository.deleteUserConsent(realm.getId(), userId, clientInternalId);
     }
 
     @Override
@@ -204,6 +225,47 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
         return new FederatedIdentityModel(federatedIdentity.getIdentityProvider(),
             federatedIdentity.getBrokerUserId(), federatedIdentity.getBrokerUserName(), federatedIdentity.getToken());
+    }
+
+    private UserConsentModel toModel(RealmModel realm, UserConsent userConsent) {
+        if (userConsent == null) {
+            return null;
+        }
+
+        ClientModel client = realm.getClientById(userConsent.getClientId());
+        if (client == null) {
+            throw new ModelException("Client with id " + userConsent.getClientId() + " is not available");
+        }
+
+        UserConsentModel model = new UserConsentModel(client);
+        model.setCreatedDate(userConsent.getCreatedTimestamp().toEpochMilli());
+        model.setLastUpdatedDate(userConsent.getLastUpdatedTimestamp().toEpochMilli());
+
+        Set<String> grantedClientScopesIds = userConsent.getGrantedClientScopesId();
+
+        if (grantedClientScopesIds != null && !grantedClientScopesIds.isEmpty()) {
+            grantedClientScopesIds.stream()
+                .map(scopeId -> KeycloakModelUtils.findClientScopeById(realm, client, scopeId))
+                .filter(Objects::nonNull)
+                .forEach(model::addGrantedClientScope);
+        }
+
+        return model;
+    }
+
+    private UserConsent fromModel(RealmModel realm, String userId, UserConsentModel consentModel) {
+
+        UserConsent userConsent = new UserConsent();
+        userConsent.setRealmId(realm.getId());
+        userConsent.setClientId(consentModel.getClient().getId());
+        userConsent.setUserId(userId);
+
+        consentModel.getGrantedClientScopes()
+            .stream()
+            .map(ClientScopeModel::getId)
+            .forEach(userConsent::addGrantedClientScopesId);
+
+        return userConsent;
     }
 
     @Override
@@ -362,6 +424,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
+        userRepository.deleteUserConsentsByUserId(realm.getId(), user.getId());
         return userRepository.deleteUser(realm.getId(), user.getId());
     }
 
@@ -391,7 +454,17 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
     @Override
     public void preRemove(RealmModel realm, ClientModel client) {
-        // TODO: Implement (Consent)
+        String clientId = client.getId();
+        String realmId = realm.getId();
+        log.debugv("preRemove[ClientModel]({0}, {1})", realmId, clientId);
+
+        List<UserConsent> userConsents = userRepository.findUserConsentsByRealmId(realmId);
+        if (userConsents != null && !userConsents.isEmpty()) {
+            userConsents.forEach(userConsent -> {
+                if (userConsent.getClientId().equals(clientId))
+                    userRepository.deleteUserConsent(realmId, userConsent.getUserId(), clientId);
+            });
+        }
     }
 
     @Override
@@ -401,7 +474,19 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
     @Override
     public void preRemove(ClientScopeModel clientScope) {
-        // TODO: Implement (Consent)
+        String clientScopeId = clientScope.getId();
+        String realmId = clientScope.getRealm().getId();
+        log.debugv("preRemove[ClientScopeModel]({0})", clientScopeId);
+
+        List<UserConsent> userConsents = userRepository.findUserConsentsByRealmId(realmId);
+        if (userConsents != null && !userConsents.isEmpty()) {
+            userConsents.forEach(userConsent -> {
+                if (userConsent.removeGrantedClientScopesId(clientScopeId)) {
+                    userConsent.setLastUpdatedTimestamp(Instant.now());
+                    userRepository.createOrUpdateUserConsent(userConsent);
+                }
+            });
+        }
     }
 
     @Override

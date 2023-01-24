@@ -297,4 +297,34 @@ public class CassandraUserRepository implements UserRepository {
             return userDao.countNonServiceAccountUsersByRealmId(realmId);
         }
     }
+
+    @Override
+    public void createOrUpdateUserConsent(UserConsent consent) {
+        userDao.insertOrUpdate(consent);
+    }
+
+    @Override
+    public boolean deleteUserConsent(String realmId, String userId, String clientId) {
+        return userDao.deleteUserConsent(realmId, userId, clientId);
+    }
+
+    @Override
+    public boolean deleteUserConsentsByUserId(String realmId, String userId) {
+        return userDao.deleteUserConsentsByUserId(realmId, userId);
+    }
+
+    @Override
+    public UserConsent findUserConsent(String realmId, String userId, String clientId) {
+        return userDao.findUserConsent(realmId, userId, clientId);
+    }
+
+    @Override
+    public List<UserConsent> findUserConsentsByUserId(String realmId, String userId) {
+        return userDao.findUserConsentsByUserId(realmId, userId).all();
+    }
+
+    @Override
+    public List<UserConsent> findUserConsentsByRealmId(String realmId) {
+        return userDao.findUserConsentsByRealmId(realmId).all();
+    }
 }

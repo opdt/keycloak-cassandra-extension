@@ -26,6 +26,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraMapLoginF
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.CassandraMapSingleUseObjectProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraMapUserProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraMapUserSessionProviderFactory;
 import org.keycloak.models.SingleUseObjectSpi;
 import org.keycloak.models.UserLoginFailureSpi;
@@ -63,6 +64,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
         .add(CassandraMapSingleUseObjectProviderFactory.class)
         .add(CassandraMapUserSessionProviderFactory.class)
         .add(CassandraMapDatastoreProviderFactory.class)
+        .add(CassandraMapUserProviderFactory.class)
         .build();
 
     private final GenericContainer cassandraContainer = createCassandraContainer();
