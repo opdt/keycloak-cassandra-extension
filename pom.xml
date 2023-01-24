@@ -59,6 +59,11 @@
 
         <!-- cassandra -->
         <cassandra-java-driver.version>4.15.0</cassandra-java-driver.version>
+
+        <!-- SonarCloud -->
+        <sonar.organization>opdt</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
     </properties>
 
     <dependencyManagement>
