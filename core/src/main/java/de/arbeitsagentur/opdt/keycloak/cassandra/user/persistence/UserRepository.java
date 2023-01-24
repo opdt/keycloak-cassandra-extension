@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserConsent;
 
 import java.util.List;
 import java.util.Set;
@@ -68,4 +69,16 @@ public interface UserRepository {
     Set<String> findUserIdsByRealmId(String realmId, int first, int max);
 
     long countUsersByRealmId(String realmId, boolean includeServiceAccounts);
+
+    void createOrUpdateUserConsent(UserConsent consent);
+
+    boolean deleteUserConsent(String realmId, String userId, String clientId);
+
+    boolean deleteUserConsentsByUserId(String realmId, String userId);
+
+    UserConsent findUserConsent(String realmId, String userId, String clientId);
+
+    List<UserConsent> findUserConsentsByUserId(String realmId, String userId);
+
+    List<UserConsent>findUserConsentsByRealmId(String realmId);
 }

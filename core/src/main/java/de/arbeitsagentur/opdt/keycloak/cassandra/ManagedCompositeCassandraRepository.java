@@ -36,6 +36,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.ent
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserConsent;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -191,6 +192,39 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     @L1Cached(cacheName = USER_CACHE)
     public long countUsersByRealmId(String realmId, boolean includeServiceAccounts) {
         return this.userRepository.countUsersByRealmId(realmId, includeServiceAccounts);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    @InvalidateCache
+    public void createOrUpdateUserConsent(UserConsent consent) {
+        this.userRepository.createOrUpdateUserConsent(consent);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    @InvalidateCache
+    public boolean deleteUserConsent(String realmId, String userId, String clientId) {
+        return this.userRepository.deleteUserConsent(realmId, userId, clientId);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    @InvalidateCache
+    public boolean deleteUserConsentsByUserId(String realmId, String userId) {
+        return this.userRepository.deleteUserConsentsByUserId(realmId, userId);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    public UserConsent findUserConsent(String realmId, String userId, String clientId) {
+        return this.userRepository.findUserConsent(realmId, userId, clientId);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    public List<UserConsent> findUserConsentsByUserId(String realmId, String userId) {
+        return this.userRepository.findUserConsentsByUserId(realmId, userId);
+    }
+
+    @L1Cached(cacheName = USER_CONSENT_CACHE)
+    public List<UserConsent> findUserConsentsByRealmId(String realmId) {
+        return this.userRepository.findUserConsentsByRealmId(realmId);
     }
 
     @L1Cached(cacheName = USER_CACHE)

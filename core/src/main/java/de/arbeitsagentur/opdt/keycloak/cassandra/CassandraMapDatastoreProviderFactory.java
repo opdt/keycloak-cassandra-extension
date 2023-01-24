@@ -18,8 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 import com.google.auto.service.AutoService;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
@@ -57,4 +56,5 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
     public boolean isSupported() {
         return true;
     }
+
 }

@@ -96,4 +96,26 @@ public interface UserDao {
 
     @Delete(entityClass = UserSearchIndex.class)
     void deleteIndex(String realmId, String name, String value, String userId);
+
+    @Insert
+    void insertOrUpdate(UserConsent userConsent);
+
+    @Delete
+    void delete(UserConsent userConsent);
+
+    @Delete(entityClass = UserConsent.class)
+    boolean deleteUserConsent(String realmId, String userId, String clientId);
+
+    @Delete(entityClass = UserConsent.class,
+            customWhereClause = "realm_id = :realmId AND user_id = :userId")
+    boolean deleteUserConsentsByUserId(String realmId, String userId);
+
+    @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId AND client_id = :clientId")
+    UserConsent findUserConsent(String realmId, String userId, String clientId);
+
+    @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId")
+    PagingIterable<UserConsent>findUserConsentsByUserId(String realmId, String userId);
+
+    @Select(customWhereClause = "realm_id = :realmId")
+    PagingIterable<UserConsent>findUserConsentsByRealmId(String realmId);
 }

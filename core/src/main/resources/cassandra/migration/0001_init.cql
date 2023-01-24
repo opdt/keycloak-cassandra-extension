@@ -173,3 +173,13 @@ CREATE TABLE IF NOT EXISTS users (
     required_actions set<text>,
     PRIMARY KEY ((realm_id, id))
 );
+
+CREATE TABLE IF NOT EXISTS user_consents (
+    realm_id text,
+    user_id text,
+    client_id text,
+    created_timestamp timestamp,
+    last_updated_timestamp timestamp,
+    granted_client_scopes_id set<text>,
+    PRIMARY KEY (realm_id, user_id, client_id)
+) WITH CLUSTERING ORDER BY (user_id ASC, client_id ASC);

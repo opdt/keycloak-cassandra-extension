@@ -20,7 +20,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScop
 import de.arbeitsagentur.opdt.keycloak.cassandra.exportImportManager.CassandraExportImportManager;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
@@ -43,7 +42,7 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public UserProvider users() {
-        return new CassandraUserProvider(session, cassandraRepository);
+        return session.getProvider(UserProvider.class, "map");
     }
 
     @Override
