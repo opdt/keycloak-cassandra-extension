@@ -18,7 +18,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --sarif-file-output=snyk.sarif --all-projects
+          args: --sarif-file-output=snyk.sarif --maven-aggregate-project
         continue-on-error: true
 
       - name: Upload result to GitHub Code Scanning
