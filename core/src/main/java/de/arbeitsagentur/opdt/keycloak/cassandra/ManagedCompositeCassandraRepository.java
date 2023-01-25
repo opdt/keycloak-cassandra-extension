@@ -41,8 +41,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import lombok.Setter;
-import org.eclipse.microprofile.metrics.MetricUnits;
-import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.List;
@@ -51,7 +49,6 @@ import java.util.Set;
 import static de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache.*;
 
 @Setter
-@Timed(name = "keycloak_cassandra_repository", unit = MetricUnits.MILLISECONDS)
 public class ManagedCompositeCassandraRepository implements CompositeRepository {
     private CassandraUserRepository userRepository;
 
