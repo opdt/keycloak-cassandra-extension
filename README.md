@@ -2,7 +2,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/de.arbeitsagentur.opdt/keycloak-cassandra-extension.svg)](https://search.maven.org/artifact/de.arbeitsagentur.opdt/keycloak-cassandra-extension)
 [![Known Vulnerabilities](https://snyk.io/test/github/opdt/keycloak-cassandra-extension/badge.svg)](https://snyk.io/test/github/opdt/keycloak-cassandra-extension)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=opdt_keycloak-cassandra-extension&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=opdt_keycloak-cassandra-extension)
-
+[![codecov](https://codecov.io/gh/opdt/keycloak-cassandra-extension/branch/main/graph/badge.svg?token=WPL8JBJKIS)](https://codecov.io/gh/opdt/keycloak-cassandra-extension)
 
 # Cassandra storage extension for Keycloak
 
