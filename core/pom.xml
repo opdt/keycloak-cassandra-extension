@@ -67,16 +67,6 @@
             <artifactId>java-driver-query-builder</artifactId>
         </dependency>
 
-        <!-- Metrics -->
-        <dependency>
-            <groupId>org.eclipse.microprofile.metrics</groupId>
-            <artifactId>microprofile-metrics-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.oss</groupId>
-            <artifactId>java-driver-metrics-micrometer</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

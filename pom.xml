@@ -142,19 +142,6 @@
                 <version>${cassandra-java-driver.version}</version>
             </dependency>
 
-            <!-- Metrics -->
-            <dependency>
-                <groupId>org.eclipse.microprofile.metrics</groupId>
-                <artifactId>microprofile-metrics-api</artifactId>
-                <version>3.0.1</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.datastax.oss</groupId>
-                <artifactId>java-driver-metrics-micrometer</artifactId>
-                <version>${cassandra-java-driver.version}</version>
-            </dependency>
-
             <!-- Test -->
             <dependency>
                 <groupId>org.testcontainers</groupId>
