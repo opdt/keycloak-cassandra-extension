@@ -20,8 +20,8 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = "key")
 @Builder
@@ -35,11 +35,11 @@ public class SingleUseObject {
     private String key;
 
     @Builder.Default
-    private Map<String, String> notes = new ConcurrentHashMap<>();
+    private Map<String, String> notes = new HashMap<>();
 
     public Map<String, String> getNotes() {
         if (notes == null) {
-            notes = new ConcurrentHashMap<>();
+            notes = new HashMap<>();
         }
         return notes;
     }

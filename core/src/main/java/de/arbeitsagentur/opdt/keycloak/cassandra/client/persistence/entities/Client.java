@@ -21,10 +21,10 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -41,11 +41,11 @@ public class Client {
     private String id;
 
     @Builder.Default
-    private Map<String, Set<String>> attributes = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> attributes = new HashMap<>();
 
     public Map<String, Set<String>> getAttributes() {
         if (attributes == null) {
-            attributes = new ConcurrentHashMap<>();
+            attributes = new HashMap<>();
         }
         return attributes;
     }

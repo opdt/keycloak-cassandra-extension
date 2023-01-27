@@ -30,7 +30,6 @@ import org.keycloak.models.map.common.TimeAdapter;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -554,7 +553,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             userSession.getLoginUsername(), userSession.getIpAddress(), userSession.getAuthMethod(), userSession.isRememberMe(),
             userSession.getBrokerSessionId(), userSession.getBrokerUserId(), offline);
 
-        entity.setNotes(new ConcurrentHashMap<>(userSession.getNotes()));
+        entity.setNotes(new HashMap<>(userSession.getNotes()));
         entity.setState(userSession.getState());
         entity.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(userSession.getStarted()));
         entity.setLastSessionRefresh(TimeAdapter.fromSecondsToMilliseconds(userSession.getLastSessionRefresh()));
@@ -580,7 +579,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             .offline(offline)
             .timestamp(timestamp)
             .lastSessionRefresh(timestamp)
-            .notes(new ConcurrentHashMap<>())
+            .notes(new HashMap<>())
             .build();
     }
 
@@ -590,7 +589,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             .clientId(clientId)
             .offline(offline)
             .timestamp(Time.currentTimeMillis())
-            .notes(new ConcurrentHashMap<>())
+            .notes(new HashMap<>())
             .build();
     }
 
@@ -600,7 +599,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         entity.setAction(clientSession.getAction());
         entity.setAuthMethod(clientSession.getProtocol());
 
-        entity.setNotes(new ConcurrentHashMap<>(clientSession.getNotes()));
+        entity.setNotes(new HashMap<>(clientSession.getNotes()));
         entity.setRedirectUri(clientSession.getRedirectUri());
         entity.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(clientSession.getTimestamp()));
 

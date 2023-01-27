@@ -25,7 +25,6 @@ import org.keycloak.models.*;
 import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setUserSessionExpiration;
@@ -202,8 +201,8 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
         userSessionEntity.setTimestamp(Time.currentTimeMillis());
         userSessionEntity.setLastSessionRefresh(Time.currentTimeMillis());
         userSessionEntity.setState(null);
-        userSessionEntity.setNotes(new ConcurrentHashMap<>());
-        userSessionEntity.setClientSessions(new ConcurrentHashMap<>());
+        userSessionEntity.setNotes(new HashMap<>());
+        userSessionEntity.setClientSessions(new HashMap<>());
 
         if (correspondingSessionId != null) {
             userSessionEntity.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId);

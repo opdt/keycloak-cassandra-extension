@@ -24,10 +24,8 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import javax.annotation.Nonnull;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -73,12 +71,10 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
             throw new ModelDuplicateException("Client with same clientId in realm " + realm.getName() + " exists: " + clientId);
         }
 
-        Client client = Client.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
-            .realmId(realm.getId())
-            .build();
-
+        String newId = id == null ? KeycloakModelUtils.generateId() : id;
+        Client client = new Client(realm.getId(), newId, new HashMap<>());
         clientRepository.insertOrUpdate(client);
+
         ClientModel adapter = entityToAdapter(realm, client);
         adapter.setClientId(clientId != null ? clientId : client.getId());
         adapter.setEnabled(true);

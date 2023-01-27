@@ -22,9 +22,10 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
 import org.keycloak.sessions.CommonClientSessionModel;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = {"parentSessionId", "tabId"})
 @Builder(toBuilder = true)
@@ -41,7 +42,7 @@ public class AuthenticationSession {
     private String tabId;
 
     @Builder.Default
-    private Map<String, CommonClientSessionModel.ExecutionStatus> executionStatus = new ConcurrentHashMap<>();
+    private Map<String, CommonClientSessionModel.ExecutionStatus> executionStatus = new HashMap<>();
 
     private Long timestamp;
 
@@ -52,58 +53,58 @@ public class AuthenticationSession {
     private String protocol;
 
     @Builder.Default
-    private Set<String> requiredActions = ConcurrentHashMap.newKeySet();
+    private Set<String> requiredActions = new HashSet<>();
 
     @Builder.Default
-    private Set<String> clientScopes = ConcurrentHashMap.newKeySet();
+    private Set<String> clientScopes = new HashSet<>();
 
     @Builder.Default
-    private Map<String, String> userNotes = new ConcurrentHashMap<>();
+    private Map<String, String> userNotes = new HashMap<>();
 
     @Builder.Default
-    private Map<String, String> authNotes = new ConcurrentHashMap<>();
+    private Map<String, String> authNotes = new HashMap<>();
 
     @Builder.Default
-    private Map<String, String> clientNotes = new ConcurrentHashMap<>();
+    private Map<String, String> clientNotes = new HashMap<>();
 
     public Map<String, CommonClientSessionModel.ExecutionStatus> getExecutionStatus() {
         if (executionStatus == null) {
-            executionStatus = new ConcurrentHashMap<>();
+            executionStatus = new HashMap<>();
         }
         return executionStatus;
     }
 
     public Set<String> getRequiredActions() {
         if (requiredActions == null) {
-            requiredActions = ConcurrentHashMap.newKeySet();
+            requiredActions = new HashSet<>();
         }
         return requiredActions;
     }
 
     public Set<String> getClientScopes() {
         if (clientScopes == null) {
-            clientScopes = ConcurrentHashMap.newKeySet();
+            clientScopes = new HashSet<>();
         }
         return clientScopes;
     }
 
     public Map<String, String> getUserNotes() {
         if (userNotes == null) {
-            userNotes = new ConcurrentHashMap<>();
+            userNotes = new HashMap<>();
         }
         return userNotes;
     }
 
     public Map<String, String> getAuthNotes() {
         if (authNotes == null) {
-            authNotes = new ConcurrentHashMap<>();
+            authNotes = new HashMap<>();
         }
         return authNotes;
     }
 
     public Map<String, String> getClientNotes() {
         if (clientNotes == null) {
-            clientNotes = new ConcurrentHashMap<>();
+            clientNotes = new HashMap<>();
         }
         return clientNotes;
     }

@@ -1214,8 +1214,9 @@ public class CassandraRealmAdapter implements RealmModel {
             ComponentFactory componentFactory = ComponentUtil.getComponentFactory(session, model);
             if (componentFactory == null && System.getProperty(COMPONENT_PROVIDER_EXISTS_DISABLED) == null) {
                 throw new IllegalArgumentException("Invalid component type");
+            } else {
+                componentFactory.validateConfiguration(session, this, model);
             }
-            componentFactory.validateConfiguration(session, this, model);
         } catch (IllegalArgumentException | ComponentValidationException e) {
             if (System.getProperty(COMPONENT_PROVIDER_EXISTS_DISABLED) == null) {
                 throw e;

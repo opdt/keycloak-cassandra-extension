@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 @JBossLog
+@SuppressWarnings("java:S5164") // Caches are reset per area via ThreadLocalCache#reset(cacheName), there is no good place to remove all caches at once
 public class ThreadLocalCache {
     public static final String USER_CACHE = "userCache";
     public static final String ROLE_CACHE = "roleCache";

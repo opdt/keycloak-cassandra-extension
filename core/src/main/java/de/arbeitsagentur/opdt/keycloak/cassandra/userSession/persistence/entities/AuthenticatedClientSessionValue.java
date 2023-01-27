@@ -18,8 +18,8 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entiti
 import lombok.*;
 import org.keycloak.models.map.common.ExpirableEntity;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -40,11 +40,11 @@ public class AuthenticatedClientSessionValue implements ExpirableEntity {
     private boolean offline;
 
     @Builder.Default
-    private Map<String, String> notes = new ConcurrentHashMap<>();
+    private Map<String, String> notes = new HashMap<>();
 
     public Map<String, String> getNotes() {
         if (notes == null) {
-            notes = new ConcurrentHashMap<>();
+            notes = new HashMap<>();
         }
         return notes;
     }
