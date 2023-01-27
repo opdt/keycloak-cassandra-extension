@@ -22,7 +22,6 @@ import lombok.*;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(of = "id")
@@ -70,11 +69,11 @@ public class User {
     private Map<String, Set<String>> clientRoles = new HashMap<>();
 
     @Builder.Default
-    private Map<String, List<String>> attributes = new ConcurrentHashMap<>();
+    private Map<String, List<String>> attributes = new HashMap<>();
 
     public Map<String, List<String>> getAttributes() {
         if (attributes == null) {
-            attributes = new ConcurrentHashMap<>();
+            attributes = new HashMap<>();
         }
         return attributes;
     }

@@ -22,8 +22,8 @@ import lombok.*;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.map.common.ExpirableEntity;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 
@@ -54,10 +54,10 @@ public class UserSession implements ExpirableEntity {
     private UserSessionModel.State state;
 
     @Builder.Default
-    private Map<String, String> notes = new ConcurrentHashMap<>();
+    private Map<String, String> notes = new HashMap<>();
 
     @Builder.Default
-    private Map<String, AuthenticatedClientSessionValue> clientSessions = new ConcurrentHashMap<>();
+    private Map<String, AuthenticatedClientSessionValue> clientSessions = new HashMap<>();
 
     private UserSessionModel.SessionPersistenceState persistenceState;
 
@@ -67,14 +67,14 @@ public class UserSession implements ExpirableEntity {
 
     public Map<String, String> getNotes() {
         if (notes == null) {
-            notes = new ConcurrentHashMap<>();
+            notes = new HashMap<>();
         }
         return notes;
     }
 
     public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
         if (clientSessions == null) {
-            clientSessions = new ConcurrentHashMap<>();
+            clientSessions = new HashMap<>();
         }
         return clientSessions;
     }

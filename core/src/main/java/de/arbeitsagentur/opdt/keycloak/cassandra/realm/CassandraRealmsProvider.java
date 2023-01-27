@@ -69,11 +69,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
 
         log.tracef("createRealm(%s, %s)%s", id, name, getShortStackTrace());
 
-        Realm realm = Realm.builder()
-            .id(id)
-            .name(name)
-            .build();
-
+        Realm realm = new Realm(id, name, new HashMap<>());
         realmRepository.createRealm(realm);
         RealmModel realmModel = entityToAdapter(realm);
         realmModel.setName(name);

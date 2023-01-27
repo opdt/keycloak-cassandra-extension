@@ -127,7 +127,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
             Optional<AuthenticationSession> oldest = authenticationSessions.stream().min(TIMESTAMP_COMPARATOR);
             String tabId = oldest.map(AuthenticationSession::getTabId).orElse(null);
 
-            if (tabId != null) {
+            if (tabId != null && !oldest.isEmpty()) {
                 log.debugf("Reached limit (%s) of active authentication sessions per a root authentication session. Removing oldest authentication session with TabId %s.", authSessionsLimit, tabId);
 
                 // remove the oldest authentication session
