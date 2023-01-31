@@ -67,6 +67,13 @@
             <artifactId>java-driver-query-builder</artifactId>
         </dependency>
 
+        <!-- Cassandra Migration -->
+        <dependency>
+            <groupId>org.cognitor.cassandra</groupId>
+            <artifactId>cassandra-migration</artifactId>
+            <version>2.5.0_v4</version>
+        </dependency>
+
     </dependencies>
 
     <build>
