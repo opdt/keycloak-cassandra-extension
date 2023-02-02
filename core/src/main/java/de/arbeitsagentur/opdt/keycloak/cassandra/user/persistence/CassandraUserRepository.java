@@ -18,13 +18,11 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.jbosslog.JBossLog;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@JBossLog
 @RequiredArgsConstructor
 public class CassandraUserRepository implements UserRepository {
     private static final String USERNAME = "username";
