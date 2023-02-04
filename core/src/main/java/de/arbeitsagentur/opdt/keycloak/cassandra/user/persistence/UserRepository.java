@@ -36,6 +36,8 @@ public interface UserRepository {
 
     List<User> findUsersByFederationLink(String realmId, String federationLink);
 
+    List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue);
+
     void deleteUsernameSearchIndex(String realmId, User user);
 
     void deleteEmailSearchIndex(String realmId, User user);
@@ -43,6 +45,8 @@ public interface UserRepository {
     void deleteFederationLinkSearchIndex(String realmId, User user);
 
     void deleteServiceAccountLinkSearchIndex(String realmId, User user);
+
+    void deleteAttributeSearchIndex(String realmId, User user, String attrName);
 
     void createOrUpdateUser(String realmId, User user);
 

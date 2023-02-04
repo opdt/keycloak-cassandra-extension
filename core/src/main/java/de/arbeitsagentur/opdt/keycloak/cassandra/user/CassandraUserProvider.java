@@ -302,14 +302,27 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
         String searchString = params.get(UserModel.SEARCH);
         log.debugf("Search with searchString %s", searchString);
 
-        if (searchString == null) {
-            return userRepository.findUserIdsByRealmId(realm.getId(), firstResult, maxResults).stream()
-                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream())
-                .sorted(Comparator.comparing(UserModel::getUsername));
-        }
+        String serviceAccountParam = params.get(UserModel.INCLUDE_SERVICE_ACCOUNT);
+        Boolean includeServiceAccounts = serviceAccountParam == null
+            ? null
+            : Boolean.parseBoolean(serviceAccountParam);
 
-        return Optional.ofNullable(userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(searchString)))
-            .map(entityToAdapterFunc(realm)).stream();
+        if (searchString == null) {
+            int first = firstResult == null ? 0 : firstResult;
+            int last = maxResults == null ? -1 : maxResults;
+            return userRepository.findUserIdsByRealmId(realm.getId(), first, last).stream()
+                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream())
+                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null)
+                .sorted(Comparator.comparing(UserModel::getUsername));
+        } else if (params.containsKey(UserModel.EMAIL)) {
+            return Optional.ofNullable(userRepository.findUserByEmail(realm.getId(), params.get(UserModel.EMAIL)))
+                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null)
+                .map(entityToAdapterFunc(realm)).stream();
+        } else {
+            return Optional.ofNullable(userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(searchString)))
+                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null)
+                .map(entityToAdapterFunc(realm)).stream();
+        }
     }
 
     @Override
@@ -321,11 +334,23 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
         log.debugf("Search with attribute %s:%s", attrName, attrValue);
 
-        return userRepository.findAllUsers().stream()
-            .filter(u -> u.getRealmId().equals(realm.getId()))
-            .filter(u -> u.getAttribute(attrName).contains(attrValue))
-            .map(entityToAdapterFunc(realm))
-            .sorted(Comparator.comparing(UserModel::getUsername));
+        if (attrName == null || attrValue == null) {
+            return Stream.empty();
+        }
+
+        if (attrName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+            return userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue).stream()
+                .map(entityToAdapterFunc(realm))
+                .filter(u -> u.getServiceAccountClientLink() == null)
+                .sorted(Comparator.comparing(UserModel::getUsername));
+        } else {
+            return userRepository.findAllUsers().stream()
+                .filter(u -> u.getRealmId().equals(realm.getId()))
+                .filter(u -> u.getAttribute(attrName).contains(attrValue))
+                .filter(u -> u.getServiceAccountClientLink() == null)
+                .map(entityToAdapterFunc(realm))
+                .sorted(Comparator.comparing(UserModel::getUsername));
+        }
     }
 
     @Override

@@ -95,5 +95,5 @@ public interface UserDao {
     void delete(UserSearchIndex searchIndex);
 
     @Delete(entityClass = UserSearchIndex.class)
-    void deleteIndex(String realmId, String name, String value);
+    void deleteIndex(String realmId, String name, String value, String userId);
 }
