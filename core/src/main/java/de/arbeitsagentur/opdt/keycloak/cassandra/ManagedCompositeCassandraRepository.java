@@ -104,6 +104,11 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     }
 
     @L1Cached(cacheName = USER_CACHE)
+    public List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
+        return this.userRepository.findUsersByIndexedAttribute(realmId, attributeName, attributeValue);
+    }
+
+    @L1Cached(cacheName = USER_CACHE)
     @InvalidateCache
     public void deleteUsernameSearchIndex(String realmId, User user) {
         this.userRepository.deleteUsernameSearchIndex(realmId, user);
@@ -125,6 +130,12 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     @InvalidateCache
     public void deleteServiceAccountLinkSearchIndex(String realmId, User user) {
         this.userRepository.deleteServiceAccountLinkSearchIndex(realmId, user);
+    }
+
+    @L1Cached(cacheName = USER_CACHE)
+    @InvalidateCache
+    public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
+        this.userRepository.deleteAttributeSearchIndex(realmId, user, attrName);
     }
 
     @L1Cached(cacheName = USER_CACHE)

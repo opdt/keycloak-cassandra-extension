@@ -127,7 +127,7 @@ public abstract class CassandraUserAdapter implements UserModel {
 
     @Override
     public Long getCreatedTimestamp() {
-        return userEntity.getCreatedTimestamp().getEpochSecond();
+        return userEntity.getCreatedTimestamp().getEpochSecond() * 1000; // Milliseconds
     }
 
     @Override
@@ -182,6 +182,7 @@ public abstract class CassandraUserAdapter implements UserModel {
         String valueToSet = !values.isEmpty() ? values.get(0) : null;
         if (setSpecialAttributeValue(name, valueToSet)) return;
 
+        userRepository.deleteAttributeSearchIndex(realm.getId(), userEntity, name);
         userEntity.getAttributes().put(name, values);
         userRepository.createOrUpdateUser(realm.getId(), userEntity);
     }
@@ -196,6 +197,7 @@ public abstract class CassandraUserAdapter implements UserModel {
 
         if (setSpecialAttributeValue(name, value)) return;
 
+        userRepository.deleteAttributeSearchIndex(realm.getId(), userEntity, name);
         userEntity.getAttributes().put(name, Collections.singletonList(value));
         userRepository.createOrUpdateUser(realm.getId(), userEntity);
     }
@@ -215,6 +217,7 @@ public abstract class CassandraUserAdapter implements UserModel {
     public void removeAttribute(String name) {
         log.debugv("remove attribute: realm={0} userId={1} name={2}", realm.getId(), userEntity.getId(), name);
 
+        userRepository.deleteAttributeSearchIndex(realm.getId(), userEntity, name);
         userEntity.getAttributes().remove(name);
         userRepository.createOrUpdateUser(realm.getId(), userEntity);
     }

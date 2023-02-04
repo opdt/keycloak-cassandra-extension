@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @Entity
 @CqlName("users")
 public class User {
+    public static final String INDEXED_ATTRIBUTE_PREFIX = "indexed.";
+
     @PartitionKey(0)
     private String realmId;
     @PartitionKey(1)
@@ -76,6 +78,16 @@ public class User {
             attributes = new HashMap<>();
         }
         return attributes;
+    }
+
+    public Map<String, List<String>> getIndexedAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        return attributes.entrySet().stream()
+            .filter(e -> e.getKey().startsWith(INDEXED_ATTRIBUTE_PREFIX))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public List<String> getAttribute(String name) {

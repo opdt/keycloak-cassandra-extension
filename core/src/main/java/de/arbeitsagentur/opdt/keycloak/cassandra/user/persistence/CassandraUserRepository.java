@@ -19,7 +19,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,7 +79,7 @@ public class CassandraUserRepository implements UserRepository {
         }
 
         UserSearchIndex user = userDao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream().findFirst().orElse(null);
-        ;
+
         if (user == null) {
             return null;
         }
@@ -92,7 +94,7 @@ public class CassandraUserRepository implements UserRepository {
         }
 
         UserSearchIndex user = userDao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink).all().stream().findFirst().orElse(null);
-        ;
+
         if (user == null) {
             return null;
         }
@@ -114,34 +116,54 @@ public class CassandraUserRepository implements UserRepository {
     }
 
     @Override
+    public List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
+        if (attributeName == null || attributeValue == null || !attributeName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+            return Collections.emptyList();
+        }
+
+        List<String> userIds = userDao.findUsers(realmId, attributeName, attributeValue).all().stream()
+            .map(UserSearchIndex::getUserId)
+            .collect(Collectors.toList());
+
+        return userDao.findByIds(realmId, userIds).all();
+    }
+
+    @Override
     public void deleteUsernameSearchIndex(String realmId, User user) {
         if (user.getUsername() != null) {
-            userDao.deleteIndex(realmId, USERNAME, user.getUsername());
+            userDao.deleteIndex(realmId, USERNAME, user.getUsername(), user.getId());
         }
 
         if (user.getUsernameCaseInsensitive() != null) {
-            userDao.deleteIndex(realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive());
+            userDao.deleteIndex(realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId());
         }
     }
 
     @Override
     public void deleteEmailSearchIndex(String realmId, User user) {
         if (user.getEmail() != null) {
-            userDao.deleteIndex(realmId, EMAIL, user.getEmail());
+            userDao.deleteIndex(realmId, EMAIL, user.getEmail(), user.getId());
         }
     }
 
     @Override
     public void deleteFederationLinkSearchIndex(String realmId, User user) {
         if (user.getFederationLink() != null) {
-            userDao.deleteIndex(realmId, FEDERATION_LINK, user.getFederationLink());
+            userDao.deleteIndex(realmId, FEDERATION_LINK, user.getFederationLink(), user.getId());
         }
     }
 
     @Override
     public void deleteServiceAccountLinkSearchIndex(String realmId, User user) {
         if (user.getServiceAccountClientLink() != null) {
-            userDao.deleteIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink());
+            userDao.deleteIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId());
+        }
+    }
+
+    @Override
+    public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
+        if (attrName != null && attrName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+            user.getAttribute(attrName).forEach(value -> userDao.deleteIndex(realmId, attrName, value, user.getId()));
         }
     }
 
@@ -169,6 +191,10 @@ public class CassandraUserRepository implements UserRepository {
         if (user.getFederationLink() != null) {
             userDao.insertOrUpdate(new UserSearchIndex(realmId, FEDERATION_LINK, user.getFederationLink(), user.getId()));
         }
+
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
+            entry.getValue().forEach(value -> userDao.insertOrUpdate(new UserSearchIndex(realmId, entry.getKey(), value, user.getId())));
+        }
     }
 
     @Override
@@ -186,6 +212,10 @@ public class CassandraUserRepository implements UserRepository {
         deleteEmailSearchIndex(realmId, user);
         deleteServiceAccountLinkSearchIndex(realmId, user);
         deleteFederationLinkSearchIndex(realmId, user);
+
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
+            entry.getValue().forEach(value -> userDao.deleteIndex(realmId, entry.getKey(), value, userId));
+        }
 
         return true;
     }
