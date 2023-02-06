@@ -54,7 +54,7 @@
         <testcontainers-keycloak.version>1.17.6</testcontainers-keycloak.version>
 
         <!-- tooling -->
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.26</lombok.version>
         <auto-service.version>1.0.1</auto-service.version>
 
         <!-- cassandra -->
