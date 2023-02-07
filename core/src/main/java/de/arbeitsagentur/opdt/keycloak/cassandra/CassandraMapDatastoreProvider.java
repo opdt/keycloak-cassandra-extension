@@ -20,7 +20,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScop
 import de.arbeitsagentur.opdt.keycloak.cassandra.exportImportManager.CassandraExportImportManager;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
 import org.keycloak.storage.ExportImportManager;
@@ -42,19 +42,12 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public UserProvider users() {
-        return session.getProvider(UserProvider.class, "map");
+        return new CassandraUserProvider(session, cassandraRepository);
     }
 
     @Override
     public RoleProvider roles() {
         return new CassandraRoleProvider(cassandraRepository);
-    }
-
-
-    // TODO as soon as https://github.com/keycloak/keycloak/issues/15490 is implemented
-    // @Override
-    public UserSessionProvider userSessions() {
-        return new CassandraUserSessionProvider(session, cassandraRepository);
     }
 
     @Override

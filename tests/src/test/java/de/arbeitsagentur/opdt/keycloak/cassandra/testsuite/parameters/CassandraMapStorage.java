@@ -26,7 +26,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraMapLoginF
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.CassandraMapSingleUseObjectProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraMapUserProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraMapUserSessionProviderFactory;
 import org.keycloak.models.SingleUseObjectSpi;
 import org.keycloak.models.UserLoginFailureSpi;
@@ -45,7 +44,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
-    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
+    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "false"));
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
         .add(CassandraConnectionSpi.class)
@@ -64,7 +63,6 @@ public class CassandraMapStorage extends KeycloakModelParameters {
         .add(CassandraMapSingleUseObjectProviderFactory.class)
         .add(CassandraMapUserSessionProviderFactory.class)
         .add(CassandraMapDatastoreProviderFactory.class)
-        .add(CassandraMapUserProviderFactory.class)
         .build();
 
     private final GenericContainer cassandraContainer = createCassandraContainer();
@@ -82,7 +80,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
 
         cf.spi(CassandraConnectionSpi.NAME).provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
             .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
-            .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
+            .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "50000")
             .config("localDatacenter", "datacenter1")
             .config("keyspace", "test")
             .config("username", "cassandra")
