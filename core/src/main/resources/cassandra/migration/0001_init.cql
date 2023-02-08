@@ -183,3 +183,9 @@ CREATE TABLE IF NOT EXISTS user_consents (
     granted_client_scopes_id set<text>,
     PRIMARY KEY (realm_id, user_id, client_id)
 ) WITH CLUSTERING ORDER BY (user_id ASC, client_id ASC);
+
+CREATE TABLE IF NOT EXISTS groups (
+    realm_id text PRIMARY KEY,
+    version bigint,
+    realm_groups frozen<set<text>>
+);

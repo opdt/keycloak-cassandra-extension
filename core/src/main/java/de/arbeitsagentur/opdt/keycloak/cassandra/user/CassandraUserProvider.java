@@ -49,7 +49,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     protected CassandraUserAdapter createNewModel(RealmModel realm, User entity) {
-        return new CassandraUserAdapter(entity, realm, userRepository) {
+        return new CassandraUserAdapter(session, entity, realm, userRepository) {
             @Override
             public boolean checkEmailUniqueness(RealmModel realm, String email) {
                 return getUserByEmail(realm, email) != null;
@@ -428,7 +428,14 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {
-        return Stream.empty();
+        log.debugf("getGroupMembersStream realmId=%s groupName=%s firstResult=%d maxResults=%d", realm.getId(), group.getName(), firstResult, maxResults);
+
+        return userRepository.findAllUsers().stream()
+            .filter(user -> user.getRealmId().equals(realm.getId()))
+            .filter(user -> user.getGroupsMembership().contains(group.getId()))
+            .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+            .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
+            .map(entityToAdapterFunc(realm));
     }
 
     @Override

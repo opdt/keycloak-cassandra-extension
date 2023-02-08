@@ -28,6 +28,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
+import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.ROLE_AFTER_REMOVE;
+import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.ROLE_BEFORE_REMOVE;
 
 @JBossLog
 public class CassandraRoleProvider implements RoleProvider {
@@ -40,9 +42,6 @@ public class CassandraRoleProvider implements RoleProvider {
     public CassandraRoleProvider(RoleRepository roleRepository, KeycloakSession session) {
         this.roleRepository = roleRepository;
         this.session = session;
-
-        rolesChanged.add(String.valueOf(hashCode()));
-        rolesDeleted.add(String.valueOf(hashCode()));
     }
 
     public void markChanged(String realmId) {
@@ -68,6 +67,7 @@ public class CassandraRoleProvider implements RoleProvider {
 
             rolesByRealmId.remove(realmId);
             rolesChanged.remove(realmId);
+            rolesDeleted.remove(realmId);
         });
 
         return roles;
@@ -139,24 +139,40 @@ public class CassandraRoleProvider implements RoleProvider {
     public boolean removeRole(RoleModel role) {
         log.debugf("removeRole roleId=%s", role.getId());
 
+        boolean removed;
+        RealmModel realm = role.isClientRole() ? ((ClientModel)role.getContainer()).getRealm() : (RealmModel)role.getContainer();
+
+        session.invalidate(ROLE_BEFORE_REMOVE, realm, role);
+
         if (role.isClientRole()) {
-            String realmId = ((ClientModel) role.getContainer()).getRealm().getId();
-            Roles roles = getRoles(realmId);
-            markChanged(realmId);
-            return roles.removeClientRole(role.getContainerId(), role.getId());
+            Roles roles = getRoles(realm.getId());
+            removed = roles.removeClientRole(role.getContainerId(), role.getId());
+            markChanged(realm.getId());
         } else {
             Roles roles = getRoles(role.getContainerId());
+            removed = roles.removeRealmRole(role.getId());
             markChanged(role.getContainerId());
-            return roles.removeRealmRole(role.getId());
         }
+
+        session.invalidate(ROLE_AFTER_REMOVE, realm, role);
+
+        return removed;
     }
 
     @Override
     public void removeRoles(RealmModel realm) {
         log.debugf("removeRoles realmId=%s", realm.getId());
 
-        roleRepository.deleteRealmRoles(realm.getId());
-        markDeleted(realm.getId());
+        getRealmRolesStream(realm).forEach(this::removeRole);
+        markChanged(realm.getId());
+    }
+
+    @Override
+    public void removeRoles(ClientModel client) {
+        log.debugf("removeRoles clientId=%s", client.getId());
+
+        getClientRolesStream(client).forEach(this::removeRole);
+        markChanged(client.getRealm().getId());
     }
 
     @Override
@@ -216,14 +232,6 @@ public class CassandraRoleProvider implements RoleProvider {
                 || role.getName().toLowerCase().contains(search.toLowerCase())
                 || role.getDescription().toLowerCase().contains(search.toLowerCase()))
             .map(entityToAdapterFunc(client.getRealm()));
-    }
-
-    @Override
-    public void removeRoles(ClientModel client) {
-        log.debugf("removeRoles clientId=%s", client.getId());
-        Roles roles = getRoles(client.getRealm().getId());
-        roles.getClientRoles().getOrDefault(client.getId(), new HashSet<>()).clear();
-        markChanged(client.getRealm().getId());
     }
 
     @Override

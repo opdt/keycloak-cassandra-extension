@@ -24,6 +24,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.CassandraGroupRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.Groups;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
@@ -54,6 +56,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     private CassandraUserRepository userRepository;
 
     private CassandraRoleRepository roleRepository;
+
+    private CassandraGroupRepository groupRepository;
 
     private RealmRepository realmRepository;
 
@@ -575,5 +579,22 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     @InvalidateCache
     public void removeClientScopes(String realmId) {
         this.clientScopeRepository.removeClientScopes(realmId);
+    }
+
+    @L1Cached(cacheName = GROUP_CACHE)
+    @InvalidateCache
+    public void insertOrUpdate(Groups groups) {
+        this.groupRepository.insertOrUpdate(groups);
+    }
+
+    @L1Cached(cacheName = GROUP_CACHE)
+    public Groups getGroupsByRealmId(String realmId) {
+        return this.groupRepository.getGroupsByRealmId(realmId);
+    }
+
+    @L1Cached(cacheName = GROUP_CACHE)
+    @InvalidateCache
+    public void deleteRealmGroups(String realmId) {
+        this.groupRepository.deleteRealmGroups(realmId);
     }
 }

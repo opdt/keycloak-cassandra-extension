@@ -24,6 +24,7 @@ import com.datastax.oss.driver.internal.core.type.codec.extras.json.JsonCodec;
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.GroupValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.CredentialValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
@@ -116,6 +117,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
             .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
             .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
+            .addTypeCodecs(new JsonCodec<>(GroupValue.class, CassandraJsonSerialization.getMapper()))
             .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
             .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
             .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
