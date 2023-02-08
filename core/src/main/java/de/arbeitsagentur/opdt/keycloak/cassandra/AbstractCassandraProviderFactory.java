@@ -27,6 +27,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.Cassand
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.CassandraGroupRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapperBuilder;
@@ -55,6 +58,7 @@ public abstract class AbstractCassandraProviderFactory {
 
     CassandraUserRepository userRepository;
     CassandraRoleRepository roleRepository;
+    CassandraGroupRepository groupRepository;
     CassandraRealmRepository realmRepository;
     CassandraUserSessionRepository userSessionRepository;
     CassandraAuthSessionRepository authSessionRepository;
@@ -76,6 +80,11 @@ public abstract class AbstractCassandraProviderFactory {
         if (roleRepository == null) {
             RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
             roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
+        }
+
+        if (groupRepository == null) {
+            GroupMapper groupMapper = new GroupMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
+            groupRepository = new CassandraGroupRepository(groupMapper.groupDao());
         }
 
         if (realmRepository == null) {
@@ -115,6 +124,7 @@ public abstract class AbstractCassandraProviderFactory {
 
         ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
         cassandraRepository.setRoleRepository(roleRepository);
+        cassandraRepository.setGroupRepository(groupRepository);
         cassandraRepository.setUserRepository(userRepository);
         cassandraRepository.setRealmRepository(realmRepository);
         cassandraRepository.setUserSessionRepository(userSessionRepository);

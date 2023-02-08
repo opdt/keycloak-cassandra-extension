@@ -17,7 +17,7 @@ Requires Keycloak 20.0.x with enabled Map-Storage feature.
 - [x] client
 - [x] clientScope
 - [ ] events
-- [ ] group
+- [x] groups
 - [x] loginFailure
 - [x] realm
 - [x] role

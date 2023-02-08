@@ -37,13 +37,17 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
     public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
 
     @EqualsAndHashCode.Exclude
+    private final KeycloakSession session;
+
+    @EqualsAndHashCode.Exclude
     private final RealmModel realm;
 
     @EqualsAndHashCode.Exclude
     private final UserRepository userRepository;
 
-    public CassandraUserAdapter(User entity, RealmModel realm, UserRepository userRepository) {
+    public CassandraUserAdapter(KeycloakSession session, User entity, RealmModel realm, UserRepository userRepository) {
         super(entity);
+        this.session = session;
         this.realm = realm;
         this.userRepository = userRepository;
     }
@@ -68,8 +72,8 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
         }
 
         return KeycloakModelUtils.isUsernameCaseSensitive(realm)
-            ? KeycloakModelUtils.toLowerCaseSafe(toCompare).equals(entity.getUsernameCaseInsensitive())
-            : toCompare.equals(entity.getUsername());
+            ? toCompare.equals(entity.getUsername())
+            : KeycloakModelUtils.toLowerCaseSafe(toCompare).equals(entity.getUsernameCaseInsensitive());
     }
 
     @Override
@@ -325,24 +329,34 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public Stream<GroupModel> getGroupsStream() {
-        // TODO: Implement
-        return Stream.empty();
+        Set<String> groups = entity.getGroupsMembership();
+        if (groups == null || groups.isEmpty()) {
+            return Stream.empty();
+        }
+
+        return session.groups().getGroupsStream(realm, groups.stream());
     }
 
     @Override
     public void joinGroup(GroupModel group) {
-        // TODO: Implement
+        if (RoleUtils.isDirectMember(getGroupsStream(), group)) {
+            return;
+        }
+        entity.addGroupsMembership(group.getId());
+
+        markUpdated();
     }
 
     @Override
     public void leaveGroup(GroupModel group) {
-        // TODO: Implement
+        entity.removeGroupsMembership(group.getId());
+
+        markUpdated();
     }
 
     @Override
     public boolean isMemberOf(GroupModel group) {
-        // TODO: Implement
-        return false;
+        return RoleUtils.isMember(getGroupsStream(), group);
     }
 
     @Override

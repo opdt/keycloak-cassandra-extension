@@ -68,6 +68,8 @@ public class User implements TransactionalEntity {
     private Set<String> requiredActions = new HashSet<>();
 
     @Builder.Default
+    private Set<String> groupsMembership = new HashSet<>();
+    @Builder.Default
     private Set<String> realmRoles = new HashSet<>();
 
     @Builder.Default
@@ -133,5 +135,22 @@ public class User implements TransactionalEntity {
 
     public boolean hasCredential(String id) {
         return getCredentials().stream().anyMatch(c -> c.getId().equals(id));
+    }
+
+    public Set<String> getGroupsMembership() {
+        return this.groupsMembership;
+    }
+
+    public void setGroupsMembership(Set<String> groupsMembership) {
+        this.groupsMembership.clear();
+        if (groupsMembership != null) this.groupsMembership.addAll(groupsMembership);
+    }
+
+    public void addGroupsMembership(String groupId) {
+        this.groupsMembership.add(groupId);
+    }
+
+    public void removeGroupsMembership(String groupId) {
+        this.groupsMembership.remove(groupId);
     }
 }

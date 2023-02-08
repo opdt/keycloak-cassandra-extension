@@ -30,6 +30,7 @@ public class KeycloakSessionCache {
     public static final String USER_CACHE = "userCache";
     public static final String USER_CONSENT_CACHE = "userConsentCache";
     public static final String ROLE_CACHE = "roleCache";
+    public static final String GROUP_CACHE = "groupCache";
     public static final String REALM_CACHE = "realmCache";
     public static final String USER_SESSION_CACHE = "userSessionCache";
     public static final String AUTH_SESSION_CACHE = "authSessionCache";

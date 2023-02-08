@@ -19,6 +19,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
@@ -26,5 +27,5 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.Sin
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 
-public interface CompositeRepository extends RoleRepository, UserRepository, RealmRepository, UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository, ClientRepository, ClientScopeRepository {
+public interface CompositeRepository extends GroupRepository, RoleRepository, UserRepository, RealmRepository, UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository, ClientRepository, ClientScopeRepository {
 }

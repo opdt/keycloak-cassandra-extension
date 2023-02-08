@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
@@ -70,10 +71,12 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
             ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0]);
             ((CassandraClientScopeProvider) create(session).clientScopes()).preRemove((RealmModel) params[0]);
             ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0]);
+            ((CassandraGroupProvider) create(session).groups()).preRemove((RealmModel) params[0]);
         } else if (type == ROLE_BEFORE_REMOVE) {
             create(session).users().preRemove((RealmModel) params[0], (RoleModel) params[1]);
             ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
             ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraGroupProvider) create(session).groups()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
         } else if (type == CLIENT_SCOPE_BEFORE_REMOVE) {
             create(session).users().preRemove((ClientScopeModel) params[1]);
             ((RealmModel) params[0]).removeDefaultClientScope((ClientScopeModel) params[1]);

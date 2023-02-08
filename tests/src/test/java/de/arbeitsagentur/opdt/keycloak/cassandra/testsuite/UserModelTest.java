@@ -1,6 +1,23 @@
+/*
+ * Copyright 2020 Red Hat, Inc. and/or its affiliates
+ * and other contributors as indicated by the @author tags.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.keycloak.models.*;
@@ -8,8 +25,10 @@ import org.keycloak.services.managers.ClientManager;
 import org.keycloak.services.managers.RealmManager;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -25,17 +44,26 @@ import static org.junit.Assert.*;
 @RequireProvider(RealmProvider.class)
 public class UserModelTest extends KeycloakModelTest {
 
+    protected static final int NUM_GROUPS = 100;
     private String originalRealmId;
     private String otherRealmId;
     private String realm1RealmId;
     private String realm2RealmId;
-
+    private final List<String> groupIds = new ArrayList<>(NUM_GROUPS);
+    @Override
+    protected boolean isUseSameKeycloakSessionFactoryForAllThreads() {
+        return true;
+    }
     @Override
     public void createEnvironment(KeycloakSession s) {
         originalRealmId = s.realms().createRealm("original").getId();
         otherRealmId = s.realms().createRealm("other").getId();
         realm1RealmId = s.realms().createRealm("realm1").getId();
         realm2RealmId = s.realms().createRealm("realm2").getId();
+
+        IntStream.range(0, NUM_GROUPS).forEach(i -> {
+            groupIds.add(s.groups().createGroup(s.realms().getRealm(originalRealmId), "group-" + i).getId());
+        });
     }
 
     @Override
@@ -91,7 +119,7 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void workingUserUpdate() {
+    public void testWorkingUserUpdate() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
             user.setFirstName("first-name");
@@ -117,12 +145,14 @@ public class UserModelTest extends KeycloakModelTest {
             assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("3"));
             assertThat(user.getFirstAttribute("test"), is("bla"));
 
+            assertNull(session.users().getUserByUsername(realm, null));
+
             return null;
         });
     }
 
     @Test
-    public void setEntityVersion() {
+    public void testSetEntityVersion() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
             assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("1"));
@@ -150,7 +180,7 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void persistUser() {
+    public void testPersistUser() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
             user.setFirstName("first-name");
@@ -184,7 +214,7 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void webOriginSetTest() {
+    public void testWebOriginSet() {
         withRealm(originalRealmId, (session, realm) -> {
             ClientModel client = realm.addClient("user");
 
@@ -777,7 +807,6 @@ public class UserModelTest extends KeycloakModelTest {
         });
     }
 
-
     private static void assertUserModel(UserModel expected, UserModel actual) {
         Assert.assertThat(actual.getUsername(), equalTo(expected.getUsername()));
         Assert.assertThat(actual.getCreatedTimestamp(), equalTo(expected.getCreatedTimestamp()));
@@ -786,4 +815,123 @@ public class UserModelTest extends KeycloakModelTest {
         Assert.assertThat(actual.getRequiredActionsStream().collect(Collectors.toSet()),
             containsInAnyOrder(expected.getRequiredActionsStream().toArray()));
     }
+
+    private Void addRemoveUser(int i) {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().addUser(realm, "user-" + i);
+
+            IntStream.range(0, NUM_GROUPS / 20).forEach(gIndex -> {
+                user.joinGroup(session.groups().getGroupById(realm, groupIds.get((i + gIndex) % NUM_GROUPS)));
+            });
+
+            UserModel obtainedUser = session.users().getUserById(realm, user.getId());
+
+            assertThat(obtainedUser, Matchers.notNullValue());
+            assertThat(obtainedUser.getUsername(), is("user-" + i));
+
+            Set<String> userGroupIds = obtainedUser.getGroupsStream().map(GroupModel::getName).collect(Collectors.toSet());
+            assertThat(userGroupIds, hasSize(NUM_GROUPS / 20));
+            assertThat(userGroupIds, hasItem("group-" + i));
+            assertThat(userGroupIds, hasItem("group-" + (i - 1 + (NUM_GROUPS / 20)) % NUM_GROUPS));
+
+            obtainedUser.leaveGroup(session.groups().getGroupById(realm, groupIds.get(i)));
+            userGroupIds = obtainedUser.getGroupsStream().map(GroupModel::getName).collect(Collectors.toSet());
+            assertThat(userGroupIds, hasSize((NUM_GROUPS / 20) - 1));
+
+            assertTrue(session.users().removeUser(realm, user));
+            assertFalse(session.users().removeUser(realm, user));
+            assertNull(session.users().getUserByUsername(realm, user.getUsername()));
+
+            return null;
+        });
+        return null;
+    }
+
+    @Test
+    public void testAddRemoveUser() {
+        addRemoveUser(1);
+    }
+
+    @Test
+    public void testAddRemoveUserConcurrent() {
+        IntStream.range(0,100).parallel().forEach(i -> addRemoveUser(i));
+    }
+
+    @Test
+    public void testCaseSensitivityGetUserByUsername() {
+        withRealm(realm1RealmId, (session, realm) -> {
+            realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
+
+            UserModel user1 = session.users().addUser(realm, "user");
+            UserModel user2 = session.users().addUser(realm, "USER");
+
+            return null;
+        });
+
+        // try to query storage in a separate transaction to make sure that storage can handle case-sensitive usernames
+        withRealm(realm1RealmId, (session, realm) -> {
+            UserModel user1 = session.users().getUserByUsername(realm, "user");
+            UserModel user2 = session.users().getUserByUsername(realm, "USER");
+
+            assertThat(user1, not(nullValue()));
+            assertThat(user2, not(nullValue()));
+
+            assertThat(user1.getUsername(), equalTo("user"));
+            assertThat(user2.getUsername(), equalTo("USER"));
+
+            return null;
+        });
+
+        withRealm(realm2RealmId, (session, realm) -> {
+            realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, false);
+
+            UserModel user1 = session.users().addUser(realm, "user");
+            assertThat(user1, not(nullValue()));
+
+            UserProvider userProvider = session.users();
+            Assert.assertThrows(ModelDuplicateException.class,
+                () -> userProvider.addUser(realm, "USER"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testAddRemoveUsersInTheSameGroupConcurrent() {
+        final ConcurrentSkipListSet<String> userIds = new ConcurrentSkipListSet<>();
+        String groupId = groupIds.get(0);
+
+        // Create users and let them join first group
+        IntStream.range(0, 100).parallel().forEach(index -> inComittedTransaction(index, (session, i) -> {
+            final RealmModel realm = session.realms().getRealm(originalRealmId);
+            final UserModel user = session.users().addUser(realm, "user-" + i);
+            user.joinGroup(session.groups().getGroupById(realm, groupId));
+            userIds.add(user.getId());
+            return null;
+        }));
+
+        withRealm(originalRealmId, (session, realm) -> {
+            final GroupModel group = session.groups().getGroupById(realm, groupId);
+            assertThat(session.users().getGroupMembersStream(realm, group).count(), is(100L));
+            assertThat(session.users().getGroupMembersStream(realm, group, null, null).count(), is(100L));
+            assertThat(session.users().getGroupMembersStream(realm, group, 10, -1).count(), is(90L));
+            assertThat(session.users().getGroupMembersStream(realm, group, -1, 90).count(), is(90L));
+            assertThat(session.users().getGroupMembersStream(realm, group, 10, 150).count(), is(90L));
+            return null;
+        });
+
+        userIds.stream().parallel().forEach(index -> inComittedTransaction(index, (session, userId) -> {
+            final RealmModel realm = session.realms().getRealm(originalRealmId);
+            final UserModel user = session.users().getUserById(realm, userId);
+            log.debugf("Remove user %s: %s", userId, session.users().removeUser(realm, user));
+            return null;
+        }));
+
+        withRealm(originalRealmId, (session, realm) -> {
+            final GroupModel group = session.groups().getGroupById(realm, groupId);
+            assertThat(session.users().getGroupMembersStream(realm, group).collect(Collectors.toList()), Matchers.empty());
+            return null;
+        });
+    }
 }
+
