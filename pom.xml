@@ -72,15 +72,12 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
+            
             <dependency>
                 <groupId>org.keycloak.bom</groupId>
                 <artifactId>keycloak-spi-bom</artifactId>
                 <version>${keycloak.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
 
             <dependency>
@@ -98,6 +95,12 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-server-spi-private</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-model-legacy</artifactId>
                 <version>${keycloak.version}</version>
             </dependency>
 
