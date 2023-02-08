@@ -369,7 +369,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
             ? null
             : Boolean.parseBoolean(serviceAccountParam);
 
-        if (searchString == null) {
+        if ((searchString == null) || searchString.isEmpty()) {
             int first = firstResult == null ? 0 : firstResult;
             int last = maxResults == null ? -1 : maxResults;
             return userRepository.findUserIdsByRealmId(realm.getId(), first, last).stream()

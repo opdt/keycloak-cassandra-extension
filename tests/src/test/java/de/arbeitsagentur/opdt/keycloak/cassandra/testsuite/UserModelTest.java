@@ -311,6 +311,7 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(originalRealmId, (currentSession, realm) -> {
             currentSession.users().addUser(realm, "user1");
+            currentSession.users().addUser(realm, "user2");
             return null;
         });
 
@@ -321,6 +322,28 @@ public class UserModelTest extends KeycloakModelTest {
                 .collect(Collectors.toList());
             Assert.assertThat(users, hasSize(1));
             Assert.assertThat(users, contains(user1));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user1 = currentSession.users().getUserByUsername(realm, "user1");
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, (String) null, null, null)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(2));
+            Assert.assertThat(users, containsInAnyOrder(user1, user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user1 = currentSession.users().getUserByUsername(realm, "user1");
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, "", 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(2));
+            Assert.assertThat(users, containsInAnyOrder(user1, user2));
             return null;
         });
     }
