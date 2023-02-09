@@ -20,13 +20,15 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.provider.Provider;
 
+import java.util.List;
+
 @JBossLog
 public abstract class AbstractCassandraProvider implements Provider {
     @Override
     public void close() {
         log.debugf("Close provider %s", getClass().getName());
-        ThreadLocalCache.reset(getCacheName());
+        getCacheNames().forEach(ThreadLocalCache::reset);
     }
 
-    protected abstract String getCacheName();
+    protected abstract List<String> getCacheNames();
 }

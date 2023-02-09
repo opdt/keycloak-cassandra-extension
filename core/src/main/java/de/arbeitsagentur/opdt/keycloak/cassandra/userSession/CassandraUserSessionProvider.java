@@ -607,7 +607,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.USER_SESSION_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.USER_SESSION_CACHE);
     }
 }

@@ -24,7 +24,9 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -251,9 +253,18 @@ public class CassandraRoleProvider extends AbstractCassandraProvider implements 
 
         return entityToAdapterFunc(client.getRealm()).apply(clientRole);
     }
+    public void preRemove(RealmModel realm) {
+        removeRoles(realm);
+    }
+
+    public void preRemove(RealmModel realm, RoleModel role) {
+        getRealmRolesStream(realm).forEach(r -> r.removeCompositeRole(role));
+        realm.getClientsStream().flatMap(this::getClientRolesStream).forEach(r -> r.removeCompositeRole(role));
+    }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.ROLE_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.ROLE_CACHE);
     }
+
 }

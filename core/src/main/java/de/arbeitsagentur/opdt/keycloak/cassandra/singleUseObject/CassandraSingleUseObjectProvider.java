@@ -26,7 +26,9 @@ import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.SingleUseObjectProvider;
 import org.keycloak.models.map.common.TimeAdapter;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -129,7 +131,7 @@ public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider 
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.SUO_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.SUO_CACHE);
     }
 }

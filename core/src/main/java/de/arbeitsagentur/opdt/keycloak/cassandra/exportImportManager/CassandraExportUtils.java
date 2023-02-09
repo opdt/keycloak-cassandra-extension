@@ -22,11 +22,6 @@ import java.util.stream.Stream;
 
 public class CassandraExportUtils {
 
-    public static RealmRepresentation exportRealm(KeycloakSession session, RealmModel realm, boolean includeUsers, boolean internal) {
-        ExportOptions opts = new ExportOptions(includeUsers, true, true, false);
-        return exportRealm(session, realm, opts, internal);
-    }
-
     public static RealmRepresentation exportRealm(KeycloakSession session, RealmModel realm, ExportOptions options, boolean internal) {
         RealmRepresentation rep = ModelToRepresentation.toRepresentation(session, realm, internal);
         ModelToRepresentation.exportAuthenticationFlows(realm, rep);

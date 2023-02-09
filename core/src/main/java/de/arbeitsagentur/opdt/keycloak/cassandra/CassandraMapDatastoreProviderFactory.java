@@ -16,6 +16,9 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.*;
@@ -64,14 +67,36 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
     public void invalidate(KeycloakSession session, InvalidableObjectType type, Object... params) {
         if (type == REALM_BEFORE_REMOVE) {
             create(session).users().preRemove((RealmModel) params[0]);
+            ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0]);
+            ((CassandraClientScopeProvider) create(session).clientScopes()).preRemove((RealmModel) params[0]);
+            ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0]);
         } else if (type == ROLE_BEFORE_REMOVE) {
             create(session).users().preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
         } else if (type == CLIENT_SCOPE_BEFORE_REMOVE) {
             create(session).users().preRemove((ClientScopeModel) params[1]);
+            ((RealmModel) params[0]).removeDefaultClientScope((ClientScopeModel) params[1]);
         } else if (type == CLIENT_BEFORE_REMOVE) {
             create(session).users().preRemove((RealmModel) params[0], (ClientModel) params[1]);
+            create(session).roles().removeRoles((ClientModel) params[1]);
         } else if (type == GROUP_BEFORE_REMOVE) {
             create(session).users().preRemove((RealmModel) params[0], (GroupModel) params[1]);
+        } else if (type == CLIENT_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new ClientModel.ClientRemovedEvent() {
+                @Override public ClientModel getClient() { return (ClientModel) params[0]; }
+                @Override public KeycloakSession getKeycloakSession() { return session; }
+            });
+        } else if (type == CLIENT_SCOPE_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new ClientScopeModel.ClientScopeRemovedEvent() {
+                @Override public ClientScopeModel getClientScope() { return (ClientScopeModel) params[0]; }
+                @Override public KeycloakSession getKeycloakSession() { return session; }
+            });
+        } else if (type == ROLE_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new RoleContainerModel.RoleRemovedEvent() {
+                @Override public RoleModel getRole() { return (RoleModel) params[1]; }
+                @Override public KeycloakSession getKeycloakSession() { return session; }
+            });
         }
     }
 }
