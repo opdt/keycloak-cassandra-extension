@@ -25,10 +25,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -475,7 +472,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.REALM_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.REALM_CACHE);
     }
 }

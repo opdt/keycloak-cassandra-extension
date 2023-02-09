@@ -26,6 +26,7 @@ import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -103,7 +104,7 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
         ClientScopes clientScopesOfRealm = repository.getClientScopesByRealmId(realm.getId());
 
         // Copy to prevent concurrent modification exception
-        List<ClientScopeValue> originalScopes = new ArrayList(clientScopesOfRealm.getClientScopes());
+        List<ClientScopeValue> originalScopes = new ArrayList<>(clientScopesOfRealm.getClientScopes());
         originalScopes.forEach(s -> removeClientScope(realm, s.getId()));
     }
 
@@ -117,8 +118,13 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
         return entityToAdapterFunc(realm).apply(repository.getClientScopesByRealmId(realm.getId()).getClientScopeById(id));
     }
 
-    @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.CLIENT_SCOPE_CACHE;
+    public void preRemove(RealmModel realm) {
+        removeClientScopes(realm);
     }
+
+    @Override
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.CLIENT_SCOPE_CACHE);
+    }
+
 }

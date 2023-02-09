@@ -22,6 +22,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
+import org.keycloak.models.map.client.MapClientEntity;
+import org.keycloak.models.map.storage.ModelCriteriaBuilder;
+import org.keycloak.models.map.storage.criteria.DefaultModelCriteria;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import javax.annotation.Nonnull;
@@ -33,6 +36,8 @@ import java.util.stream.Stream;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_AFTER_REMOVE;
 import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
+import static org.keycloak.models.map.storage.QueryParameters.withCriteria;
+import static org.keycloak.models.map.storage.criteria.DefaultModelCriteria.criteria;
 
 @JBossLog
 public class CassandraClientProvider extends AbstractCassandraProvider implements ClientProvider {
@@ -210,8 +215,16 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
             .collect(Collectors.toMap(ClientScopeModel::getName, Function.identity()));
     }
 
+    public void preRemove(RealmModel realm, RoleModel role) {
+        realm.getClientsStream().forEach(c -> c.deleteScopeMapping(role));
+    }
+
+    public void preRemove(RealmModel realm) {
+        this.removeClients(realm);
+    }
+
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.CLIENT_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.CLIENT_CACHE);
     }
 }

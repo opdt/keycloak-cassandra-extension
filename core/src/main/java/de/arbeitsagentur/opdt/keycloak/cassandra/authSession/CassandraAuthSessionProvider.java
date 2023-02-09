@@ -34,9 +34,7 @@ import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -175,7 +173,7 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.AUTH_SESSION_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.AUTH_SESSION_CACHE);
     }
 }

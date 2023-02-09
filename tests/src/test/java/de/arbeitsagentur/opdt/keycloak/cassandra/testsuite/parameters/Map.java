@@ -21,7 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
 import org.keycloak.authorization.store.StoreFactorySpi;
 import org.keycloak.events.EventStoreSpi;
-import org.keycloak.keys.PublicKeyStorageSpi;
+import org.keycloak.keys.*;
 import org.keycloak.models.*;
 import org.keycloak.models.dblock.NoLockingDBLockProviderFactory;
 import org.keycloak.models.map.authSession.MapRootAuthenticationSessionProviderFactory;
@@ -42,6 +42,10 @@ import org.keycloak.models.map.user.MapUserProviderFactory;
 import org.keycloak.models.map.userSession.MapUserSessionProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
+import org.keycloak.services.clientpolicy.ClientPolicyManagerSpi;
+import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
+import org.keycloak.services.managers.RealmManagerProviderFactory;
+import org.keycloak.services.managers.RealmManagerSpi;
 import org.keycloak.sessions.AuthenticationSessionSpi;
 
 import java.util.Set;
@@ -56,7 +60,8 @@ public class Map extends KeycloakModelParameters {
         .add(SingleUseObjectSpi.class)
         .add(PublicKeyStorageSpi.class)
         .add(MapStorageSpi.class)
-
+        .add(ClientPolicyManagerSpi.class)
+        .add(KeySpi.class)
         .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
@@ -75,6 +80,14 @@ public class Map extends KeycloakModelParameters {
         .add(MapEventStoreProviderFactory.class)
         .add(SingleUseObjectProviderFactory.class)
         .add(MapPublicKeyStorageProviderFactory.class)
+        .add(DefaultClientPolicyManagerFactory.class)
+        .add(GeneratedAesKeyProviderFactory.class)
+        .add(GeneratedHmacKeyProviderFactory.class)
+        .add(GeneratedEcdsaKeyProviderFactory.class)
+        .add(ImportedRsaEncKeyProviderFactory.class)
+        .add(ImportedRsaKeyProviderFactory.class)
+        .add(GeneratedRsaEncKeyProviderFactory.class)
+        .add(GeneratedRsaKeyProviderFactory.class)
         .build();
 
     public Map() {
@@ -98,6 +111,15 @@ public class Map extends KeycloakModelParameters {
             .spi("dblock").defaultProvider(NoLockingDBLockProviderFactory.PROVIDER_ID)
             .spi(EventStoreSpi.NAME).defaultProvider(MapEventStoreProviderFactory.PROVIDER_ID)
             .spi("publicKeyStorage").defaultProvider(MapPublicKeyStorageProviderFactory.PROVIDER_ID)
+            .spi("client-policy-manager").defaultProvider("default")
+            .spi("keys")
+                .provider(GeneratedAesKeyProviderFactory.ID)
+                .provider(GeneratedHmacKeyProviderFactory.ID)
+                .provider(GeneratedEcdsaKeyProviderFactory.ID)
+                .provider(ImportedRsaEncKeyProviderFactory.ID)
+                .provider(ImportedRsaKeyProviderFactory.ID)
+                .provider(GeneratedRsaEncKeyProviderFactory.ID)
+                .provider(GeneratedRsaKeyProviderFactory.ID)
         ;
         cf.spi(MapStorageSpi.NAME).provider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID).config("keyType.single-use-objects", "string");
     }

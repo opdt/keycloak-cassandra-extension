@@ -120,8 +120,22 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void updateProtocolMapper(ProtocolMapperModel mapping) {
+        if(mapping.getId() == null) {
+            ProtocolMapperModel existingMapper = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                .filter(e -> e.getName().equals(mapping.getName()))
+                .findFirst()
+                .orElse(null);
+
+            if(existingMapper == null) {
+                addProtocolMapper(mapping);
+                return;
+            } else {
+                mapping.setId(existingMapper.getId());
+            }
+        }
+
         List<ProtocolMapperModel> protocolMappersWithoutMapping = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-            .filter(e -> !e.getId().equals(mapping.getId()))
+            .filter(e -> (mapping.getId() == null && !e.getName().equals(mapping.getName())) || (mapping.getId() != null && !e.getId().equals(mapping.getId())))
             .collect(Collectors.toList());
         protocolMappersWithoutMapping.add(mapping);
         setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);

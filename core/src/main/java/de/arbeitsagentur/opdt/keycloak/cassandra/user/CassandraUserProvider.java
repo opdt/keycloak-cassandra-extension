@@ -431,6 +431,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     @Override
     public void preRemove(RealmModel realm) {
         log.tracef("preRemove[RealmModel](%s)%s", realm, getShortStackTrace());
+        searchForUserStream(realm, "").forEach(u -> removeUser(realm, u));
     }
 
     @Override
@@ -504,7 +505,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.USER_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.USER_CACHE, ThreadLocalCache.USER_CONSENT_CACHE);
     }
 }

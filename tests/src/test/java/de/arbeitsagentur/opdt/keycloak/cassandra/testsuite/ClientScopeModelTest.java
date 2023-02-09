@@ -75,6 +75,7 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             assertThat(clientScope.isDynamicScope(), is(false));
             assertThat(clientScope.getProtocol(), is("openid-connect"));
             assertThat(clientScope.getAttribute("testKey"), is("testVal"));
+            assertThat(clientScope.getAttributes().get("testKey"), is("testVal"));
 
             session.clientScopes().removeClientScope(realm, clientScopes.get(0));
 
@@ -120,7 +121,15 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             assertThat(clientScope.getProtocolMapperByName("saml", OIDCLoginProtocolFactory.USERNAME), nullValue());
             assertThat(clientScope.getProtocolMapperById(actualUsernameMapper.getId()), is(usernameMapper));
 
-            clientScope.removeProtocolMapper(actualUsernameMapper);
+            ProtocolMapperModel updatedUsernameMapper = UserPropertyMapper.createClaimMapper(OIDCLoginProtocolFactory.USERNAME,
+                "username",
+                "preferred_username_updated", "String",
+                true, true);
+
+            clientScope.updateProtocolMapper(updatedUsernameMapper);
+            assertThat(clientScope.getProtocolMapperByName("openid-connect", OIDCLoginProtocolFactory.USERNAME), is(updatedUsernameMapper));
+
+            clientScope.removeProtocolMapper(updatedUsernameMapper);
 
             return null;
         });

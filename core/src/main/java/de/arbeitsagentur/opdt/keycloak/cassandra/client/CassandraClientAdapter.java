@@ -554,7 +554,7 @@ public class CassandraClientAdapter implements ClientModel {
                 .filter(e -> e.getValue() == defaultScope)
                 .map(e -> session.clientScopes().getClientScopeById(getRealm(), e.getKey()))
                 .filter(Objects::nonNull)
-                .filter(clientScope -> Objects.equals(clientScope.getProtocol(), safeGetProtocol()))
+                .filter(clientScope -> Objects.equals(safeGetProtocol(clientScope), safeGetProtocol()))
                 .collect(Collectors.toSet());
 
             result.addAll(directScopes);
@@ -641,8 +641,22 @@ public class CassandraClientAdapter implements ClientModel {
 
     @Override
     public void updateProtocolMapper(ProtocolMapperModel mapping) {
+        if(mapping.getId() == null) {
+            ProtocolMapperModel existingMapper = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                .filter(e -> e.getName().equals(mapping.getName()))
+                .findFirst()
+                .orElse(null);
+
+            if(existingMapper == null) {
+                addProtocolMapper(mapping);
+                return;
+            } else {
+                mapping.setId(existingMapper.getId());
+            }
+        }
+
         List<ProtocolMapperModel> protocolMappersWithoutMapping = getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-            .filter(e -> !e.getId().equals(mapping.getId()))
+            .filter(e -> (mapping.getId() == null && !e.getName().equals(mapping.getName())) || (mapping.getId() != null && !e.getId().equals(mapping.getId())))
             .collect(Collectors.toList());
         protocolMappersWithoutMapping.add(mapping);
         setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
@@ -671,6 +685,10 @@ public class CassandraClientAdapter implements ClientModel {
 
     private String safeGetProtocol() {
         return getProtocol() == null ? "openid-connect" : getProtocol();
+    }
+
+    private String safeGetProtocol(ClientScopeModel clientScope) {
+        return clientScope.getProtocol() == null ? "openid-connect" : clientScope.getProtocol();
     }
 
     @Override

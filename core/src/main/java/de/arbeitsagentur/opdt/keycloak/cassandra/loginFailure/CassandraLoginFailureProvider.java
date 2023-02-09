@@ -27,6 +27,8 @@ import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserLoginFailureProvider;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
@@ -86,7 +88,7 @@ public class CassandraLoginFailureProvider extends AbstractCassandraProvider imp
     }
 
     @Override
-    protected String getCacheName() {
-        return ThreadLocalCache.LOGIN_FAILURE_CACHE;
+    protected List<String> getCacheNames() {
+        return Arrays.asList(ThreadLocalCache.LOGIN_FAILURE_CACHE);
     }
 }
