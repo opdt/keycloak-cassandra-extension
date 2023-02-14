@@ -39,6 +39,8 @@ public class User {
     @PartitionKey(1)
     private String id;
 
+    private Long version;
+
     private String username;
     private String email;
     private String firstName;
@@ -72,6 +74,10 @@ public class User {
 
     @Builder.Default
     private Map<String, List<String>> attributes = new HashMap<>();
+
+    public void incrementVersion() {
+        version++;
+    }
 
     public Map<String, List<String>> getAttributes() {
         if (attributes == null) {

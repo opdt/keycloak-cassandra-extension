@@ -157,8 +157,10 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     @Override
     public void removeImportedUsers(RealmModel realm, String storageProviderId) {
         log.tracef("removeImportedUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
-        List<User> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId);
-        users.forEach(u -> userRepository.deleteUser(realm.getId(), u.getId()));
+        List<UserModel> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId).stream()
+            .map(entityToAdapterFunc(realm))
+            .collect(Collectors.toList());
+        users.forEach(u -> removeUser(realm, u));
     }
 
     @Override
@@ -326,6 +328,11 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     @Override
     public UserModel getUserById(RealmModel realm, String id) {
         log.debugv("getUserById realm={0} id={1}", realm, id);
+        CassandraUserAdapter existingUser = userModels.get(id);
+        if(existingUser != null) {
+            return existingUser;
+        }
+
         User userById = userRepository.findUserById(realm.getId(), id);
         return entityToAdapterFunc(realm).apply(userById);
     }
@@ -441,7 +448,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     public boolean removeUser(RealmModel realm, UserModel user) {
         userRepository.deleteUserConsentsByUserId(realm.getId(), user.getId());
         userModels.remove(user.getId());
-        return userRepository.deleteUser(realm.getId(), user.getId());
+        return ((CassandraUserAdapter) user).delete();
     }
 
     @Override
@@ -459,7 +466,6 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
         List<User> users = userRepository.findUsersByFederationLink(realm.getId(), providerAlias);
         users.forEach(u -> {
             userRepository.deleteFederatedIdentity(realm.getId(), providerAlias);
-            userModels.remove(u.getId());
         });
     }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import org.keycloak.common.Profile;
 import org.keycloak.common.Version;
 import org.keycloak.common.util.MultivaluedHashMap;
@@ -300,6 +301,7 @@ public class CassandraExportUtils {
      */
     public static UserRepresentation exportUser(KeycloakSession session, RealmModel realm, UserModel user, ExportOptions options, boolean internal) {
         UserRepresentation userRep = ModelToRepresentation.toRepresentation(session, realm, user);
+        userRep.getAttributes().remove(CassandraUserAdapter.ENTITY_VERSION); // Users have to be imported as new entities with new version
 
         // Social links
         List<FederatedIdentityRepresentation> socialLinkReps = session.users().getFederatedIdentitiesStream(realm, user)

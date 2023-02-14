@@ -52,7 +52,8 @@ public class ThreadLocalCache {
 
     public static void reset(String cacheName) {
         log.tracef("Reset cache %s", cacheName);
-        getCache(cacheName).clear();
+        Map<String, Map<CacheInvocationContext, Object>> cache = threadLocalCacheContainer.get();
+        cache.remove(cacheName);
     }
 
     private static Map<CacheInvocationContext, Object> getCache(String cacheName) {

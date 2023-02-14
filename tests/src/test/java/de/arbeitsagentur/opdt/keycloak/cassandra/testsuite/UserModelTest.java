@@ -1,36 +1,25 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
-import org.hamcrest.Matchers;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import org.junit.Assert;
 import org.junit.Test;
-import org.keycloak.component.ComponentModel;
 import org.keycloak.models.*;
-import org.keycloak.models.map.realm.MapRealmProviderFactory;
-import org.keycloak.models.map.user.MapUserProviderFactory;
-import org.keycloak.models.utils.KeycloakModelUtils;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.services.managers.ClientManager;
 import org.keycloak.services.managers.RealmManager;
-import org.keycloak.storage.user.UserRegistrationProvider;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
- *
  * Ported from:
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 
@@ -42,6 +31,7 @@ public class UserModelTest extends KeycloakModelTest {
     private String otherRealmId;
     private String realm1RealmId;
     private String realm2RealmId;
+
     @Override
     public void createEnvironment(KeycloakSession s) {
         originalRealmId = s.realms().createRealm("original").getId();
@@ -59,6 +49,81 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
+    public void staleUserUpdate() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().addUser(realm, "user");
+            user.setFirstName("first-name");
+            user.setLastName("last-name");
+            user.setEmail("email");
+
+            return null;
+        });
+
+        boolean staleExceptionOccured = false;
+        try {
+            withRealm(originalRealmId, (session, realm) -> {
+                UserModel user = session.users().getUserByUsername(realm, "user");
+                assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("2"));
+
+                user.setAttribute(CassandraUserAdapter.ENTITY_VERSION, Arrays.asList("1"));
+
+                return null;
+            });
+        } catch (Exception e) {
+            staleExceptionOccured = true;
+        }
+
+        assertTrue(staleExceptionOccured);
+
+        staleExceptionOccured = false;
+        try {
+            withRealm(originalRealmId, (session, realm) -> {
+                UserModel user = session.users().getUserByUsername(realm, "user");
+                assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("2"));
+
+                user.setAttribute(CassandraUserAdapter.ENTITY_VERSION, Arrays.asList("3"));
+
+                return null;
+            });
+        } catch (Exception e) {
+            staleExceptionOccured = true;
+        }
+
+        assertTrue(staleExceptionOccured);
+    }
+
+    @Test
+    public void workingUserUpdate() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().addUser(realm, "user");
+            user.setFirstName("first-name");
+            user.setLastName("last-name");
+            user.setEmail("email");
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().getUserByUsername(realm, "user");
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("2"));
+
+            user.setUsername("updateduser");
+            user.setSingleAttribute("test", "bla");
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().getUserByUsername(realm, "updateduser");
+
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("3"));
+            assertThat(user.getFirstAttribute("test"), is("bla"));
+
+            return null;
+        });
+    }
+
+    @Test
     public void persistUser() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
@@ -67,7 +132,7 @@ public class UserModelTest extends KeycloakModelTest {
             user.setEmail("email");
             assertNotNull(user.getCreatedTimestamp());
             // test that timestamp is current with 10s tollerance
-            Assert.assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
+            assertTrue((System.currentTimeMillis() - user.getCreatedTimestamp()) < 10000);
 
             user.addRequiredAction(UserModel.RequiredAction.CONFIGURE_TOTP);
             user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
@@ -218,8 +283,8 @@ public class UserModelTest extends KeycloakModelTest {
             Assert.assertThat(user.getFirstAttribute("key3"), nullValue());
 
             Map<String, List<String>> allAttrVals = user.getAttributes();
-            Assert.assertThat(allAttrVals.keySet(), hasSize(6));
-            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder(UserModel.USERNAME, UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, "key1", "key2"));
+            Assert.assertThat(allAttrVals.keySet(), hasSize(7));
+            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder(UserModel.USERNAME, UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, CassandraUserAdapter.ENTITY_VERSION, "key1", "key2"));
             Assert.assertThat(allAttrVals.get("key1"), equalTo(user.getAttributeStream("key1").collect(Collectors.toList())));
             Assert.assertThat(allAttrVals.get("key2"), equalTo(user.getAttributeStream("key2").collect(Collectors.toList())));
 
@@ -262,8 +327,8 @@ public class UserModelTest extends KeycloakModelTest {
             Map<String, List<String>> allAttrVals = user.getAttributes();
 
             // Ensure same transaction is able to see updated value
-            Assert.assertThat(allAttrVals.keySet(), hasSize(5));
-            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder("key1", UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, UserModel.USERNAME));
+            Assert.assertThat(allAttrVals.keySet(), hasSize(6));
+            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder("key1", UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, UserModel.USERNAME, CassandraUserAdapter.ENTITY_VERSION));
             Assert.assertThat(allAttrVals.get("key1"), contains("val2"));
             return null;
         });
@@ -283,6 +348,7 @@ public class UserModelTest extends KeycloakModelTest {
             expected.put(UserModel.LAST_NAME, Collections.singletonList(null));
             expected.put(UserModel.EMAIL, Collections.singletonList(null));
             expected.put(UserModel.USERNAME, Collections.singletonList("user"));
+            expected.put(CassandraUserAdapter.ENTITY_VERSION, Collections.singletonList("1"));
 
             UserModel user = currentSession.users().addUser(realm, "user");
 
@@ -301,6 +367,8 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(originalRealmId, (currentSession, realm) -> {
             Map<String, List<String>> expected = expectedAtomic.get();
+            expected.put(CassandraUserAdapter.ENTITY_VERSION, Collections.singletonList("2"));
+
             Assert.assertThat(currentSession.users().getUserByUsername(realm, "user").getAttributes(), equalTo(expected));
             return null;
         });
@@ -490,8 +558,8 @@ public class UserModelTest extends KeycloakModelTest {
             RoleModel role1 = realm1.getRole("role1");
             UserModel user1 = currentSession.users().getUserByUsername(realm1, "user1");
             UserModel user2 = currentSession.users().getUserByUsername(realm1, "user2");
-            Assert.assertTrue(user1.hasRole(role1));
-            Assert.assertTrue(user2.hasRole(role1));
+            assertTrue(user1.hasRole(role1));
+            assertTrue(user2.hasRole(role1));
 
             RealmModel realm2 = currentSession.realms().getRealmByName("realm2");
             UserModel realm2User1 = currentSession.users().getUserByUsername(realm2, "user1");
