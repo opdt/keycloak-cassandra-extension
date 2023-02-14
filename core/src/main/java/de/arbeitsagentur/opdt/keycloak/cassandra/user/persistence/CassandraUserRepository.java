@@ -15,7 +15,9 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import lombok.RequiredArgsConstructor;
 
@@ -169,7 +171,8 @@ public class CassandraUserRepository implements UserRepository {
 
     @Override
     public void createOrUpdateUser(String realmId, User user) {
-        userDao.insert(user);
+        insertOrUpdateVersionAware(user);
+
         userDao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
 
         if (user.getUsername() != null) {
@@ -223,7 +226,7 @@ public class CassandraUserRepository implements UserRepository {
     @Override
     public void makeUserServiceAccount(User user, String realmId) {
         user.setServiceAccount(true);
-        userDao.update(user);
+        insertOrUpdateVersionAware(user);
 
         userDao.deleteRealmToUserMapping(realmId, false, user.getId());
         userDao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
@@ -326,5 +329,21 @@ public class CassandraUserRepository implements UserRepository {
     @Override
     public List<UserConsent> findUserConsentsByRealmId(String realmId) {
         return userDao.findUserConsentsByRealmId(realmId).all();
+    }
+
+    private void insertOrUpdateVersionAware(User user) {
+        if (user.getVersion() == null) {
+            user.setVersion(1L);
+            userDao.insert(user);
+        } else {
+            Long currentVersion = user.getVersion();
+            user.incrementVersion();
+
+            ResultSet result = userDao.update(user, currentVersion);
+
+            if (!result.wasApplied()) {
+                throw new EntityStaleException("User entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database", currentVersion);
+            }
+        }
     }
 }

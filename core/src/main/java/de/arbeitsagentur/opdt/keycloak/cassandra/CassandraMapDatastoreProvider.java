@@ -25,16 +25,11 @@ import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
 import org.keycloak.storage.ExportImportManager;
 
+import java.util.function.Supplier;
+
 public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
     private KeycloakSession session;
     private CompositeRepository cassandraRepository;
-
-    private RealmProvider realmProvider;
-    private UserProvider userProvider;
-    private RoleProvider roleProvider;
-    private ClientProvider clientProvider;
-    private ClientScopeProvider clientScopeProvider;
-    private ExportImportManager exportImportManager;
 
     public CassandraMapDatastoreProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
         super(session);
@@ -44,50 +39,41 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public RealmProvider realms() {
-        if (realmProvider == null) {
-            realmProvider = new CassandraRealmsProvider(session, cassandraRepository);
-        }
-        return realmProvider;
+        return createProvider(RealmProvider.class, () -> new CassandraRealmsProvider(session, cassandraRepository));
     }
 
     @Override
     public UserProvider users() {
-        if (userProvider == null) {
-            userProvider = new CassandraUserProvider(session, cassandraRepository);
-        }
-        return userProvider;
+        return createProvider(UserProvider.class, () -> new CassandraUserProvider(session, cassandraRepository));
     }
 
     @Override
     public RoleProvider roles() {
-        if (roleProvider == null) {
-            roleProvider = new CassandraRoleProvider(cassandraRepository);
-        }
-        return roleProvider;
+        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository));
     }
 
     @Override
     public ClientProvider clients() {
-        if (clientProvider == null) {
-            clientProvider = new CassandraClientProvider(session, cassandraRepository);
-        }
-        return clientProvider;
+        return createProvider(ClientProvider.class, () -> new CassandraClientProvider(session, cassandraRepository));
     }
 
     @Override
     public ClientScopeProvider clientScopes() {
-        if (clientScopeProvider == null) {
-            clientScopeProvider = new CassandraClientScopeProvider(session, cassandraRepository);
-        }
-        return clientScopeProvider;
+        return createProvider(ClientScopeProvider.class, () -> new CassandraClientScopeProvider(session, cassandraRepository));
     }
 
     @Override
     public ExportImportManager getExportImportManager() {
-        if (exportImportManager == null) {
-            exportImportManager = new CassandraExportImportManager(session);
-        }
-        return exportImportManager;
+        return createProvider(ExportImportManager.class, () -> new CassandraExportImportManager(session));
     }
 
+    private <T> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
+        T provider = session.getAttribute(providerClass.getName(), providerClass);
+        if (provider != null) {
+            return provider;
+        }
+        provider = providerSupplier.get();
+        session.setAttribute(providerClass.getName(), provider);
+        return provider;
+    }
 }

@@ -35,12 +35,14 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public abstract class CassandraUserAdapter implements UserModel {
     public static final String NOT_BEFORE = "notBefore";
+    public static final String ENTITY_VERSION = "entityVersion";
     private final RealmModel realm;
     private final UserRepository userRepository;
     private final User userEntity;
 
     private final List<Runnable> postUpdateTasks = new ArrayList<>();
     private boolean updated = false;
+    private boolean deleted = false;
 
     public RealmModel getRealm() {
         return realm;
@@ -189,6 +191,7 @@ public abstract class CassandraUserAdapter implements UserModel {
         result.add(UserModel.LAST_NAME, userEntity.getLastName());
         result.add(UserModel.EMAIL, userEntity.getEmail());
         result.add(UserModel.USERNAME, userEntity.getUsername());
+        result.add(ENTITY_VERSION, String.valueOf(userEntity.getVersion()));
 
         return result;
     }
@@ -407,8 +410,13 @@ public abstract class CassandraUserAdapter implements UserModel {
     @Override
     public abstract SubjectCredentialManager credentialManager();
 
+    public boolean delete() {
+        deleted = true; // no more updates for this user
+        return userRepository.deleteUser(userEntity.getRealmId(), userEntity.getId());
+    }
+
     public void flush() {
-        if (updated) {
+        if (updated && !deleted) {
             userRepository.createOrUpdateUser(realm.getId(), userEntity);
 
             if (userEntity.getServiceAccountClientLink() != null && !userEntity.isServiceAccount()) {
@@ -422,6 +430,11 @@ public abstract class CassandraUserAdapter implements UserModel {
         }
     }
 
+    private void setVersion(long version) {
+        userEntity.setVersion(version);
+        updated = true;
+    }
+
     private Optional<String> getSpecialAttributeValue(String name) {
         if (UserModel.FIRST_NAME.equals(name)) {
             return Optional.ofNullable(userEntity.getFirstName());
@@ -431,6 +444,8 @@ public abstract class CassandraUserAdapter implements UserModel {
             return Optional.ofNullable(userEntity.getEmail());
         } else if (UserModel.USERNAME.equals(name)) {
             return Optional.ofNullable(userEntity.getUsername());
+        } else if(ENTITY_VERSION.equals(name)) {
+            return Optional.of(String.valueOf(userEntity.getVersion()));
         }
 
         return Optional.empty();
@@ -448,6 +463,9 @@ public abstract class CassandraUserAdapter implements UserModel {
             return true;
         } else if (UserModel.USERNAME.equals(name)) {
             setUsername(value);
+            return true;
+        } else if (ENTITY_VERSION.equals(name)) {
+            setVersion(Long.parseLong(value));
             return true;
         }
 
