@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(of = "id")
-@Builder
+@Builder(toBuilder = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
