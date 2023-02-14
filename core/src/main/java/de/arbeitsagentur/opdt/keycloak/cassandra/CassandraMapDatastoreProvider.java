@@ -29,6 +29,13 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
     private KeycloakSession session;
     private CompositeRepository cassandraRepository;
 
+    private RealmProvider realmProvider;
+    private UserProvider userProvider;
+    private RoleProvider roleProvider;
+    private ClientProvider clientProvider;
+    private ClientScopeProvider clientScopeProvider;
+    private ExportImportManager exportImportManager;
+
     public CassandraMapDatastoreProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
         super(session);
         this.session = session;
@@ -37,32 +44,50 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public RealmProvider realms() {
-        return new CassandraRealmsProvider(session, cassandraRepository);
+        if (realmProvider == null) {
+            realmProvider = new CassandraRealmsProvider(session, cassandraRepository);
+        }
+        return realmProvider;
     }
 
     @Override
     public UserProvider users() {
-        return new CassandraUserProvider(session, cassandraRepository);
+        if (userProvider == null) {
+            userProvider = new CassandraUserProvider(session, cassandraRepository);
+        }
+        return userProvider;
     }
 
     @Override
     public RoleProvider roles() {
-        return new CassandraRoleProvider(cassandraRepository);
+        if (roleProvider == null) {
+            roleProvider = new CassandraRoleProvider(cassandraRepository);
+        }
+        return roleProvider;
     }
 
     @Override
     public ClientProvider clients() {
-        return new CassandraClientProvider(session, cassandraRepository);
+        if (clientProvider == null) {
+            clientProvider = new CassandraClientProvider(session, cassandraRepository);
+        }
+        return clientProvider;
     }
 
     @Override
     public ClientScopeProvider clientScopes() {
-        return new CassandraClientScopeProvider(session, cassandraRepository);
+        if (clientScopeProvider == null) {
+            clientScopeProvider = new CassandraClientScopeProvider(session, cassandraRepository);
+        }
+        return clientScopeProvider;
     }
 
     @Override
     public ExportImportManager getExportImportManager() {
-        return new CassandraExportImportManager(session);
+        if (exportImportManager == null) {
+            exportImportManager = new CassandraExportImportManager(session);
+        }
+        return exportImportManager;
     }
 
 }

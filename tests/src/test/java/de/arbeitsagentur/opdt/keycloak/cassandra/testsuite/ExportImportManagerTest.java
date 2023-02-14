@@ -210,8 +210,8 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
     @Test
     public void testExportImport() {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         withRealm(originalRealm.getId(), (session, realm) -> {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
             ExportImportManager exportImportManager = session.getProvider(DatastoreProvider.class).getExportImportManager();
             exportImportManager.exportRealm(realm, new ExportOptions(true, true, true, false), new ExportAdapter() {
@@ -232,6 +232,10 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
             session.realms().removeRealm(originalRealm.getId());
 
+            return null;
+        });
+
+        inComittedTransaction(session -> {
             RealmRepresentation rep;
             try {
                 rep = JsonSerialization.readValue(outputStream.toByteArray(), RealmRepresentation.class);
@@ -241,10 +245,11 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
             RealmModel newRealm = session.realms().createRealm(rep.getId(), rep.getRealm());
             // DefaultRole must be set beforehand to prevent NPE...
-            RoleModel newlySavedDefaultRole = session.roles().addRealmRole(realm, defaultRole.getName());
+            RoleModel newlySavedDefaultRole = session.roles().addRealmRole(newRealm, defaultRole.getName());
             newRealm.setDefaultRole(newlySavedDefaultRole);
             CryptoIntegration.init(KeycloakApplication.class.getClassLoader());
 
+            ExportImportManager exportImportManager = session.getProvider(DatastoreProvider.class).getExportImportManager();
             exportImportManager.importRealm(rep, newRealm, false);
 
             RealmModel importedRealm = session.realms().getRealm(originalRealm.getId());
