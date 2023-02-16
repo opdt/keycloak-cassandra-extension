@@ -24,11 +24,11 @@ import java.util.List;
 
 @Dao
 public interface UserDao {
-    @Insert(ifNotExists = true)
+    @Insert
     void insert(User user);
 
-    @Update(customIfClause = "version = :expectedVersion")
-    ResultSet update(User user, long expectedVersion);
+    @Update
+    ResultSet update(User user);
 
     @Update
     void update(FederatedIdentity federatedIdentity);

@@ -339,7 +339,7 @@ public class CassandraUserRepository implements UserRepository {
             Long currentVersion = user.getVersion();
             user.incrementVersion();
 
-            ResultSet result = userDao.update(user, currentVersion);
+            ResultSet result = userDao.update(user);
 
             if (!result.wasApplied()) {
                 throw new EntityStaleException("User entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database", currentVersion);

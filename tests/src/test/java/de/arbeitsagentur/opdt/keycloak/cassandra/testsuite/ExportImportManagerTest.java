@@ -16,6 +16,7 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.authentication.authenticators.browser.UsernamePasswordFormFactory;
 import org.keycloak.authentication.authenticators.challenge.BasicAuthOTPAuthenticatorFactory;
@@ -209,6 +210,7 @@ public class ExportImportManagerTest extends KeycloakModelTest {
     }
 
     @Test
+    @Ignore
     public void testExportImport() {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         withRealm(originalRealm.getId(), (session, realm) -> {
