@@ -3,7 +3,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.models.*;
 import org.keycloak.services.managers.ClientManager;
@@ -50,7 +49,6 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
-    @Ignore
     public void staleUserUpdate() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
