@@ -16,10 +16,8 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
@@ -38,13 +36,16 @@ public interface RealmDao {
     @Delete(entityClass = NameToRealm.class)
     void deleteNameToRealm(String name);
 
-    @Update
-    void insertOrUpdate(Realm realm);
+    @Insert(ifNotExists = true)
+    void insert(Realm realm);
+
+    @Update(customIfClause = "version = :expectedVersion")
+    ResultSet update(Realm realm, long expectedVersion);
 
     @Update
     void insertOrUpdate(NameToRealm nameToRealm);
 
-    @Delete
+    @Delete(ifExists = true)
     void delete(Realm realm);
 
     // ClientInitialAccessModel

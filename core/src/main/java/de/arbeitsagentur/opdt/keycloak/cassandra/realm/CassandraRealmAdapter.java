@@ -136,6 +136,9 @@ public class CassandraRealmAdapter implements RealmModel {
     private final Realm realmEntity;
     private final RealmRepository realmRepository;
 
+    private boolean updated = false;
+    private boolean deleted = false;
+
     @Override
     public String getId() {
         return realmEntity.getId();
@@ -149,7 +152,7 @@ public class CassandraRealmAdapter implements RealmModel {
     @Override
     public void setName(String name) {
         realmEntity.setName(name);
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1580,7 +1583,7 @@ public class CassandraRealmAdapter implements RealmModel {
         }
 
         realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1590,7 +1593,7 @@ public class CassandraRealmAdapter implements RealmModel {
         }
 
         realmEntity.getAttributes().remove(name);
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1613,7 +1616,7 @@ public class CassandraRealmAdapter implements RealmModel {
         }
 
         realmEntity.getAttributes().put(name, new HashSet<>(values));
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     private List<String> getAttributeValues(String name) {
@@ -1638,7 +1641,7 @@ public class CassandraRealmAdapter implements RealmModel {
             .collect(Collectors.toCollection(HashSet::new));
 
         realmEntity.getAttributes().put(name, attributeValues);
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
@@ -1770,7 +1773,7 @@ public class CassandraRealmAdapter implements RealmModel {
         Set<String> values = realmEntity.getAttribute(attrName);
         values.add(clientScope.getId());
         realmEntity.getAttributes().put(attrName, values);
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1781,7 +1784,7 @@ public class CassandraRealmAdapter implements RealmModel {
             realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
         }
 
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1803,14 +1806,14 @@ public class CassandraRealmAdapter implements RealmModel {
     public void addDefaultGroup(GroupModel group) {
         Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
         values.add(group.getId());
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
     public void removeDefaultGroup(GroupModel group) {
         Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
         values.remove(group.getId());
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1874,11 +1877,10 @@ public class CassandraRealmAdapter implements RealmModel {
         return getRoleById(defaultRoleId);
     }
 
-
     @Override
     public void setDefaultRole(RoleModel role) {
         realmEntity.getAttributes().put(DEFAULT_ROLE_ID, new HashSet<>(Arrays.asList(role.getId())));
-        realmRepository.insertOrUpdate(realmEntity);
+        updated = true;
     }
 
     @Override
@@ -1951,6 +1953,17 @@ public class CassandraRealmAdapter implements RealmModel {
     @Override
     public RoleModel getRoleById(String id) {
         return session.roles().getRoleById(this, id);
+    }
+
+    public void markAsDeleted() {
+        deleted = true;
+    }
+
+    public void flush() {
+        if (updated && !deleted) {
+            realmRepository.update(realmEntity);
+            updated = false;
+        }
     }
 
     private ClientInitialAccessModel toModel(ClientInitialAccess entity) {

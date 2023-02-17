@@ -21,7 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Real
 import java.util.List;
 
 public interface RealmRepository {
-    void insertOrUpdate(Realm realm);
+    void update(Realm realm);
 
     Realm getRealmById(String id);
 

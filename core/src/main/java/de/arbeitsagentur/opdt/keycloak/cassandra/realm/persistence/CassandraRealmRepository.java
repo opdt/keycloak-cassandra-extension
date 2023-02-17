@@ -15,9 +15,11 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.map.common.TimeAdapter;
@@ -29,8 +31,21 @@ public class CassandraRealmRepository implements RealmRepository {
     private final RealmDao realmDao;
 
     @Override
-    public void insertOrUpdate(Realm realm) {
-        realmDao.insertOrUpdate(realm);
+    public void update(Realm realm) {
+        if (realm.getVersion() == null) {
+            realm.setVersion(1L);
+            realmDao.insert(realm);
+        } else {
+            Long currentVersion = realm.getVersion();
+            realm.incrementVersion();
+
+            ResultSet result = realmDao.update(realm, currentVersion);
+
+            if (!result.wasApplied()) {
+                throw new EntityStaleException("Realm entity (name = '" + realm.getName() + "') couldn't be updated because its version " + currentVersion + " doesn't match the version in the database", currentVersion);
+            }
+        }
+
         realmDao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
     }
 
@@ -56,7 +71,8 @@ public class CassandraRealmRepository implements RealmRepository {
 
     @Override
     public void createRealm(Realm realm) {
-        realmDao.insertOrUpdate(realm);
+        realm.setVersion(1L);
+        realmDao.insert(realm);
     }
 
     @Override
