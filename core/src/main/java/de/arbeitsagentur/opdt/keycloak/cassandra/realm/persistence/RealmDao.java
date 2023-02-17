@@ -25,9 +25,11 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Real
 @Dao
 public interface RealmDao {
     @Select(customWhereClause = "id = :id")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     Realm getRealmById(String id);
 
     @Select
+    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<Realm> findAll();
 
     @Select(customWhereClause = "name = :name")
