@@ -59,7 +59,10 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
 
 
         CassandraRealmAdapter adapter = new CassandraRealmAdapter(session, entity, realmRepository);
-        session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+        session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
+            adapter.flush();
+            realmModels.remove(adapter.getId());
+        });
         realmModels.put(entity.getId(), adapter);
 
         return adapter;

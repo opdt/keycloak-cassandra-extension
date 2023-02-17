@@ -72,7 +72,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
                 }
 
                 CassandraUserSessionAdapter cassandraUserSessionAdapter = new CassandraUserSessionAdapter(session, realm, origEntity, userSessionRepository);
-                session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) cassandraUserSessionAdapter::flush);
+                session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
+                    cassandraUserSessionAdapter.flush();
+                    sessionModels.remove(cassandraUserSessionAdapter.getId());
+                });
                 sessionModels.put(cassandraUserSessionAdapter.getId(), cassandraUserSessionAdapter);
 
                 return cassandraUserSessionAdapter;
@@ -124,16 +127,14 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
     @Override
     public UserSessionModel createUserSession(RealmModel realm, UserModel user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId) {
-        return createUserSession(null, realm, user, loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId,
-            brokerUserId, UserSessionModel.SessionPersistenceState.PERSISTENT);
+        return createUserSession(null, realm, user, loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId, UserSessionModel.SessionPersistenceState.PERSISTENT);
     }
 
     @Override
     public UserSessionModel createUserSession(String id, RealmModel realm, UserModel user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId, UserSessionModel.SessionPersistenceState persistenceState) {
         log.tracef("createUserSession(%s, %s, %s, %s)%s", id, realm, loginUsername, persistenceState, getShortStackTrace());
 
-        UserSession entity = createUserSessionEntityInstance(id, realm.getId(), user.getId(), loginUsername, ipAddress, authMethod,
-            rememberMe, brokerSessionId, brokerUserId, false);
+        UserSession entity = createUserSessionEntityInstance(id, realm.getId(), user.getId(), loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId, false);
 
         entity.setPersistenceState(persistenceState);
         setUserSessionExpiration(entity, realm);
@@ -179,20 +180,14 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public Stream<UserSessionModel> getUserSessionsStream(RealmModel realm, UserModel user) {
         log.tracef("getUserSessionsStream(%s, %s)%s", realm, user, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByUserId(user.getId()).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == null || !s.getOffline())
-            .map(entityToAdapterFunc((realm)));
+        return userSessionRepository.findUserSessionsByUserId(user.getId()).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == null || !s.getOffline()).map(entityToAdapterFunc((realm)));
     }
 
     @Override
     public Stream<UserSessionModel> getUserSessionsStream(RealmModel realm, ClientModel client) {
         log.tracef("getUserSessionsStream(%s, %s)%s", realm, client, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByClientId(client.getId()).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == null || !s.getOffline())
-            .map(entityToAdapterFunc((realm)));
+        return userSessionRepository.findUserSessionsByClientId(client.getId()).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == null || !s.getOffline()).map(entityToAdapterFunc((realm)));
     }
 
     @Override
@@ -200,33 +195,21 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         log.tracef("getUserSessionsStream(%s, %s, %s, %s)%s", realm, client, firstResult, maxResults, getShortStackTrace());
 
         // TODO: perf
-        return getUserSessionsStream(realm, client)
-            .filter(s -> s.getRealm().equals(realm))
-            .filter(s -> !s.isOffline())
-            .skip(firstResult != null && firstResult > 0 ? firstResult : 0)
-            .limit(maxResults != null && maxResults > 0 ? maxResults : Long.MAX_VALUE);
+        return getUserSessionsStream(realm, client).filter(s -> s.getRealm().equals(realm)).filter(s -> !s.isOffline()).skip(firstResult != null && firstResult > 0 ? firstResult : 0).limit(maxResults != null && maxResults > 0 ? maxResults : Long.MAX_VALUE);
     }
 
     @Override
     public Stream<UserSessionModel> getUserSessionByBrokerUserIdStream(RealmModel realm, String brokerUserId) {
         log.tracef("getUserSessionByBrokerUserIdStream(%s, %s)%s", realm, brokerUserId, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByBrokerUserId(brokerUserId).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == null || !s.getOffline())
-            .map(entityToAdapterFunc((realm)));
+        return userSessionRepository.findUserSessionsByBrokerUserId(brokerUserId).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == null || !s.getOffline()).map(entityToAdapterFunc((realm)));
     }
 
     @Override
     public UserSessionModel getUserSessionByBrokerSessionId(RealmModel realm, String brokerSessionId) {
         log.tracef("getUserSessionByBrokerSessionId(%s, %s)%s", realm, brokerSessionId, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByBrokerSession(brokerSessionId).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == null || !s.getOffline())
-            .map(entityToAdapterFunc((realm)))
-            .findFirst()
-            .orElse(null);
+        return userSessionRepository.findUserSessionsByBrokerSession(brokerSessionId).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == null || !s.getOffline()).map(entityToAdapterFunc((realm))).findFirst().orElse(null);
     }
 
     @Override
@@ -235,17 +218,13 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
         Stream<CassandraUserSessionAdapter> userSessionEntityStream;
         if (offline) {
-            userSessionEntityStream = getOfflineUserSessionEntityStream(realm, id)
-                .map(entityToAdapterFunc(realm)).filter(Objects::nonNull);
+            userSessionEntityStream = getOfflineUserSessionEntityStream(realm, id).map(entityToAdapterFunc(realm)).filter(Objects::nonNull);
         } else {
             CassandraUserSessionAdapter userSession = getUserSession(realm, id);
             userSessionEntityStream = userSession != null ? Stream.of(userSession) : Stream.empty();
         }
 
-        return userSessionEntityStream
-            .filter(predicate)
-            .findFirst()
-            .orElse(null);
+        return userSessionEntityStream.filter(predicate).findFirst().orElse(null);
     }
 
     @Override
@@ -259,15 +238,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public Map<String, Long> getActiveClientSessionStats(RealmModel realm, boolean offline) {
         log.tracef("getActiveClientSessionStats(%s, %s)%s", realm, offline, getShortStackTrace());
 
-        return userSessionRepository.findAll().stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == offline)
-            .map(entityToAdapterFunc(realm))
-            .filter(Objects::nonNull)
-            .map(UserSessionModel::getAuthenticatedClientSessions)
-            .map(Map::keySet)
-            .flatMap(Collection::stream)
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == offline).map(entityToAdapterFunc(realm)).filter(Objects::nonNull).map(UserSessionModel::getAuthenticatedClientSessions).map(Map::keySet).flatMap(Collection::stream).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     @Override
@@ -293,12 +264,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     protected void removeAllUserSessions(RealmModel realm) {
         log.tracef("removeAllUserSessions(%s)%s", realm, getShortStackTrace());
 
-        realm.getClientsStream()
-            .flatMap(c -> userSessionRepository.findUserSessionsByClientId(c.getId()).stream())
-            .forEach(session -> {
-                userSessionRepository.deleteUserSession(session.getId());
-                sessionModels.remove(session.getId());
-            });
+        realm.getClientsStream().flatMap(c -> userSessionRepository.findUserSessionsByClientId(c.getId()).stream()).forEach(session -> {
+            userSessionRepository.deleteUserSession(session.getId());
+            sessionModels.remove(session.getId());
+        });
     }
 
     @Override
@@ -315,12 +284,10 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
     @Override
     public void removeUserSessions(RealmModel realm) {
-        userSessionRepository.findAll().stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .forEach(session -> {
-                userSessionRepository.deleteUserSession(session.getId());
-                sessionModels.remove(session.getId());
-            });
+        userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).forEach(session -> {
+            userSessionRepository.deleteUserSession(session.getId());
+            sessionModels.remove(session.getId());
+        });
     }
 
     @Override
@@ -331,9 +298,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
 
     @Override
     public void onClientRemoved(RealmModel realm, ClientModel client) {
-        List<UserSession> relevantSessions = userSessionRepository.findAll().stream()
-            .filter(s -> s.getClientSessions().containsKey(client.getId()))
-            .collect(Collectors.toList());
+        List<UserSession> relevantSessions = userSessionRepository.findAll().stream().filter(s -> s.getClientSessions().containsKey(client.getId())).collect(Collectors.toList());
 
         for (UserSession session : relevantSessions) {
             session.getClientSessions().remove(client.getId());
@@ -369,10 +334,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public UserSessionModel getOfflineUserSession(RealmModel realm, String userSessionId) {
         log.tracef("getOfflineUserSession(%s, %s)%s", realm, userSessionId, getShortStackTrace());
 
-        return getOfflineUserSessionEntityStream(realm, userSessionId)
-            .findFirst()
-            .map(entityToAdapterFunc(realm))
-            .orElse(null);
+        return getOfflineUserSessionEntityStream(realm, userSessionId).findFirst().map(entityToAdapterFunc(realm)).orElse(null);
     }
 
     @Override
@@ -421,44 +383,28 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     public Stream<UserSessionModel> getOfflineUserSessionsStream(RealmModel realm, UserModel user) {
         log.tracef("getOfflineUserSessionsStream(%s, %s)%s", realm, user, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByUserId(user.getId()).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() != null && s.getOffline())
-            .map(entityToAdapterFunc(realm));
+        return userSessionRepository.findUserSessionsByUserId(user.getId()).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).map(entityToAdapterFunc(realm));
     }
 
     @Override
     public UserSessionModel getOfflineUserSessionByBrokerSessionId(RealmModel realm, String brokerSessionId) {
         log.tracef("getOfflineUserSessionByBrokerSessionId(%s, %s)%s", realm, brokerSessionId, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByBrokerSession(brokerSessionId).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() != null && s.getOffline())
-            .map(entityToAdapterFunc(realm))
-            .findFirst()
-            .orElse(null);
+        return userSessionRepository.findUserSessionsByBrokerSession(brokerSessionId).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).map(entityToAdapterFunc(realm)).findFirst().orElse(null);
     }
 
     @Override
     public Stream<UserSessionModel> getOfflineUserSessionByBrokerUserIdStream(RealmModel realm, String brokerUserId) {
         log.tracef("getOfflineUserSessionByBrokerUserIdStream(%s, %s)%s", realm, brokerUserId, getShortStackTrace());
 
-        return userSessionRepository.findUserSessionsByBrokerUserId(brokerUserId).stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() != null && s.getOffline())
-            .map(entityToAdapterFunc(realm));
+        return userSessionRepository.findUserSessionsByBrokerUserId(brokerUserId).stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).map(entityToAdapterFunc(realm));
     }
 
     @Override
     public long getOfflineSessionsCount(RealmModel realm, ClientModel client) {
         log.tracef("getOfflineSessionsCount(%s, %s)%s", realm, client, getShortStackTrace());
 
-        return userSessionRepository.findAll().stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() != null && s.getOffline())
-            .flatMap(s -> s.getClientSessions().values().stream())
-            .filter(s -> s.getClientId().equals(client.getId()))
-            .count();
+        return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).flatMap(s -> s.getClientSessions().values().stream()).filter(s -> s.getClientId().equals(client.getId())).count();
     }
 
     @Override
@@ -466,14 +412,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         log.tracef("getOfflineUserSessionsStream(%s, %s, %s, %s)%s", realm, client, firstResult, maxResults, getShortStackTrace());
 
         // TODO: perf
-        return userSessionRepository.findAll().stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() != null && s.getOffline())
-            .filter(s -> s.getClientSessions().containsKey(client.getId()))
-            .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
-            .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
-            .sorted(Comparator.comparing(UserSession::getLastSessionRefresh))
-            .map(entityToAdapterFunc(realm));
+        return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).filter(s -> s.getClientSessions().containsKey(client.getId())).skip(firstResult == null || firstResult < 0 ? 0 : firstResult).limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults).sorted(Comparator.comparing(UserSession::getLastSessionRefresh)).map(entityToAdapterFunc(realm));
     }
 
     @Override
@@ -482,28 +421,24 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
             return;
         }
 
-        persistentUserSessions.stream()
-            .map(pus -> {
-                UserSession userSessionEntity = createUserSessionEntityInstance(null, pus.getRealm().getId(),
-                    pus.getUser().getId(), pus.getLoginUsername(), pus.getIpAddress(), pus.getAuthMethod(),
-                    pus.isRememberMe(), pus.getBrokerSessionId(), pus.getBrokerUserId(), offline);
+        persistentUserSessions.stream().map(pus -> {
+            UserSession userSessionEntity = createUserSessionEntityInstance(null, pus.getRealm().getId(), pus.getUser().getId(), pus.getLoginUsername(), pus.getIpAddress(), pus.getAuthMethod(), pus.isRememberMe(), pus.getBrokerSessionId(), pus.getBrokerUserId(), offline);
 
-                for (Map.Entry<String, AuthenticatedClientSessionModel> entry : pus.getAuthenticatedClientSessions().entrySet()) {
-                    AuthenticatedClientSessionValue clientSession = createAuthenticatedClientSessionInstance(entry.getValue(), offline);
+            for (Map.Entry<String, AuthenticatedClientSessionModel> entry : pus.getAuthenticatedClientSessions().entrySet()) {
+                AuthenticatedClientSessionValue clientSession = createAuthenticatedClientSessionInstance(entry.getValue(), offline);
 
-                    // Update timestamp to same value as userSession. LastSessionRefresh of userSession from DB will have correct value
-                    clientSession.setTimestamp(userSessionEntity.getLastSessionRefresh());
+                // Update timestamp to same value as userSession. LastSessionRefresh of userSession from DB will have correct value
+                clientSession.setTimestamp(userSessionEntity.getLastSessionRefresh());
 
-                    userSessionRepository.insert(userSessionEntity);
-                    userSessionRepository.addClientSession(userSessionEntity, clientSession);
+                userSessionRepository.insert(userSessionEntity);
+                userSessionRepository.addClientSession(userSessionEntity, clientSession);
 
-                    CassandraUserSessionAdapter adapter = entityToAdapterFunc(pus.getRealm()).apply(userSessionEntity);
-                    sessionModels.put(adapter.getId(), adapter);
-                }
+                CassandraUserSessionAdapter adapter = entityToAdapterFunc(pus.getRealm()).apply(userSessionEntity);
+                sessionModels.put(adapter.getId(), adapter);
+            }
 
-                return userSessionEntity;
-            })
-            .forEach(userSessionRepository::insert);
+            return userSessionEntity;
+        }).forEach(userSessionRepository::insert);
     }
 
     @Override
@@ -549,9 +484,7 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     }
 
     private UserSession createUserSessionEntityInstance(UserSessionModel userSession, boolean offline) {
-        UserSession entity = createUserSessionEntityInstance(null, userSession.getRealm().getId(), userSession.getUser().getId(),
-            userSession.getLoginUsername(), userSession.getIpAddress(), userSession.getAuthMethod(), userSession.isRememberMe(),
-            userSession.getBrokerSessionId(), userSession.getBrokerUserId(), offline);
+        UserSession entity = createUserSessionEntityInstance(null, userSession.getRealm().getId(), userSession.getUser().getId(), userSession.getLoginUsername(), userSession.getIpAddress(), userSession.getAuthMethod(), userSession.isRememberMe(), userSession.getBrokerSessionId(), userSession.getBrokerUserId(), offline);
 
         entity.setNotes(new HashMap<>(userSession.getNotes()));
         entity.setState(userSession.getState());
@@ -561,36 +494,14 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         return entity;
     }
 
-    private UserSession createUserSessionEntityInstance(String id, String realmId, String userId, String loginUsername, String ipAddress,
-                                                        String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId,
-                                                        boolean offline) {
+    private UserSession createUserSessionEntityInstance(String id, String realmId, String userId, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId, boolean offline) {
         long timestamp = Time.currentTimeMillis();
 
-        return UserSession.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
-            .realmId(realmId)
-            .userId(userId)
-            .loginUsername(loginUsername)
-            .ipAddress(ipAddress)
-            .authMethod(authMethod)
-            .rememberMe(rememberMe)
-            .brokerSessionId(brokerSessionId)
-            .brokerUserId(brokerUserId)
-            .offline(offline)
-            .timestamp(timestamp)
-            .lastSessionRefresh(timestamp)
-            .notes(new HashMap<>())
-            .build();
+        return UserSession.builder().id(id == null ? KeycloakModelUtils.generateId() : id).realmId(realmId).userId(userId).loginUsername(loginUsername).ipAddress(ipAddress).authMethod(authMethod).rememberMe(rememberMe).brokerSessionId(brokerSessionId).brokerUserId(brokerUserId).offline(offline).timestamp(timestamp).lastSessionRefresh(timestamp).notes(new HashMap<>()).build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionEntityInstance(String id, String clientId, boolean offline) {
-        return AuthenticatedClientSessionValue.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
-            .clientId(clientId)
-            .offline(offline)
-            .timestamp(Time.currentTimeMillis())
-            .notes(new HashMap<>())
-            .build();
+        return AuthenticatedClientSessionValue.builder().id(id == null ? KeycloakModelUtils.generateId() : id).clientId(clientId).offline(offline).timestamp(Time.currentTimeMillis()).notes(new HashMap<>()).build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionInstance(AuthenticatedClientSessionModel clientSession, boolean offline) {
