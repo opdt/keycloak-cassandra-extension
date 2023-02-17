@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmAdapter;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import org.keycloak.common.Profile;
 import org.keycloak.common.Version;
