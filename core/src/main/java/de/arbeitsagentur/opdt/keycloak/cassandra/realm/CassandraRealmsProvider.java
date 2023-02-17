@@ -21,6 +21,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -39,13 +41,28 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
     private KeycloakSession session;
     private RealmRepository realmRepository;
 
+    private final Map<String, CassandraRealmAdapter> realmModels = new HashMap<>();
+
     public CassandraRealmsProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
         this.session = session;
         this.realmRepository = cassandraRepository;
     }
 
     private RealmModel entityToAdapter(Realm entity) {
-        return entity == null ? null : new CassandraRealmAdapter(session, entity, realmRepository);
+        if(entity == null) {
+            return null;
+        }
+
+        if(realmModels.containsKey(entity.getId())) {
+            return realmModels.get(entity.getId());
+        }
+
+
+        CassandraRealmAdapter adapter = new CassandraRealmAdapter(session, entity, realmRepository);
+        session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+        realmModels.put(entity.getId(), adapter);
+
+        return adapter;
     }
 
     @Override
@@ -66,7 +83,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
 
         log.tracef("createRealm(%s, %s)%s", id, name, getShortStackTrace());
 
-        Realm realm = new Realm(id, name, new HashMap<>());
+        Realm realm = new Realm(id, name, null, new HashMap<>());
         realmRepository.createRealm(realm);
         RealmModel realmModel = entityToAdapter(realm);
         realmModel.setName(name);
@@ -90,8 +107,10 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
 
         log.tracef("getRealm(%s)%s", name, getShortStackTrace());
 
-        Realm realm = realmRepository.findRealmByName(name);
-        return entityToAdapter(realm);
+        return realmModels.values().stream()
+            .filter(r -> r.getName().equals(name))
+            .findFirst()
+            .orElseGet(() -> (CassandraRealmAdapter) entityToAdapter(realmRepository.findRealmByName(name)));
     }
 
     @Override
@@ -117,6 +136,8 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
         RealmModel realmModel = getRealm(id);
         session.invalidate(REALM_BEFORE_REMOVE, realmModel);
         realmRepository.deleteRealm(realm);
+        ((CassandraRealmAdapter) realmModel).markAsDeleted();
+        realmModels.remove(id);
         session.invalidate(REALM_AFTER_REMOVE, realmModel);
 
         return true;

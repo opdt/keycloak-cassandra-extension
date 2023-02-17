@@ -38,9 +38,14 @@ public class Realm {
 
     private String name;
 
+    private Long version;
+
     @Builder.Default
     private Map<String, Set<String>> attributes = new HashMap<>();
 
+    public void incrementVersion() {
+        version++;
+    }
     public Map<String, Set<String>> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();
