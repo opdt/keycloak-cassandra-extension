@@ -191,7 +191,6 @@ public abstract class CassandraUserAdapter implements UserModel {
         result.add(UserModel.LAST_NAME, userEntity.getLastName());
         result.add(UserModel.EMAIL, userEntity.getEmail());
         result.add(UserModel.USERNAME, userEntity.getUsername());
-        result.add(ENTITY_VERSION, String.valueOf(userEntity.getVersion()));
 
         return result;
     }

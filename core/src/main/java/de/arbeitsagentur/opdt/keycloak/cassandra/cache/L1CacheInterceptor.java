@@ -15,13 +15,10 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;

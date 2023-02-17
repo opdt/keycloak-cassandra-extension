@@ -16,6 +16,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmAdapter;
 import org.junit.Test;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.ResourceServer;
@@ -30,6 +31,7 @@ import java.util.function.Consumer;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertTrue;
 
 @RequireProvider(RealmProvider.class)
 public class RealmModelTest extends KeycloakModelTest {
@@ -50,6 +52,69 @@ public class RealmModelTest extends KeycloakModelTest {
         s.realms().removeRealm(realmId);
         if (realm1Id != null) s.realms().removeRealm(realm1Id);
         if (realm2Id != null) s.realms().removeRealm(realm2Id);
+    }
+
+    @Test
+    public void staleRealmUpdate() {
+        withRealm(realmId, (session, realm) -> {
+            realm.setAttribute("key", "val");
+
+            return null;
+        });
+
+        boolean staleExceptionOccured = false;
+        try {
+            withRealm(realmId, (session, realm) -> {
+                assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("3"));
+
+                realm.setAttribute(CassandraRealmAdapter.ENTITY_VERSION, "2");
+
+                return null;
+            });
+        } catch (Exception e) {
+            staleExceptionOccured = true;
+        }
+
+        assertTrue(staleExceptionOccured);
+
+        staleExceptionOccured = false;
+        try {
+            withRealm(realmId, (session, realm) -> {
+                assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("3"));
+
+                realm.setAttribute(CassandraRealmAdapter.ENTITY_VERSION, "4");
+
+                return null;
+            });
+        } catch (Exception e) {
+            staleExceptionOccured = true;
+        }
+
+        assertTrue(staleExceptionOccured);
+    }
+
+    @Test
+    public void workingRealmUpdate() {
+        withRealm(realmId, (session, realm) -> {
+            realm.setAttribute("key", "val");
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("3"));
+
+            realm.setAttribute("key", "val2");
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("4"));
+            assertThat(realm.getAttribute("key"), is("val2"));
+
+            return null;
+        });
     }
 
     @Test

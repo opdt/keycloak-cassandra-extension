@@ -132,6 +132,8 @@ public class CassandraRealmAdapter implements RealmModel {
     public static final String DEFAULT_LOCALE = INTERNAL_ATTRIBUTE_PREFIX + "defaultLocale";
     public static final String LOCALIZATION_TEXTS = INTERNAL_ATTRIBUTE_PREFIX + "localizationTexts";
 
+    public static final String ENTITY_VERSION = INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
+
     private final KeycloakSession session;
     private final Realm realmEntity;
     private final RealmRepository realmRepository;
@@ -1582,7 +1584,12 @@ public class CassandraRealmAdapter implements RealmModel {
             return;
         }
 
-        realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
+        if(ENTITY_VERSION.equals(name)) {
+            realmEntity.setVersion(Long.parseLong(value));
+        } else {
+            realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
+        }
+
         updated = true;
     }
 
@@ -1598,6 +1605,9 @@ public class CassandraRealmAdapter implements RealmModel {
 
     @Override
     public String getAttribute(String name) {
+        if(ENTITY_VERSION.equals(name)) {
+            return String.valueOf(realmEntity.getVersion());
+        }
         Set<String> values = realmEntity.getAttribute(name);
         return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
     }
@@ -1876,6 +1886,7 @@ public class CassandraRealmAdapter implements RealmModel {
         }
         return getRoleById(defaultRoleId);
     }
+
 
     @Override
     public void setDefaultRole(RoleModel role) {
