@@ -20,17 +20,23 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScop
 import de.arbeitsagentur.opdt.keycloak.cassandra.exportImportManager.CassandraExportImportManager;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
+import org.keycloak.provider.Provider;
 import org.keycloak.storage.ExportImportManager;
 
+import java.io.Closeable;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
     private KeycloakSession session;
     private CompositeRepository cassandraRepository;
+
+    private Set<Provider> providersToClose = new HashSet<>();
 
     public CassandraMapDatastoreProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
         super(session);
@@ -65,20 +71,31 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public ExportImportManager getExportImportManager() {
-        return createProvider(ExportImportManager.class, () -> new CassandraExportImportManager(session));
+        return new CassandraExportImportManager(session);
     }
 
-    private <T> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
+    private <T extends Provider> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
         T provider = session.getAttribute(providerClass.getName(), providerClass);
         if (provider != null) {
             return provider;
         }
         provider = providerSupplier.get();
         session.setAttribute(providerClass.getName(), provider);
-        session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
-            session.removeAttribute(providerClass.getName());
-        });
+        providersToClose.add(provider);
 
         return provider;
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        Consumer<Provider> safeClose = p -> {
+            try {
+                p.close();
+            } catch (Exception e) {
+                // Ignore exception
+            }
+        };
+        providersToClose.forEach(safeClose);
     }
 }

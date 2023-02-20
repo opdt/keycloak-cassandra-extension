@@ -515,4 +515,10 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
     protected List<String> getCacheNames() {
         return Arrays.asList(ThreadLocalCache.REALM_CACHE);
     }
+
+    @Override
+    public void close() {
+        super.close();
+        realmModels.clear();
+    }
 }

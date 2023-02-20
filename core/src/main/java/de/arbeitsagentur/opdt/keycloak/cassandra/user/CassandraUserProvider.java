@@ -539,4 +539,10 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     protected List<String> getCacheNames() {
         return Arrays.asList(ThreadLocalCache.USER_CACHE, ThreadLocalCache.USER_CONSENT_CACHE);
     }
+
+    @Override
+    public void close() {
+        super.close();
+        userModels.clear();
+    }
 }
