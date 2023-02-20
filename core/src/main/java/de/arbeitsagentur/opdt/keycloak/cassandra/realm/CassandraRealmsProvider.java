@@ -105,7 +105,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
         Realm realm = realmRepository.getRealmById(id);
         RealmModel result = entityToAdapter(realm);
 
-        if(log.isTraceEnabled()) {
+        if(result != null && log.isTraceEnabled()) {
             log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
                 result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
                 result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
@@ -123,7 +123,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
         Realm realm = realmRepository.findRealmByName(name);
         RealmModel result = entityToAdapter(realm);
 
-        if(log.isTraceEnabled()) {
+        if(result != null && log.isTraceEnabled()) {
             log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
                 result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
                 result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
