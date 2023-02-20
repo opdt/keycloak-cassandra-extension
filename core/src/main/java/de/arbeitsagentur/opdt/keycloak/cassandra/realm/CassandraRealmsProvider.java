@@ -54,12 +54,14 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
         }
 
         if(realmModels.containsKey(entity.getId())) {
+            log.tracef("Return cached realm-model for id %s", entity.getId());
             return realmModels.get(entity.getId());
         }
 
 
         CassandraRealmAdapter adapter = new CassandraRealmAdapter(session, entity, realmRepository);
         session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
+            log.tracef("Flush realm-model with id %s", adapter.getId());
             adapter.flush();
             realmModels.remove(adapter.getId());
         });

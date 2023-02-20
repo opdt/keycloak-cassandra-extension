@@ -57,6 +57,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
 
             CassandraUserAdapter existingModel = userModels.get(origEntity.getId());
             if (existingModel != null) {
+                log.tracef("Return cached user-model for id %s", origEntity.getId());
                 return existingModel;
             }
             CassandraUserAdapter adapter = new CassandraUserAdapter(realm, userRepository, origEntity) {
@@ -76,7 +77,11 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
                 }
             };
 
-            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
+                log.tracef("Flush user-model with id %s", adapter.getId());
+                adapter.flush();
+                userModels.remove(adapter.getId());
+            });
             userModels.put(adapter.getId(), adapter);
             return adapter;
         };

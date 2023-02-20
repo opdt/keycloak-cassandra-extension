@@ -72,8 +72,9 @@ public class L1CacheInterceptor implements InvocationHandler {
         CacheInvocationContext cacheInvocationContext = CacheInvocationContext.create(target, method, args);
 
         Object result = ThreadLocalCache.get(cacheName, cacheInvocationContext);
+        long timestamp = System.currentTimeMillis();
+
         if (ThreadLocalCache.NONE == result) {
-            long timestamp = System.currentTimeMillis();
             result = method.invoke(target, args);
 
             if (log.isTraceEnabled()) {
@@ -81,6 +82,8 @@ public class L1CacheInterceptor implements InvocationHandler {
             }
 
             ThreadLocalCache.put(cacheName, cacheInvocationContext, result);
+        } else if (log.isTraceEnabled()) {
+            log.tracef("Cached Result for Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
         }
 
         return result;
