@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import lombok.*;
 
 import java.util.HashMap;
@@ -32,7 +33,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @CqlName("realms")
-public class Realm {
+public class Realm implements TransactionalEntity {
     @PartitionKey
     private String id;
 
@@ -43,9 +44,6 @@ public class Realm {
     @Builder.Default
     private Map<String, Set<String>> attributes = new HashMap<>();
 
-    public void incrementVersion() {
-        version++;
-    }
     public Map<String, Set<String>> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();

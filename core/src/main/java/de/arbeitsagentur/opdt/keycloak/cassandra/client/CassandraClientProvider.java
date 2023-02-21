@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -32,29 +33,32 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
 
 @JBossLog
-public class CassandraClientProvider implements ClientProvider {
-    private final KeycloakSession session;
-
+public class CassandraClientProvider extends TransactionalProvider<Client, CassandraClientAdapter> implements ClientProvider {
     private final ClientRepository clientRepository;
 
 
     public CassandraClientProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
-        this.session = session;
+        super(session);
         this.clientRepository = cassandraRepository;
     }
 
-    private ClientModel entityToAdapter(RealmModel realm, Client entity) {
-        return entity == null ? null : new CassandraClientAdapter(session, entity, realm, clientRepository);
+    @Override
+    protected CassandraClientAdapter createNewModel(RealmModel realm, Client entity) {
+        return new CassandraClientAdapter(session, entity, realm, clientRepository);
     }
 
     @Override
     public Stream<ClientModel> getClientsStream(RealmModel realm, Integer firstResult, Integer maxResults) {
-        return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-            .filter(Objects::nonNull)
+        return Stream.concat(
+                models.values().stream()
+                    .filter(m -> m.getRealm().equals(realm)),
+                clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+                    .filter(Objects::nonNull)
+                    .map(entityToAdapterFunc(realm))).distinct()
+            .map(ClientModel.class::cast)
+            .sorted(Comparator.comparing(ClientModel::getClientId))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
-            .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
-            .map(e -> entityToAdapter(realm, e))
-            .sorted(Comparator.comparing(ClientModel::getClientId));
+            .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }
 
     @Override
@@ -69,10 +73,10 @@ public class CassandraClientProvider implements ClientProvider {
         }
 
         String newId = id == null ? KeycloakModelUtils.generateId() : id;
-        Client client = new Client(realm.getId(), newId, new HashMap<>());
+        Client client = new Client(realm.getId(), newId, null, new HashMap<>());
         clientRepository.insertOrUpdate(client);
 
-        ClientModel adapter = entityToAdapter(realm, client);
+        ClientModel adapter = entityToAdapterFunc(realm).apply(client);
         adapter.setClientId(clientId != null ? clientId : client.getId());
         adapter.setEnabled(true);
         adapter.setStandardFlowEnabled(true);
@@ -106,6 +110,8 @@ public class CassandraClientProvider implements ClientProvider {
         session.invalidate(CLIENT_BEFORE_REMOVE, realm, clientModel);
 
         clientRepository.delete(client);
+        ((CassandraClientAdapter) clientModel).markDeleted();
+        models.remove(client.getId());
 
         session.invalidate(CLIENT_AFTER_REMOVE, clientModel);
 
@@ -146,8 +152,11 @@ public class CassandraClientProvider implements ClientProvider {
 
     @Override
     public Map<ClientModel, Set<String>> getAllRedirectUrisOfEnabledClients(RealmModel realm) {
-        return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-            .map(e -> entityToAdapter(realm, e))
+        return Stream.concat(models.values().stream()
+                    .filter(m -> m.getRealm().equals(realm)),
+                clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+                    .map(entityToAdapterFunc(realm)))
+            .distinct()
             .filter(ClientModel::isEnabled)
             .filter(c -> !c.getRedirectUris().isEmpty())
             .collect(Collectors.toMap(Function.identity(), ClientModel::getRedirectUris));
@@ -158,13 +167,16 @@ public class CassandraClientProvider implements ClientProvider {
         log.tracef("getClientById(%s, %s)%s", realm, id, getShortStackTrace());
 
         Client client = clientRepository.getClientById(realm.getId(), id);
-        return client == null ? null : entityToAdapter(realm, client);
+        return entityToAdapterFunc(realm).apply(client);
     }
 
     @Override
     public ClientModel getClientByClientId(RealmModel realm, String clientId) {
-        return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-            .map(e -> entityToAdapter(realm, e))
+        return Stream.concat(models.values().stream()
+                    .filter(m -> m.getRealm().equals(realm)),
+                clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+                    .map(entityToAdapterFunc(realm)))
+            .distinct()
             .filter(e -> Objects.equals(e.getClientId(), clientId))
             .findFirst()
             .orElse(null);
@@ -176,17 +188,25 @@ public class CassandraClientProvider implements ClientProvider {
             return Stream.empty();
         }
 
-        return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-            .filter(e -> "%".equals(clientId) || e.getAttribute(CassandraClientAdapter.CLIENT_ID).stream().anyMatch(id -> id.toLowerCase().contains(clientId.toLowerCase())))
-            .map(e -> entityToAdapter(realm, e))
+        return Stream.concat(models.values().stream()
+                    .filter(m -> m.getRealm().equals(realm)),
+                clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+                    .map(entityToAdapterFunc(realm)))
+            .distinct()
+            .map(ClientModel.class::cast)
+            .filter(e -> "%".equals(clientId) || e.getAttribute(CassandraClientAdapter.CLIENT_ID).toLowerCase().contains(clientId.toLowerCase()))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }
 
     @Override
     public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
-        return clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
-            .map(e -> entityToAdapter(realm, e))
+        return Stream.concat(models.values().stream()
+                    .filter(m -> m.getRealm().equals(realm)),
+                clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
+                    .map(entityToAdapterFunc(realm)))
+            .distinct()
+            .map(ClientModel.class::cast)
             .filter(c -> c.getAttributes().entrySet().containsAll(attributes.entrySet()))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
@@ -213,10 +233,5 @@ public class CassandraClientProvider implements ClientProvider {
 
     public void preRemove(RealmModel realm) {
         this.removeClients(realm);
-    }
-
-    @Override
-    public void close() {
-        // Nothing to do
     }
 }

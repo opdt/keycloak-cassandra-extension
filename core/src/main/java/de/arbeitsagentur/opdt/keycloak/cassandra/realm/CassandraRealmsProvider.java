@@ -19,7 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -37,37 +37,17 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 @JBossLog
-public class CassandraRealmsProvider implements RealmProvider {
-    private KeycloakSession session;
-    private RealmRepository realmRepository;
-
-    private final Map<String, CassandraRealmAdapter> realmModels = new HashMap<>();
+public class CassandraRealmsProvider extends TransactionalProvider<Realm, CassandraRealmAdapter> implements RealmProvider {
+    private final RealmRepository realmRepository;
 
     public CassandraRealmsProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
-        this.session = session;
+        super(session);
         this.realmRepository = cassandraRepository;
     }
 
-    private RealmModel entityToAdapter(Realm entity) {
-        if(entity == null) {
-            return null;
-        }
-
-        if(realmModels.containsKey(entity.getId())) {
-            log.tracef("Return cached realm-model for id %s", entity.getId());
-            return realmModels.get(entity.getId());
-        }
-
-
-        CassandraRealmAdapter adapter = new CassandraRealmAdapter(session, entity, realmRepository);
-        session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
-            log.tracef("Flush realm-model with id %s", adapter.getId());
-            adapter.flush();
-            realmModels.remove(adapter.getId());
-        });
-        realmModels.put(entity.getId(), adapter);
-
-        return adapter;
+    @Override
+    protected CassandraRealmAdapter createNewModel(RealmModel realm, Realm entity) {
+        return new CassandraRealmAdapter(session, entity, realmRepository);
     }
 
     @Override
@@ -90,7 +70,7 @@ public class CassandraRealmsProvider implements RealmProvider {
 
         Realm realm = new Realm(id, name, null, new HashMap<>());
         realmRepository.createRealm(realm);
-        RealmModel realmModel = entityToAdapter(realm);
+        RealmModel realmModel = entityToAdapterFunc(null).apply(realm);
         realmModel.setName(name);
 
         return realmModel;
@@ -103,7 +83,7 @@ public class CassandraRealmsProvider implements RealmProvider {
         log.tracef("getRealm(%s)%s", id, getShortStackTrace());
 
         Realm realm = realmRepository.getRealmById(id);
-        RealmModel result = entityToAdapter(realm);
+        RealmModel result = entityToAdapterFunc(null).apply(realm);
 
         if(result != null && log.isTraceEnabled()) {
             log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
@@ -121,7 +101,7 @@ public class CassandraRealmsProvider implements RealmProvider {
         log.tracef("getRealm(%s)%s", name, getShortStackTrace());
 
         Realm realm = realmRepository.findRealmByName(name);
-        RealmModel result = entityToAdapter(realm);
+        RealmModel result = entityToAdapterFunc(null).apply(realm);
 
         if(result != null && log.isTraceEnabled()) {
             log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
@@ -134,7 +114,7 @@ public class CassandraRealmsProvider implements RealmProvider {
 
     @Override
     public Stream<RealmModel> getRealmsStream() {
-        return realmRepository.getAllRealms().stream().map(this::entityToAdapter);
+        return realmRepository.getAllRealms().stream().map(entityToAdapterFunc(null));
     }
 
     @Override
@@ -142,7 +122,7 @@ public class CassandraRealmsProvider implements RealmProvider {
         return realmRepository.getAllRealms().stream()
             .filter(r -> r.getAttributes().containsKey(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE))
             .filter(r -> r.getAttributes().get(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE).contains(type.getName()))
-            .map(this::entityToAdapter);
+            .map(entityToAdapterFunc(null));
     }
 
     @Override
@@ -155,8 +135,8 @@ public class CassandraRealmsProvider implements RealmProvider {
         RealmModel realmModel = getRealm(id);
         session.invalidate(REALM_BEFORE_REMOVE, realmModel);
         realmRepository.deleteRealm(realm);
-        ((CassandraRealmAdapter) realmModel).markAsDeleted();
-        realmModels.remove(id);
+        ((CassandraRealmAdapter) realmModel).markDeleted();
+        models.remove(id);
         session.invalidate(REALM_AFTER_REMOVE, realmModel);
 
         return true;
@@ -509,10 +489,5 @@ public class CassandraRealmsProvider implements RealmProvider {
     @Deprecated
     public Stream<RoleModel> searchForClientRolesStream(ClientModel client, String search, Integer first, Integer max) {
         return session.roles().searchForClientRolesStream(client, search, first, max);
-    }
-
-    @Override
-    public void close() {
-        realmModels.clear();
     }
 }

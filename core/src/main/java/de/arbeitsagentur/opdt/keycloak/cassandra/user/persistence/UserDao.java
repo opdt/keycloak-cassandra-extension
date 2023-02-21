@@ -18,18 +18,13 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 
 import java.util.List;
 
 @Dao
-public interface UserDao {
-    @Insert(ifNotExists = true)
-    void insert(User user);
-
-    @Update(customIfClause = "version = :expectedVersion")
-    ResultSet update(User user, long expectedVersion);
-
+public interface UserDao extends TransactionalDao<User> {
     @Update
     void update(FederatedIdentity federatedIdentity);
 
@@ -40,6 +35,7 @@ public interface UserDao {
     void insert(RealmToUserMapping realmToUserMapping);
 
     @Query("SELECT COUNT(id) FROM users")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     long count();
 
     @Select
@@ -68,9 +64,6 @@ public interface UserDao {
 
     @Select(customWhereClause = "realm_id = :realmId")
     PagingIterable<RealmToUserMapping> findUsersByRealmId(String realmId);
-
-    @Delete(ifExists = true)
-    void delete(User User);
 
     @Delete
     boolean delete(FederatedIdentity federatedIdentity);

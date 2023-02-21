@@ -49,7 +49,7 @@ public interface UserRepository {
 
     void deleteAttributeSearchIndex(String realmId, User user, String attrName);
 
-    void createOrUpdateUser(String realmId, User user);
+    void insertOrUpdate(User user);
 
     boolean deleteUser(String realmId, String userId);
 

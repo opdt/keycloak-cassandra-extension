@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import lombok.EqualsAndHashCode;
@@ -34,17 +35,13 @@ import java.util.stream.Stream;
 @EqualsAndHashCode(of = "userEntity")
 @JBossLog
 @RequiredArgsConstructor
-public abstract class CassandraUserAdapter implements UserModel {
+public abstract class CassandraUserAdapter extends TransactionalModelAdapter implements UserModel {
     public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
     public static final String ENTITY_VERSION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
     public static final String ENTITY_VERSION_READONLY = AttributeTypes.READONLY_ATTRIBUTE_PREFIX + "entityVersion";
     private final RealmModel realm;
     private final UserRepository userRepository;
     private final User userEntity;
-
-    private final List<Runnable> postUpdateTasks = new ArrayList<>();
-    private boolean updated = false;
-    private boolean deleted = false;
 
     public RealmModel getRealm() {
         return realm;
@@ -94,9 +91,7 @@ public abstract class CassandraUserAdapter implements UserModel {
         User userCopy = userEntity.toBuilder().build();
         userEntity.setUsername(username);
         userEntity.setUsernameCaseInsensitive(KeycloakModelUtils.toLowerCaseSafe(username));
-        updated = true;
-
-        postUpdateTasks.add(() -> userRepository.deleteUsernameSearchIndex(realm.getId(), userCopy));
+        markUpdated(() -> userRepository.deleteUsernameSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
@@ -123,9 +118,8 @@ public abstract class CassandraUserAdapter implements UserModel {
 
         User userCopy = userEntity.toBuilder().build();
         userEntity.setEmail(email);
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteEmailSearchIndex(realm.getId(), userCopy));
+        markUpdated(() -> userRepository.deleteEmailSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
@@ -136,7 +130,7 @@ public abstract class CassandraUserAdapter implements UserModel {
     @Override
     public void setFirstName(String firstName) {
         userEntity.setFirstName(firstName);
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -147,7 +141,7 @@ public abstract class CassandraUserAdapter implements UserModel {
     @Override
     public void setLastName(String lastName) {
         userEntity.setLastName(lastName);
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -173,13 +167,13 @@ public abstract class CassandraUserAdapter implements UserModel {
     @Override
     public void setEmailVerified(boolean verified) {
         userEntity.setEmailVerified(verified);
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void setEnabled(boolean enabled) {
         userEntity.setEnabled(enabled);
-        updated = true;
+        markUpdated();
 
     }
 
@@ -214,9 +208,8 @@ public abstract class CassandraUserAdapter implements UserModel {
 
         User userCopy = userEntity.toBuilder().build();
         userEntity.getAttributes().put(name, values);
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
@@ -231,9 +224,8 @@ public abstract class CassandraUserAdapter implements UserModel {
 
         User userCopy = userEntity.toBuilder().build();
         userEntity.getAttributes().put(name, Collections.singletonList(value));
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
@@ -253,9 +245,8 @@ public abstract class CassandraUserAdapter implements UserModel {
 
         User userCopy = userEntity.toBuilder().build();
         userEntity.getAttributes().remove(name);
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
@@ -270,7 +261,7 @@ public abstract class CassandraUserAdapter implements UserModel {
             userEntity.getRealmRoles().add(role.getId());
         }
 
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -287,31 +278,31 @@ public abstract class CassandraUserAdapter implements UserModel {
             userEntity.getRealmRoles().remove(role.getId());
         }
 
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void addRequiredAction(RequiredAction action) {
         userEntity.getRequiredActions().add(action.name());
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void addRequiredAction(String action) {
         userEntity.getRequiredActions().add(action);
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void removeRequiredAction(RequiredAction action) {
         userEntity.getRequiredActions().remove(action.name());
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void removeRequiredAction(String action) {
         userEntity.getRequiredActions().remove(action);
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -323,9 +314,8 @@ public abstract class CassandraUserAdapter implements UserModel {
     public void setFederationLink(String link) {
         User userCopy = userEntity.toBuilder().build();
         userEntity.setFederationLink(link);
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), userCopy));
+        markUpdated(() -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
@@ -337,9 +327,8 @@ public abstract class CassandraUserAdapter implements UserModel {
     public void setServiceAccountClientLink(String clientInternalId) {
         User userCopy = userEntity.toBuilder().build();
         userEntity.setServiceAccountClientLink(clientInternalId);
-        updated = true;
 
-        postUpdateTasks.add(() -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
+        markUpdated(() -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
     }
 
 
@@ -416,27 +405,22 @@ public abstract class CassandraUserAdapter implements UserModel {
     public abstract SubjectCredentialManager credentialManager();
 
     public boolean delete() {
-        deleted = true; // no more updates for this user
+        markDeleted(); // no more updates for this user
         return userRepository.deleteUser(userEntity.getRealmId(), userEntity.getId());
     }
 
-    public void flush() {
-        if (updated && !deleted) {
-            userRepository.createOrUpdateUser(realm.getId(), userEntity);
+    @Override
+    protected void flushChanges() {
+        userRepository.insertOrUpdate(userEntity);
 
-            if (userEntity.getServiceAccountClientLink() != null && !userEntity.isServiceAccount()) {
-                userRepository.makeUserServiceAccount(userEntity, realm.getId());
-            }
-
-            postUpdateTasks.forEach(Runnable::run);
-            postUpdateTasks.clear();
-            updated = false;
+        if (userEntity.getServiceAccountClientLink() != null && !userEntity.isServiceAccount()) {
+            userRepository.makeUserServiceAccount(userEntity, realm.getId());
         }
     }
 
     private void setVersion(long version) {
         userEntity.setVersion(version);
-        updated = true;
+        markUpdated();
     }
 
     private Optional<String> getSpecialAttributeValue(String name) {

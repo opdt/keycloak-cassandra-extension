@@ -21,6 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -46,7 +47,7 @@ import static java.util.Objects.nonNull;
 @EqualsAndHashCode(of = "realmEntity")
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraRealmAdapter implements RealmModel {
+public class CassandraRealmAdapter extends TransactionalModelAdapter implements RealmModel {
     private static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled"; // Copied from MapRealmAdapter
     public static final String COMPONENT_PROVIDER_TYPE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
     public static final String DEFAULT_GROUP_IDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
@@ -139,11 +140,6 @@ public class CassandraRealmAdapter implements RealmModel {
     private final Realm realmEntity;
     private final RealmRepository realmRepository;
 
-    private final List<Runnable> postUpdateTasks = new ArrayList<>();
-
-    private boolean updated = false;
-    private boolean deleted = false;
-
     @Override
     public String getId() {
         return realmEntity.getId();
@@ -157,14 +153,13 @@ public class CassandraRealmAdapter implements RealmModel {
     @Override
     public void setName(String name) {
         String oldName = realmEntity.getName();
-        postUpdateTasks.add(() -> {
-            if(!oldName.equals(realmEntity.getName())) {
+        realmEntity.setName(name);
+
+        markUpdated(() -> {
+            if (!oldName.equals(realmEntity.getName())) {
                 realmRepository.deleteNameToRealm(oldName);
             }
         });
-
-        realmEntity.setName(name);
-        updated = true;
     }
 
     @Override
@@ -1594,13 +1589,13 @@ public class CassandraRealmAdapter implements RealmModel {
             return;
         }
 
-        if(ENTITY_VERSION.equals(name)) {
+        if (ENTITY_VERSION.equals(name)) {
             realmEntity.setVersion(Long.parseLong(value));
         } else {
             realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
         }
 
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -1610,12 +1605,12 @@ public class CassandraRealmAdapter implements RealmModel {
         }
 
         realmEntity.getAttributes().remove(name);
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public String getAttribute(String name) {
-        if(ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
+        if (ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
             return String.valueOf(realmEntity.getVersion());
         }
         Set<String> values = realmEntity.getAttribute(name);
@@ -1629,7 +1624,7 @@ public class CassandraRealmAdapter implements RealmModel {
             .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
 
-        if(realmEntity.getVersion() != null) {
+        if (realmEntity.getVersion() != null) {
             attributes.put(ENTITY_VERSION_READONLY, String.valueOf(realmEntity.getVersion()));
         }
 
@@ -1642,11 +1637,11 @@ public class CassandraRealmAdapter implements RealmModel {
         }
 
         realmEntity.getAttributes().put(name, new HashSet<>(values));
-        updated = true;
+        markUpdated();
     }
 
     private List<String> getAttributeValues(String name) {
-        if(ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
+        if (ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
             return Arrays.asList(String.valueOf(realmEntity.getVersion()));
         }
 
@@ -1671,7 +1666,7 @@ public class CassandraRealmAdapter implements RealmModel {
             .collect(Collectors.toCollection(HashSet::new));
 
         realmEntity.getAttributes().put(name, attributeValues);
-        updated = true;
+        markUpdated();
     }
 
     private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
@@ -1803,7 +1798,7 @@ public class CassandraRealmAdapter implements RealmModel {
         Set<String> values = realmEntity.getAttribute(attrName);
         values.add(clientScope.getId());
         realmEntity.getAttributes().put(attrName, values);
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -1814,7 +1809,7 @@ public class CassandraRealmAdapter implements RealmModel {
             realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
         }
 
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -1836,14 +1831,14 @@ public class CassandraRealmAdapter implements RealmModel {
     public void addDefaultGroup(GroupModel group) {
         Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
         values.add(group.getId());
-        updated = true;
+        markUpdated();
     }
 
     @Override
     public void removeDefaultGroup(GroupModel group) {
         Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
         values.remove(group.getId());
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -1911,7 +1906,7 @@ public class CassandraRealmAdapter implements RealmModel {
     @Override
     public void setDefaultRole(RoleModel role) {
         realmEntity.getAttributes().put(DEFAULT_ROLE_ID, new HashSet<>(Arrays.asList(role.getId())));
-        updated = true;
+        markUpdated();
     }
 
     @Override
@@ -1986,18 +1981,9 @@ public class CassandraRealmAdapter implements RealmModel {
         return session.roles().getRoleById(this, id);
     }
 
-    public void markAsDeleted() {
-        deleted = true;
-    }
-
-    public void flush() {
-        if (updated && !deleted) {
-            realmRepository.update(realmEntity);
-
-            postUpdateTasks.forEach(Runnable::run);
-            postUpdateTasks.clear();
-            updated = false;
-        }
+    @Override
+    protected void flushChanges() {
+        realmRepository.insertOrUpdate(realmEntity);
     }
 
     private ClientInitialAccessModel toModel(ClientInitialAccess entity) {

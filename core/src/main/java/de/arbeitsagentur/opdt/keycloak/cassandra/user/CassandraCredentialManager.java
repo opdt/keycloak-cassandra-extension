@@ -67,7 +67,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
         CredentialValue credential = fromModel(cred);
         userEntity.getCredentials().remove(credential);
         userEntity.getCredentials().add(credential);
-        userRepository.createOrUpdateUser(realm.getId(), userEntity);
+        userRepository.insertOrUpdate(userEntity);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
 
         userEntity.getCredentials().remove(credential);
         userEntity.getCredentials().add(credential);
-        userRepository.createOrUpdateUser(realm.getId(), userEntity);
+        userRepository.insertOrUpdate(userEntity);
 
         return toModel(credential);
     }
@@ -102,7 +102,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
             return false;
         }
 
-        userRepository.createOrUpdateUser(realm.getId(), userEntity);
+        userRepository.insertOrUpdate(userEntity);
         return true;
     }
 
@@ -190,7 +190,7 @@ public class CassandraCredentialManager implements SubjectCredentialManager {
 
                 userEntity.getCredentials().remove(credential);
                 userEntity.getCredentials().add(credential);
-                userRepository.createOrUpdateUser(realm.getId(), userEntity);
+                userRepository.insertOrUpdate(userEntity);
             }
         }
 

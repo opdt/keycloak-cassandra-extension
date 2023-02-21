@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -33,11 +34,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX;
+
 @JBossLog
 @RequiredArgsConstructor
 @EqualsAndHashCode(of = "clientEntity")
-public class CassandraClientAdapter implements ClientModel {
-    private static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
+public class CassandraClientAdapter extends TransactionalModelAdapter implements ClientModel {
     public static final String CLIENT_ID = INTERNAL_ATTRIBUTE_PREFIX + "clientId";
     public static final String NAME = INTERNAL_ATTRIBUTE_PREFIX + "name";
     public static final String DESCRIPTION = INTERNAL_ATTRIBUTE_PREFIX + "description";
@@ -761,7 +763,7 @@ public class CassandraClientAdapter implements ClientModel {
         }
 
         clientEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
-        clientRepository.insertOrUpdate(clientEntity);
+        markUpdated();
     }
 
     @Override
@@ -771,7 +773,7 @@ public class CassandraClientAdapter implements ClientModel {
         }
 
         clientEntity.getAttributes().remove(name);
-        clientRepository.insertOrUpdate(clientEntity);
+        markUpdated();
     }
 
     @Override
@@ -794,7 +796,7 @@ public class CassandraClientAdapter implements ClientModel {
         }
 
         clientEntity.getAttributes().put(name, new HashSet<>(values));
-        clientRepository.insertOrUpdate(clientEntity);
+        markUpdated();
     }
 
     private List<String> getAttributeValues(String name) {
@@ -824,7 +826,7 @@ public class CassandraClientAdapter implements ClientModel {
             .collect(Collectors.toCollection(HashSet::new));
 
         clientEntity.getAttributes().put(name, attributeValues);
-        clientRepository.insertOrUpdate(clientEntity);
+        markUpdated();
     }
 
     private <T> T getDeserializedAttribute(String name, TypeReference<T> type) {
@@ -882,5 +884,10 @@ public class CassandraClientAdapter implements ClientModel {
     private int getAttribute(String name, int defaultValue) {
         String v = getAttribute(name);
         return v != null && !v.isEmpty() ? Integer.valueOf(v) : defaultValue;
+    }
+
+    @Override
+    protected void flushChanges() {
+        clientRepository.insertOrUpdate(clientEntity);
     }
 }

@@ -16,36 +16,33 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
-import lombok.RequiredArgsConstructor;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 
 import java.util.List;
 
-@RequiredArgsConstructor
-public class CassandraClientRepository implements ClientRepository {
-    private final ClientDao clientDao;
+public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao> implements ClientRepository {
 
-    @Override
-    public void insertOrUpdate(Client client) {
-        clientDao.insertOrUpdate(client);
+    public CassandraClientRepository(ClientDao dao) {
+        super(dao);
     }
 
     @Override
     public void delete(Client client) {
-        clientDao.delete(client);
+        dao.delete(client);
     }
 
     @Override
     public Client getClientById(String realmId, String id) {
-        return clientDao.getClientById(realmId, id);
+        return dao.getClientById(realmId, id);
     }
 
     @Override
     public long countClientsByRealm(String realmId) {
-        return clientDao.count();
+        return dao.count();
     }
 
     @Override
     public List<Client> findAllClientsWithRealmId(String realmId) {
-        return clientDao.findAllClientsWithRealmId(realmId).all();
+        return dao.findAllClientsWithRealmId(realmId).all();
     }
 }
