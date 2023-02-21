@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RequireProvider(RealmProvider.class)
@@ -114,6 +115,27 @@ public class RealmModelTest extends KeycloakModelTest {
             assertThat(realm.getAttribute("key"), is("val2"));
 
             return null;
+        });
+    }
+
+    @Test
+    public void getRealmByName() {
+        inComittedTransaction(s -> {
+            s.realms().createRealm("my-realm");
+            RealmModel realmByName = s.realms().getRealmByName("my-realm");
+
+            assertThat(realmByName.getName(), is("my-realm"));
+
+            realmByName.setName("my-updated-realm");
+        });
+
+        inComittedTransaction(s -> {
+            RealmModel realmByName = s.realms().getRealmByName("my-updated-realm");
+
+            assertThat(realmByName.getName(), is("my-updated-realm"));
+
+            s.realms().removeRealm(realmByName.getId());
+            assertNull(s.realms().getRealmByName("my-updated-realm"));
         });
     }
 

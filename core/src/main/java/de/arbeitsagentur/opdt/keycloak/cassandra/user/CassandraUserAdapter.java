@@ -423,7 +423,6 @@ public abstract class CassandraUserAdapter implements UserModel {
             }
 
             postUpdateTasks.forEach(Runnable::run);
-
             postUpdateTasks.clear();
             updated = false;
         }

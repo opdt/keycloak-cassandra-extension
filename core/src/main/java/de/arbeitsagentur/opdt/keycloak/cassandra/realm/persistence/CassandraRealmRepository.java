@@ -73,6 +73,7 @@ public class CassandraRealmRepository implements RealmRepository {
     public void createRealm(Realm realm) {
         realm.setVersion(1L);
         realmDao.insert(realm);
+        realmDao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
     }
 
     @Override
@@ -80,6 +81,11 @@ public class CassandraRealmRepository implements RealmRepository {
         realmDao.delete(realm);
         realmDao.deleteAllClientInitialAccessModels(realm.getId());
         realmDao.deleteNameToRealm(realm.getName());
+    }
+
+    @Override
+    public void deleteNameToRealm(String name) {
+        realmDao.deleteNameToRealm(name);
     }
 
     // ClientInitialAccessModel

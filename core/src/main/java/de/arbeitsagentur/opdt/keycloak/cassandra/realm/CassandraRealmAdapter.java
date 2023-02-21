@@ -138,6 +138,8 @@ public class CassandraRealmAdapter implements RealmModel {
     private final Realm realmEntity;
     private final RealmRepository realmRepository;
 
+    private final List<Runnable> postUpdateTasks = new ArrayList<>();
+
     private boolean updated = false;
     private boolean deleted = false;
 
@@ -153,6 +155,13 @@ public class CassandraRealmAdapter implements RealmModel {
 
     @Override
     public void setName(String name) {
+        String oldName = realmEntity.getName();
+        postUpdateTasks.add(() -> {
+            if(!oldName.equals(realmEntity.getName())) {
+                realmRepository.deleteNameToRealm(oldName);
+            }
+        });
+
         realmEntity.setName(name);
         updated = true;
     }
@@ -1973,6 +1982,9 @@ public class CassandraRealmAdapter implements RealmModel {
     public void flush() {
         if (updated && !deleted) {
             realmRepository.update(realmEntity);
+
+            postUpdateTasks.forEach(Runnable::run);
+            postUpdateTasks.clear();
             updated = false;
         }
     }

@@ -44,4 +44,6 @@ public interface RealmRepository {
     void deleteClientInitialAccess(String realmId, String id);
 
     Realm findRealmByName(String name);
+
+    void deleteNameToRealm(String name);
 }

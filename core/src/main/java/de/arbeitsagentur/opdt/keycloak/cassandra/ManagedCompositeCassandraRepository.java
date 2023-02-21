@@ -273,6 +273,12 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     @L1Cached(cacheName = REALM_CACHE)
     @InvalidateCache
+    public void deleteNameToRealm(String name) {
+        this.realmRepository.deleteNameToRealm(name);
+    }
+
+    @L1Cached(cacheName = REALM_CACHE)
+    @InvalidateCache
     public void insertOrUpdate(ClientInitialAccess model) {
         this.realmRepository.insertOrUpdate(model);
     }
