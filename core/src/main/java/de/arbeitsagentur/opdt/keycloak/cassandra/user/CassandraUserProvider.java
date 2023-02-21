@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
@@ -416,7 +417,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
             return Stream.empty();
         }
 
-        if (attrName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+        if (attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
             return
                 Stream.concat(
                     userModels.values().stream()

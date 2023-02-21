@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import lombok.*;
 
 import java.time.Instant;
@@ -32,7 +33,6 @@ import java.util.stream.Collectors;
 @Entity
 @CqlName("users")
 public class User {
-    public static final String INDEXED_ATTRIBUTE_PREFIX = "indexed.";
 
     @PartitionKey(0)
     private String realmId;
@@ -92,7 +92,7 @@ public class User {
         }
 
         return attributes.entrySet().stream()
-            .filter(e -> e.getKey().startsWith(INDEXED_ATTRIBUTE_PREFIX))
+            .filter(e -> e.getKey().startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

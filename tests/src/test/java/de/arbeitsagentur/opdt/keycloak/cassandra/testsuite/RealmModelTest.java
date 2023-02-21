@@ -140,6 +140,24 @@ public class RealmModelTest extends KeycloakModelTest {
     }
 
     @Test
+    public void entityVersionAttribute() {
+        withRealm(realmId, (session, realm) -> {
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("2"));
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION_READONLY), is("2"));
+
+            realm.setAttribute(CassandraRealmAdapter.ENTITY_VERSION_READONLY, "42");
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("2"));
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION_READONLY), is("2"));
+
+            realm.setAttribute(CassandraRealmAdapter.ENTITY_VERSION, "42");
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION), is("42"));
+            assertThat(realm.getAttribute(CassandraRealmAdapter.ENTITY_VERSION_READONLY), is("42"));
+
+            realm.setAttribute(CassandraRealmAdapter.ENTITY_VERSION, "2");
+            return null;
+        });
+    }
+    @Test
     public void testRealmLocalizationTexts() {
         withRealm(realmId, (session, realm) -> {
             // Assert emptyMap

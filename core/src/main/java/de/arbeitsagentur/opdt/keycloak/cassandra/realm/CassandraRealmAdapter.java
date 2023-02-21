@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
@@ -46,93 +47,93 @@ import static java.util.Objects.nonNull;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraRealmAdapter implements RealmModel {
-    private static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
     private static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled"; // Copied from MapRealmAdapter
-    public static final String COMPONENT_PROVIDER_TYPE = INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
-    public static final String DEFAULT_GROUP_IDS = INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
-    public static final String DEFAULT_ROLE_ID = INTERNAL_ATTRIBUTE_PREFIX + "defaultRoleId";
-    public static final String DEFAULT_CLIENT_SCOPE_ID = INTERNAL_ATTRIBUTE_PREFIX + "defaultClientScopeId";
-    public static final String OPTIONAL_CLIENT_SCOPE_ID = INTERNAL_ATTRIBUTE_PREFIX + "optionalClientScopeId";
-    public static final String DISPLAY_NAME = INTERNAL_ATTRIBUTE_PREFIX + "displayName";
-    public static final String DISPLAY_NAME_HTML = INTERNAL_ATTRIBUTE_PREFIX + "displayNameHtml";
-    public static final String ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "enabled";
-    public static final String SSL_REQUIRED = INTERNAL_ATTRIBUTE_PREFIX + "sslRequired";
-    public static final String IS_REGISTRATION_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "isRegistrationAllowed";
-    public static final String IS_REGISTRATION_EMAIL_AS_USERNAME = INTERNAL_ATTRIBUTE_PREFIX + "isRegistrationEmailAsUsername";
-    public static final String IS_REMEMBER_ME = INTERNAL_ATTRIBUTE_PREFIX + "isRememberMe";
-    public static final String IS_EDIT_USERNAME_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "isEditUsernameAllowed";
-    public static final String IS_USER_MANAGED_ACCESS_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "isUserManagedAccessAllowed";
-    public static final String IS_BRUTE_FORCE_PROTECTED = INTERNAL_ATTRIBUTE_PREFIX + "isBruteForceProtected";
-    public static final String IS_PERMANENT_LOCKOUT = INTERNAL_ATTRIBUTE_PREFIX + "isPermanentLockout";
-    public static final String MAX_FAILURE_WAIT_SECONDS = INTERNAL_ATTRIBUTE_PREFIX + "maxFailureWaitSeconds";
-    public static final String WAIT_INCREMENT_SECONDS = INTERNAL_ATTRIBUTE_PREFIX + "waitIncrementSeconds";
-    public static final String MINIMUM_QUICK_LOGIN_WAIT_SECONDS = INTERNAL_ATTRIBUTE_PREFIX + "minimumQuickLoginWaitSeconds";
-    public static final String QUICK_LOGIN_CHECK_MILLI_SECONDS = INTERNAL_ATTRIBUTE_PREFIX + "quickLoginCheckMilliSeconds";
-    public static final String MAX_DELTA_TIME_SECONDS = INTERNAL_ATTRIBUTE_PREFIX + "maxDeltaTimeSeconds";
-    public static final String FAILURE_FACTOR = INTERNAL_ATTRIBUTE_PREFIX + "failureFactor";
-    public static final String VERIFY_EMAIL = INTERNAL_ATTRIBUTE_PREFIX + "verifyEmail";
-    public static final String LOGIN_WITH_EMAIL_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "loginWithEmailAllowed";
-    public static final String IS_DUPLICATE_EMAILS_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "isDuplicateEmailsAllowed";
-    public static final String IS_RESET_PASSWORD_ALLOWED = INTERNAL_ATTRIBUTE_PREFIX + "isResetPasswordAllowed";
-    public static final String DEFAULT_SIG_ALGORITHM = INTERNAL_ATTRIBUTE_PREFIX + "defaultSigAlgorithm";
-    public static final String IS_REVOKE_REFRESH_TOKEN = INTERNAL_ATTRIBUTE_PREFIX + "isRevokeRefreshToken";
-    public static final String REFRESH_TOKEN_MAX_REUSE = INTERNAL_ATTRIBUTE_PREFIX + "refreshTokenMaxReuse";
-    public static final String SSO_SESSION_IDLE_TIMEOUT = INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionIdleTimeout";
-    public static final String SSO_SESSION_MAX_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionMaxLifespan";
-    public static final String SSO_SESSION_IDLE_TIMEOUT_REMEMBER_ME = INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionIdleTimeoutRememberMe";
-    public static final String SSO_SESSION_MAX_LIFESPAN_REMEMBER_ME = INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionMaxLifespanRememberMe";
-    public static final String OFFLINE_SESSION_IDLE_TIMEOUT = INTERNAL_ATTRIBUTE_PREFIX + "offlineSessionIdleTimeout";
-    public static final String ACCESS_TOKEN_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "accessTokenLifespan";
-    public static final String IS_OFFLINE_SESSION_MAX_LIFESPAN_ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "isOfflineSessionMaxLifespanEnabled";
-    public static final String OFFLINE_SESSION_MAX_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "offlineSessionMaxLifespan";
-    public static final String CLIENT_SESSION_IDLE_TIMEOUT = INTERNAL_ATTRIBUTE_PREFIX + "clientSessionIdleTimeout";
-    public static final String CLIENT_SESSION_MAX_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "clientSessionMaxLifespan";
-    public static final String CLIENT_OFFLINE_SESSION_IDLE_TIMEOUT = INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineSessionIdleTimeout";
-    public static final String CLIENT_OFFLINE_SESSION_MAX_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineSessionMaxLifespan";
-    public static final String ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "accessTokenLifespanForImplicitFlow";
-    public static final String ACCESS_CODE_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespan";
-    public static final String ACCESS_CODE_LIFESPAN_USER_ACTION = INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespanUserAction";
-    public static final String ACCESS_CODE_LIFESPAN_LOGIN = INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespanLogin";
-    public static final String ACTION_TOKEN_GENERATED_BY_ADMIN_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "actionTokenGeneratedByAdminLifespan";
-    public static final String ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN = INTERNAL_ATTRIBUTE_PREFIX + "actionTokenGeneratedByUserLifespan";
-    public static final String PASSWORD_POLICY = INTERNAL_ATTRIBUTE_PREFIX + "passwordPolicy";
-    public static final String REQUIRED_CREDENTIALS = INTERNAL_ATTRIBUTE_PREFIX + "requiredCredentials";
-    public static final String OTP_POLICY = INTERNAL_ATTRIBUTE_PREFIX + "otpPolicy";
-    public static final String WEB_AUTHN_POLICY = INTERNAL_ATTRIBUTE_PREFIX + "webAuthnPolicy";
-    public static final String WEB_AUTHN_POLICY_PASSWORDLESS = INTERNAL_ATTRIBUTE_PREFIX + "webAuthnPolicyPasswordless";
-    public static final String BROWSER_SECURITY_HEADERS = INTERNAL_ATTRIBUTE_PREFIX + "browserSecurityHeaders";
-    public static final String SMTP_CONFIG = INTERNAL_ATTRIBUTE_PREFIX + "smtpConfig";
-    public static final String BROWSER_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "browserFlow";
-    public static final String REGISTRATION_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "registrationFlow";
-    public static final String DIRECT_GRANT_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "directGrantFlow";
-    public static final String RESET_CREDENTIALS_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "resetCredentialsFlow";
-    public static final String CLIENT_AUTHENTICATION_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "clientAuthenticationFlow";
-    public static final String DOCKER_AUTHENTICATION_FLOW = INTERNAL_ATTRIBUTE_PREFIX + "dockerAuthenticationFlow";
-    public static final String AUTHENTICATION_FLOWS = INTERNAL_ATTRIBUTE_PREFIX + "authenticationFlows";
-    public static final String AUTHENTICATION_EXECUTION_MODELS = INTERNAL_ATTRIBUTE_PREFIX + "authenticationExecutionModels";
-    public static final String AUTHENTICATOR_CONFIG_MODELS = INTERNAL_ATTRIBUTE_PREFIX + "authenticatorConfigModels";
-    public static final String REQUIRED_ACTION_PROVIDER_MODELS = INTERNAL_ATTRIBUTE_PREFIX + "requiredActionProviderModels";
-    public static final String IDENTITY_PROVIDERS = INTERNAL_ATTRIBUTE_PREFIX + "identityProviders";
-    public static final String IDENTITY_PROVIDER_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "identityProviderMappers";
-    public static final String COMPONENTS = INTERNAL_ATTRIBUTE_PREFIX + "components";
-    public static final String LOGIN_THEME = INTERNAL_ATTRIBUTE_PREFIX + "loginTheme";
-    public static final String ACCOUNT_THEME = INTERNAL_ATTRIBUTE_PREFIX + "accountTheme";
-    public static final String ADMIN_THEME = INTERNAL_ATTRIBUTE_PREFIX + "adminTheme";
-    public static final String EMAIL_THEME = INTERNAL_ATTRIBUTE_PREFIX + "emailTheme";
-    public static final String NOT_BEFORE = INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
-    public static final String IS_EVENTS_ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "isEventsEnabled";
-    public static final String EVENTS_EXPIRATION = INTERNAL_ATTRIBUTE_PREFIX + "eventsExpiration";
-    public static final String EVENT_LISTENERS = INTERNAL_ATTRIBUTE_PREFIX + "eventListeners";
-    public static final String ENABLED_EVENT_TYPES = INTERNAL_ATTRIBUTE_PREFIX + "enabledEventTypes";
-    public static final String IS_ADMIN_EVENTS_ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "isAdminEventsEnabled";
-    public static final String IS_ADMIN_EVENTS_DETAILS_ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "isAdminEventsDetailsEnabled";
-    public static final String MASTER_ADMIN_CLIENT_ID = INTERNAL_ATTRIBUTE_PREFIX + "masterAdminClientId";
-    public static final String IS_INTERNATIONALIZATION_ENABLED = INTERNAL_ATTRIBUTE_PREFIX + "isInternationalizationEnabled";
-    public static final String SUPPORTED_LOCALES = INTERNAL_ATTRIBUTE_PREFIX + "supportedLocales";
-    public static final String DEFAULT_LOCALE = INTERNAL_ATTRIBUTE_PREFIX + "defaultLocale";
-    public static final String LOCALIZATION_TEXTS = INTERNAL_ATTRIBUTE_PREFIX + "localizationTexts";
+    public static final String COMPONENT_PROVIDER_TYPE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
+    public static final String DEFAULT_GROUP_IDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
+    public static final String DEFAULT_ROLE_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultRoleId";
+    public static final String DEFAULT_CLIENT_SCOPE_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultClientScopeId";
+    public static final String OPTIONAL_CLIENT_SCOPE_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "optionalClientScopeId";
+    public static final String DISPLAY_NAME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "displayName";
+    public static final String DISPLAY_NAME_HTML = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "displayNameHtml";
+    public static final String ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "enabled";
+    public static final String SSL_REQUIRED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "sslRequired";
+    public static final String IS_REGISTRATION_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isRegistrationAllowed";
+    public static final String IS_REGISTRATION_EMAIL_AS_USERNAME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isRegistrationEmailAsUsername";
+    public static final String IS_REMEMBER_ME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isRememberMe";
+    public static final String IS_EDIT_USERNAME_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isEditUsernameAllowed";
+    public static final String IS_USER_MANAGED_ACCESS_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isUserManagedAccessAllowed";
+    public static final String IS_BRUTE_FORCE_PROTECTED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isBruteForceProtected";
+    public static final String IS_PERMANENT_LOCKOUT = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isPermanentLockout";
+    public static final String MAX_FAILURE_WAIT_SECONDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxFailureWaitSeconds";
+    public static final String WAIT_INCREMENT_SECONDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "waitIncrementSeconds";
+    public static final String MINIMUM_QUICK_LOGIN_WAIT_SECONDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "minimumQuickLoginWaitSeconds";
+    public static final String QUICK_LOGIN_CHECK_MILLI_SECONDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "quickLoginCheckMilliSeconds";
+    public static final String MAX_DELTA_TIME_SECONDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxDeltaTimeSeconds";
+    public static final String FAILURE_FACTOR = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "failureFactor";
+    public static final String VERIFY_EMAIL = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "verifyEmail";
+    public static final String LOGIN_WITH_EMAIL_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "loginWithEmailAllowed";
+    public static final String IS_DUPLICATE_EMAILS_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isDuplicateEmailsAllowed";
+    public static final String IS_RESET_PASSWORD_ALLOWED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isResetPasswordAllowed";
+    public static final String DEFAULT_SIG_ALGORITHM = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultSigAlgorithm";
+    public static final String IS_REVOKE_REFRESH_TOKEN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isRevokeRefreshToken";
+    public static final String REFRESH_TOKEN_MAX_REUSE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "refreshTokenMaxReuse";
+    public static final String SSO_SESSION_IDLE_TIMEOUT = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionIdleTimeout";
+    public static final String SSO_SESSION_MAX_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionMaxLifespan";
+    public static final String SSO_SESSION_IDLE_TIMEOUT_REMEMBER_ME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionIdleTimeoutRememberMe";
+    public static final String SSO_SESSION_MAX_LIFESPAN_REMEMBER_ME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "ssoSessionMaxLifespanRememberMe";
+    public static final String OFFLINE_SESSION_IDLE_TIMEOUT = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "offlineSessionIdleTimeout";
+    public static final String ACCESS_TOKEN_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accessTokenLifespan";
+    public static final String IS_OFFLINE_SESSION_MAX_LIFESPAN_ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isOfflineSessionMaxLifespanEnabled";
+    public static final String OFFLINE_SESSION_MAX_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "offlineSessionMaxLifespan";
+    public static final String CLIENT_SESSION_IDLE_TIMEOUT = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientSessionIdleTimeout";
+    public static final String CLIENT_SESSION_MAX_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientSessionMaxLifespan";
+    public static final String CLIENT_OFFLINE_SESSION_IDLE_TIMEOUT = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineSessionIdleTimeout";
+    public static final String CLIENT_OFFLINE_SESSION_MAX_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineSessionMaxLifespan";
+    public static final String ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accessTokenLifespanForImplicitFlow";
+    public static final String ACCESS_CODE_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespan";
+    public static final String ACCESS_CODE_LIFESPAN_USER_ACTION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespanUserAction";
+    public static final String ACCESS_CODE_LIFESPAN_LOGIN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accessCodeLifespanLogin";
+    public static final String ACTION_TOKEN_GENERATED_BY_ADMIN_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "actionTokenGeneratedByAdminLifespan";
+    public static final String ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "actionTokenGeneratedByUserLifespan";
+    public static final String PASSWORD_POLICY = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "passwordPolicy";
+    public static final String REQUIRED_CREDENTIALS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "requiredCredentials";
+    public static final String OTP_POLICY = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "otpPolicy";
+    public static final String WEB_AUTHN_POLICY = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "webAuthnPolicy";
+    public static final String WEB_AUTHN_POLICY_PASSWORDLESS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "webAuthnPolicyPasswordless";
+    public static final String BROWSER_SECURITY_HEADERS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "browserSecurityHeaders";
+    public static final String SMTP_CONFIG = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "smtpConfig";
+    public static final String BROWSER_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "browserFlow";
+    public static final String REGISTRATION_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "registrationFlow";
+    public static final String DIRECT_GRANT_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "directGrantFlow";
+    public static final String RESET_CREDENTIALS_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "resetCredentialsFlow";
+    public static final String CLIENT_AUTHENTICATION_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientAuthenticationFlow";
+    public static final String DOCKER_AUTHENTICATION_FLOW = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "dockerAuthenticationFlow";
+    public static final String AUTHENTICATION_FLOWS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticationFlows";
+    public static final String AUTHENTICATION_EXECUTION_MODELS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticationExecutionModels";
+    public static final String AUTHENTICATOR_CONFIG_MODELS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticatorConfigModels";
+    public static final String REQUIRED_ACTION_PROVIDER_MODELS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "requiredActionProviderModels";
+    public static final String IDENTITY_PROVIDERS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "identityProviders";
+    public static final String IDENTITY_PROVIDER_MAPPERS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "identityProviderMappers";
+    public static final String COMPONENTS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "components";
+    public static final String LOGIN_THEME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "loginTheme";
+    public static final String ACCOUNT_THEME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "accountTheme";
+    public static final String ADMIN_THEME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "adminTheme";
+    public static final String EMAIL_THEME = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "emailTheme";
+    public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
+    public static final String IS_EVENTS_ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isEventsEnabled";
+    public static final String EVENTS_EXPIRATION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "eventsExpiration";
+    public static final String EVENT_LISTENERS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "eventListeners";
+    public static final String ENABLED_EVENT_TYPES = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "enabledEventTypes";
+    public static final String IS_ADMIN_EVENTS_ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isAdminEventsEnabled";
+    public static final String IS_ADMIN_EVENTS_DETAILS_ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isAdminEventsDetailsEnabled";
+    public static final String MASTER_ADMIN_CLIENT_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "masterAdminClientId";
+    public static final String IS_INTERNATIONALIZATION_ENABLED = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isInternationalizationEnabled";
+    public static final String SUPPORTED_LOCALES = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "supportedLocales";
+    public static final String DEFAULT_LOCALE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultLocale";
+    public static final String LOCALIZATION_TEXTS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "localizationTexts";
 
-    public static final String ENTITY_VERSION = INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
+    public static final String ENTITY_VERSION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
+    public static final String ENTITY_VERSION_READONLY = AttributeTypes.READONLY_ATTRIBUTE_PREFIX + "entityVersion";
 
     private final KeycloakSession session;
     private final Realm realmEntity;
@@ -1589,7 +1590,7 @@ public class CassandraRealmAdapter implements RealmModel {
     // Attributes
     @Override
     public void setAttribute(String name, String value) {
-        if (name == null || value == null) {
+        if (name == null || value == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
             return;
         }
 
@@ -1614,7 +1615,7 @@ public class CassandraRealmAdapter implements RealmModel {
 
     @Override
     public String getAttribute(String name) {
-        if(ENTITY_VERSION.equals(name)) {
+        if(ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
             return String.valueOf(realmEntity.getVersion());
         }
         Set<String> values = realmEntity.getAttribute(name);
@@ -1623,13 +1624,19 @@ public class CassandraRealmAdapter implements RealmModel {
 
     @Override
     public Map<String, String> getAttributes() {
-        return realmEntity.getAttributes().entrySet().stream()
-            .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
+        Map<String, String> attributes = realmEntity.getAttributes().entrySet().stream()
+            .filter(e -> !e.getKey().startsWith(AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX))
             .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
+
+        if(realmEntity.getVersion() != null) {
+            attributes.put(ENTITY_VERSION_READONLY, String.valueOf(realmEntity.getVersion()));
+        }
+
+        return attributes;
     }
 
-    public void setAttributeValues(String name, List<String> values) {
+    private void setAttributeValues(String name, List<String> values) {
         if (name == null || values == null) {
             return;
         }
@@ -1639,6 +1646,10 @@ public class CassandraRealmAdapter implements RealmModel {
     }
 
     private List<String> getAttributeValues(String name) {
+        if(ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
+            return Arrays.asList(String.valueOf(realmEntity.getVersion()));
+        }
+
         Set<String> values = realmEntity.getAttribute(name);
         return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
     }

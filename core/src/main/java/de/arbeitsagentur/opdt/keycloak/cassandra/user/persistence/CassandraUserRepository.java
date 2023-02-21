@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
@@ -119,7 +120,7 @@ public class CassandraUserRepository implements UserRepository {
 
     @Override
     public List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
-        if (attributeName == null || attributeValue == null || !attributeName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+        if (attributeName == null || attributeValue == null || !attributeName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
             return Collections.emptyList();
         }
 
@@ -164,7 +165,7 @@ public class CassandraUserRepository implements UserRepository {
 
     @Override
     public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
-        if (attrName != null && attrName.startsWith(User.INDEXED_ATTRIBUTE_PREFIX)) {
+        if (attrName != null && attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
             user.getAttribute(attrName).forEach(value -> userDao.deleteIndex(realmId, attrName, value, user.getId()));
         }
     }

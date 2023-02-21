@@ -123,6 +123,34 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
+    public void setEntityVersion() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().addUser(realm, "user");
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("1"));
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION_READONLY), is("1"));
+
+            user.setSingleAttribute(CassandraUserAdapter.ENTITY_VERSION_READONLY, "42");
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("1"));
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION_READONLY), is("1"));
+
+            user.setSingleAttribute(CassandraUserAdapter.ENTITY_VERSION, "2");
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("2"));
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION_READONLY), is("2"));
+
+            user.setSingleAttribute(CassandraUserAdapter.ENTITY_VERSION, "1");
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user = session.users().getUserByUsername(realm, "user");
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION), is("2"));
+            assertThat(user.getFirstAttribute(CassandraUserAdapter.ENTITY_VERSION_READONLY), is("2"));
+
+            return null;
+        });
+    }
+
+    @Test
     public void persistUser() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
@@ -282,8 +310,8 @@ public class UserModelTest extends KeycloakModelTest {
             Assert.assertThat(user.getFirstAttribute("key3"), nullValue());
 
             Map<String, List<String>> allAttrVals = user.getAttributes();
-            Assert.assertThat(allAttrVals.keySet(), hasSize(6));
-            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder(UserModel.USERNAME, UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, "key1", "key2"));
+            Assert.assertThat(allAttrVals.keySet(), hasSize(7));
+            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder(CassandraUserAdapter.ENTITY_VERSION_READONLY, UserModel.USERNAME, UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, "key1", "key2"));
             Assert.assertThat(allAttrVals.get("key1"), equalTo(user.getAttributeStream("key1").collect(Collectors.toList())));
             Assert.assertThat(allAttrVals.get("key2"), equalTo(user.getAttributeStream("key2").collect(Collectors.toList())));
 
@@ -326,8 +354,8 @@ public class UserModelTest extends KeycloakModelTest {
             Map<String, List<String>> allAttrVals = user.getAttributes();
 
             // Ensure same transaction is able to see updated value
-            Assert.assertThat(allAttrVals.keySet(), hasSize(5));
-            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder("key1", UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, UserModel.USERNAME));
+            Assert.assertThat(allAttrVals.keySet(), hasSize(6));
+            Assert.assertThat(allAttrVals.keySet(), containsInAnyOrder("key1", CassandraUserAdapter.ENTITY_VERSION_READONLY, UserModel.FIRST_NAME, UserModel.LAST_NAME, UserModel.EMAIL, UserModel.USERNAME));
             Assert.assertThat(allAttrVals.get("key1"), contains("val2"));
             return null;
         });
@@ -347,6 +375,7 @@ public class UserModelTest extends KeycloakModelTest {
             expected.put(UserModel.LAST_NAME, Collections.singletonList(null));
             expected.put(UserModel.EMAIL, Collections.singletonList(null));
             expected.put(UserModel.USERNAME, Collections.singletonList("user"));
+            expected.put(CassandraUserAdapter.ENTITY_VERSION_READONLY, Collections.singletonList("1"));
 
             UserModel user = currentSession.users().addUser(realm, "user");
 
@@ -365,6 +394,7 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(originalRealmId, (currentSession, realm) -> {
             Map<String, List<String>> expected = expectedAtomic.get();
+            expected.put(CassandraUserAdapter.ENTITY_VERSION_READONLY, Collections.singletonList("2"));
 
             Assert.assertThat(currentSession.users().getUserByUsername(realm, "user").getAttributes(), equalTo(expected));
             return null;
