@@ -21,9 +21,10 @@ import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
-public interface RealmDao {
+public interface RealmDao extends TransactionalDao<Realm> {
     @Select(customWhereClause = "id = :id")
     @StatementAttributes(consistencyLevel = "SERIAL")
     Realm getRealmById(String id);
@@ -38,17 +39,8 @@ public interface RealmDao {
     @Delete(entityClass = NameToRealm.class)
     void deleteNameToRealm(String name);
 
-    @Insert(ifNotExists = true)
-    void insert(Realm realm);
-
-    @Update(customIfClause = "version = :expectedVersion")
-    ResultSet update(Realm realm, long expectedVersion);
-
     @Update
     void insertOrUpdate(NameToRealm nameToRealm);
-
-    @Delete(ifExists = true)
-    void delete(Realm realm);
 
     // ClientInitialAccessModel
 

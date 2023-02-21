@@ -17,7 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
@@ -29,7 +29,6 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,53 +36,32 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.utils.KeycloakModelUtils.isUsernameCaseSensitive;
 
 @JBossLog
-public class CassandraUserProvider implements UserProvider {
+public class CassandraUserProvider extends TransactionalProvider<User, CassandraUserAdapter> implements UserProvider {
 
-    private final KeycloakSession session;
     private final UserRepository userRepository;
 
-    private final Map<String, CassandraUserAdapter> userModels = new HashMap<>();
-
     public CassandraUserProvider(KeycloakSession session, UserRepository userRepository) {
-        this.session = session;
+        super(session);
         this.userRepository = userRepository;
     }
 
-    private Function<User, UserModel> entityToAdapterFunc(RealmModel realm) {
-        return origEntity -> {
-            if (origEntity == null) {
-                return null;
+    @Override
+    protected CassandraUserAdapter createNewModel(RealmModel realm, User entity) {
+        return new CassandraUserAdapter(realm, userRepository, entity) {
+            @Override
+            public boolean checkEmailUniqueness(RealmModel realm, String email) {
+                return getUserByEmail(realm, email) != null;
             }
 
-            CassandraUserAdapter existingModel = userModels.get(origEntity.getId());
-            if (existingModel != null) {
-                log.tracef("Return cached user-model for id %s", origEntity.getId());
-                return existingModel;
+            @Override
+            public boolean checkUsernameUniqueness(RealmModel realm, String username) {
+                return getUserByUsername(realm, username) != null;
             }
-            CassandraUserAdapter adapter = new CassandraUserAdapter(realm, userRepository, origEntity) {
-                @Override
-                public boolean checkEmailUniqueness(RealmModel realm, String email) {
-                    return getUserByEmail(realm, email) != null;
-                }
 
-                @Override
-                public boolean checkUsernameUniqueness(RealmModel realm, String username) {
-                    return getUserByUsername(realm, username) != null;
-                }
-
-                @Override
-                public SubjectCredentialManager credentialManager() {
-                    return new CassandraCredentialManager(session, realm, userRepository, this, origEntity);
-                }
-            };
-
-            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
-                log.tracef("Flush user-model with id %s", adapter.getId());
-                adapter.flush();
-                userModels.remove(adapter.getId());
-            });
-            userModels.put(adapter.getId(), adapter);
-            return adapter;
+            @Override
+            public SubjectCredentialManager credentialManager() {
+                return new CassandraCredentialManager(session, realm, userRepository, this, entity);
+            }
         };
     }
 
@@ -112,7 +90,7 @@ public class CassandraUserProvider implements UserProvider {
             .createdTimestamp(Instant.now())
             .build();
 
-        UserModel userModel = entityToAdapterFunc(realm).apply(user);
+        CassandraUserAdapter userModel = entityToAdapterFunc(realm).apply(user);
         userModel.setUsername(username);
 
         if (addDefaultRoles) {
@@ -132,7 +110,7 @@ public class CassandraUserProvider implements UserProvider {
                 .forEach(userModel::addRequiredAction);
         }
 
-        ((CassandraUserAdapter) userModel).flush(); // initial save
+        userModel.commit(); // initial save
         return userModel;
     }
 
@@ -333,7 +311,7 @@ public class CassandraUserProvider implements UserProvider {
     @Override
     public UserModel getUserById(RealmModel realm, String id) {
         log.debugv("getUserById realm={0} id={1}", realm, id);
-        CassandraUserAdapter existingUser = userModels.get(id);
+        CassandraUserAdapter existingUser = models.get(id);
         if (existingUser != null) {
             return existingUser;
         }
@@ -345,7 +323,7 @@ public class CassandraUserProvider implements UserProvider {
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         log.debugv("getUserByUsername realm={0} username={1}", realm, username);
-        return userModels.values().stream()
+        return models.values().stream()
             .filter(model -> model.getRealm().equals(realm))
             .filter(model -> model.hasUsername(username))
             .map(model -> (UserModel) model)
@@ -359,7 +337,7 @@ public class CassandraUserProvider implements UserProvider {
     @Override
     public UserModel getUserByEmail(RealmModel realm, String email) {
         log.debugv("getUserByEmail realm={0} email={1}", realm, email);
-        return userModels.values().stream()
+        return models.values().stream()
             .filter(model -> model.getRealm().equals(realm))
             .filter(model -> model.getEmail() != null && model.getEmail().equals(email))
             .map(model -> (UserModel) model)
@@ -419,26 +397,28 @@ public class CassandraUserProvider implements UserProvider {
         if (attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
             return
                 Stream.concat(
-                    userModels.values().stream()
+                        models.values().stream()
+                            .filter(model -> model.getRealm().equals(realm))
+                            .filter(model -> model.getAttributes().getOrDefault(attrName, Collections.emptyList()).contains(attrValue))
+                            .filter(u -> u.getServiceAccountClientLink() == null),
+                        userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue).stream()
+                            .map(entityToAdapterFunc(realm))
+                            .filter(u -> u.getServiceAccountClientLink() == null)
+                            .sorted(Comparator.comparing(UserModel::getUsername)))
+                    .map(UserModel.class::cast).distinct();
+        } else {
+            return Stream.concat(
+                    models.values().stream()
                         .filter(model -> model.getRealm().equals(realm))
                         .filter(model -> model.getAttributes().getOrDefault(attrName, Collections.emptyList()).contains(attrValue))
                         .filter(u -> u.getServiceAccountClientLink() == null),
-                    userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue).stream()
-                        .map(entityToAdapterFunc(realm))
+                    userRepository.findAllUsers().stream()
+                        .filter(u -> u.getRealmId().equals(realm.getId()))
+                        .filter(u -> u.getAttribute(attrName).contains(attrValue))
                         .filter(u -> u.getServiceAccountClientLink() == null)
-                        .sorted(Comparator.comparing(UserModel::getUsername))).distinct();
-        } else {
-            return Stream.concat(
-                userModels.values().stream()
-                    .filter(model -> model.getRealm().equals(realm))
-                    .filter(model -> model.getAttributes().getOrDefault(attrName, Collections.emptyList()).contains(attrValue))
-                    .filter(u -> u.getServiceAccountClientLink() == null),
-                userRepository.findAllUsers().stream()
-                    .filter(u -> u.getRealmId().equals(realm.getId()))
-                    .filter(u -> u.getAttribute(attrName).contains(attrValue))
-                    .filter(u -> u.getServiceAccountClientLink() == null)
-                    .map(entityToAdapterFunc(realm))
-                    .sorted(Comparator.comparing(UserModel::getUsername))).distinct();
+                        .map(entityToAdapterFunc(realm))
+                        .sorted(Comparator.comparing(UserModel::getUsername)))
+                .map(UserModel.class::cast).distinct();
         }
     }
 
@@ -452,7 +432,7 @@ public class CassandraUserProvider implements UserProvider {
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
         userRepository.deleteUserConsentsByUserId(realm.getId(), user.getId());
-        userModels.remove(user.getId());
+        models.remove(user.getId());
         return ((CassandraUserAdapter) user).delete();
     }
 
@@ -460,7 +440,7 @@ public class CassandraUserProvider implements UserProvider {
     public void preRemove(RealmModel realm) {
         log.tracef("preRemove[RealmModel](%s)%s", realm, getShortStackTrace());
         searchForUserStream(realm, "").forEach(u -> removeUser(realm, u));
-        userModels.clear();
+        models.clear();
     }
 
     @Override
@@ -533,10 +513,5 @@ public class CassandraUserProvider implements UserProvider {
         }
 
         return userById;
-    }
-
-    @Override
-    public void close() {
-        userModels.clear();
     }
 }

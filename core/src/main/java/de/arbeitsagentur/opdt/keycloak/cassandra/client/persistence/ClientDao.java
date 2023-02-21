@@ -16,23 +16,22 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
-public interface ClientDao {
-    @Update
-    void insertOrUpdate(Client client);
-
+public interface ClientDao extends TransactionalDao<Client> {
     @Select(customWhereClause = "realm_id = :realmId AND id = :id")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     Client getClientById(String realmId, String id);
 
-    @Query("SELECT COUNT(id) FROM users")
+    @Query("SELECT COUNT(id) FROM clients")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     long count();
 
     @Select(customWhereClause = "realm_id = :realmId")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<Client> findAllClientsWithRealmId(String realmId);
-
-    @Delete
-    void delete(Client client);
 }
