@@ -47,7 +47,7 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import java.util.List;
 import java.util.Set;
 
-import static de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache.*;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.cache.KeycloakSessionCache.*;
 
 @Setter
 public class ManagedCompositeCassandraRepository implements CompositeRepository {

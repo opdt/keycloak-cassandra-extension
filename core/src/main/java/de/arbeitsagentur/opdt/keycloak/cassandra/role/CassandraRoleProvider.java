@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.role;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
@@ -24,9 +22,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -34,7 +30,7 @@ import java.util.stream.Stream;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
-public class CassandraRoleProvider extends AbstractCassandraProvider implements RoleProvider {
+public class CassandraRoleProvider implements RoleProvider {
     private final RoleRepository roleRepository;
 
     public CassandraRoleProvider(RoleRepository roleRepository) {
@@ -263,8 +259,7 @@ public class CassandraRoleProvider extends AbstractCassandraProvider implements 
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.ROLE_CACHE);
+    public void close() {
+        // Nothing to do
     }
-
 }

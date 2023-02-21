@@ -15,11 +15,9 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -34,7 +32,9 @@ import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -44,7 +44,7 @@ import static org.keycloak.models.utils.SessionExpiration.getAuthSessionLifespan
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraAuthSessionProvider extends AbstractCassandraProvider implements AuthenticationSessionProvider {
+public class CassandraAuthSessionProvider implements AuthenticationSessionProvider {
     private final KeycloakSession session;
     private final AuthSessionRepository authSessionRepository;
     private final int authSessionsLimit;
@@ -173,7 +173,7 @@ public class CassandraAuthSessionProvider extends AbstractCassandraProvider impl
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.AUTH_SESSION_CACHE);
+    public void close() {
+        // Nothing to do
     }
 }

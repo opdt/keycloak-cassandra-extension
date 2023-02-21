@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import lombok.RequiredArgsConstructor;
@@ -27,15 +25,13 @@ import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserLoginFailureProvider;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraLoginFailureProvider extends AbstractCassandraProvider implements UserLoginFailureProvider {
+public class CassandraLoginFailureProvider implements UserLoginFailureProvider {
     private final KeycloakSession session;
     private final LoginFailureRepository loginFailureRepository;
 
@@ -88,7 +84,7 @@ public class CassandraLoginFailureProvider extends AbstractCassandraProvider imp
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.LOGIN_FAILURE_CACHE);
+    public void close() {
+        // Nothing to do
     }
 }

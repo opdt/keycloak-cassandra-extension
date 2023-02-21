@@ -15,9 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
@@ -38,7 +37,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.utils.KeycloakModelUtils.isUsernameCaseSensitive;
 
 @JBossLog
-public class CassandraUserProvider extends AbstractCassandraProvider implements UserProvider {
+public class CassandraUserProvider implements UserProvider {
 
     private final KeycloakSession session;
     private final UserRepository userRepository;
@@ -335,7 +334,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     public UserModel getUserById(RealmModel realm, String id) {
         log.debugv("getUserById realm={0} id={1}", realm, id);
         CassandraUserAdapter existingUser = userModels.get(id);
-        if(existingUser != null) {
+        if (existingUser != null) {
             return existingUser;
         }
 
@@ -537,13 +536,7 @@ public class CassandraUserProvider extends AbstractCassandraProvider implements 
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.USER_CACHE, ThreadLocalCache.USER_CONSENT_CACHE);
-    }
-
-    @Override
     public void close() {
-        super.close();
         userModels.clear();
     }
 }

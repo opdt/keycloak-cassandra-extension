@@ -15,19 +15,19 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,7 +37,7 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 @JBossLog
-public class CassandraRealmsProvider extends AbstractCassandraProvider implements RealmProvider {
+public class CassandraRealmsProvider implements RealmProvider {
     private KeycloakSession session;
     private RealmRepository realmRepository;
 
@@ -512,13 +512,7 @@ public class CassandraRealmsProvider extends AbstractCassandraProvider implement
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.REALM_CACHE);
-    }
-
-    @Override
     public void close() {
-        super.close();
         realmModels.clear();
     }
 }

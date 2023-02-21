@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +24,7 @@ import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.SingleUseObjectProvider;
 import org.keycloak.models.map.common.TimeAdapter;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -36,7 +32,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider implements SingleUseObjectProvider {
+public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider {
     private final KeycloakSession session;
     private final SingleUseObjectRepository repository;
 
@@ -131,7 +127,7 @@ public class CassandraSingleUseObjectProvider extends AbstractCassandraProvider 
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.SUO_CACHE);
+    public void close() {
+        // Nothing to do
     }
 }

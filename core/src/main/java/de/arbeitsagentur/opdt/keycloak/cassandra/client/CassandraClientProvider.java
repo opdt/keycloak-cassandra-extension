@@ -15,19 +15,13 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.client;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
-import org.keycloak.models.map.client.MapClientEntity;
-import org.keycloak.models.map.storage.ModelCriteriaBuilder;
-import org.keycloak.models.map.storage.criteria.DefaultModelCriteria;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,11 +30,9 @@ import java.util.stream.Stream;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_AFTER_REMOVE;
 import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
-import static org.keycloak.models.map.storage.QueryParameters.withCriteria;
-import static org.keycloak.models.map.storage.criteria.DefaultModelCriteria.criteria;
 
 @JBossLog
-public class CassandraClientProvider extends AbstractCassandraProvider implements ClientProvider {
+public class CassandraClientProvider implements ClientProvider {
     private final KeycloakSession session;
 
     private final ClientRepository clientRepository;
@@ -224,7 +216,7 @@ public class CassandraClientProvider extends AbstractCassandraProvider implement
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.CLIENT_CACHE);
+    public void close() {
+        // Nothing to do
     }
 }

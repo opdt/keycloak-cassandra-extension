@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
@@ -44,7 +42,7 @@ import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraUserSessionProvider extends AbstractCassandraProvider implements UserSessionProvider {
+public class CassandraUserSessionProvider implements UserSessionProvider {
     private final KeycloakSession session;
     private final UserSessionRepository userSessionRepository;
 
@@ -442,6 +440,11 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
     }
 
     @Override
+    public void close() {
+        // Nothing to do
+    }
+
+    @Override
     public int getStartupTime(RealmModel realm) {
         return realm.getNotBefore();
     }
@@ -517,8 +520,4 @@ public class CassandraUserSessionProvider extends AbstractCassandraProvider impl
         return entity;
     }
 
-    @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.USER_SESSION_CACHE);
-    }
 }
