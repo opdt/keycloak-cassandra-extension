@@ -16,14 +16,17 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.models.KeycloakSession;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 @JBossLog
-@SuppressWarnings("java:S5164") // Caches are reset per area via ThreadLocalCache#reset(cacheName), there is no good place to remove all caches at once
-public class ThreadLocalCache {
+public class KeycloakSessionCache {
+    private static final String SESSION_CACHE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "sessionCache";
     public static final String USER_CACHE = "userCache";
     public static final String USER_CONSENT_CACHE = "userConsentCache";
     public static final String ROLE_CACHE = "roleCache";
@@ -37,30 +40,29 @@ public class ThreadLocalCache {
 
     static final Object NONE = new Object();
 
-    private static final ThreadLocal<Map<String, Map<CacheInvocationContext, Object>>> threadLocalCacheContainer = new ThreadLocal<>();
 
-    public static Object get(String cacheName, CacheInvocationContext invocationContext) {
-        Map<CacheInvocationContext, Object> cache = getCache(cacheName);
+    public static Object get(KeycloakSession session, String cacheName, CacheInvocationContext invocationContext) {
+        Map<CacheInvocationContext, Object> cache = getCache(session, cacheName);
 
         return cache.getOrDefault(invocationContext, NONE);
     }
 
-    static void put(String cacheName, CacheInvocationContext methodInvocation, Object result) {
-        Map<CacheInvocationContext, Object> cache = getCache(cacheName);
+    static void put(KeycloakSession session, String cacheName, CacheInvocationContext methodInvocation, Object result) {
+        Map<CacheInvocationContext, Object> cache = getCache(session, cacheName);
         cache.put(methodInvocation, result);
     }
 
-    public static void reset(String cacheName) {
+    public static void reset(KeycloakSession session, String cacheName) {
         log.tracef("Reset cache %s", cacheName);
-        Map<String, Map<CacheInvocationContext, Object>> cache = threadLocalCacheContainer.get();
+        Map<String, Map<CacheInvocationContext, Object>> cache = session.getAttributeOrDefault(SESSION_CACHE_ATTRIBUTE, new HashMap<>());
         cache.remove(cacheName);
     }
 
-    private static Map<CacheInvocationContext, Object> getCache(String cacheName) {
-        Map<String, Map<CacheInvocationContext, Object>> cache = threadLocalCacheContainer.get();
+    private static Map<CacheInvocationContext, Object> getCache(KeycloakSession session, String cacheName) {
+        Map<String, Map<CacheInvocationContext, Object>> cache = session.getAttributeOrDefault(SESSION_CACHE_ATTRIBUTE, new HashMap<>());
         if (cache == null) {
             cache = new WeakHashMap<>();
-            threadLocalCacheContainer.set(cache);
+            session.setAttribute(SESSION_CACHE_ATTRIBUTE, cache);
         }
 
         if (!cache.containsKey(cacheName)) {

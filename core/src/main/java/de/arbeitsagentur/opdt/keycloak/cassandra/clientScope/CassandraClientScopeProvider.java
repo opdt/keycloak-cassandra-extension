@@ -15,8 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.AbstractCassandraProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.cache.ThreadLocalCache;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
@@ -26,7 +24,6 @@ import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -38,7 +35,7 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraClientScopeProvider extends AbstractCassandraProvider implements ClientScopeProvider {
+public class CassandraClientScopeProvider implements ClientScopeProvider {
     private final KeycloakSession session;
 
     private final ClientScopeRepository repository;
@@ -123,8 +120,7 @@ public class CassandraClientScopeProvider extends AbstractCassandraProvider impl
     }
 
     @Override
-    protected List<String> getCacheNames() {
-        return Arrays.asList(ThreadLocalCache.CLIENT_SCOPE_CACHE);
+    public void close() {
+        // Nothing to do
     }
-
 }

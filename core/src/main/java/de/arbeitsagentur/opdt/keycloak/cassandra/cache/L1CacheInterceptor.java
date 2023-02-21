@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.models.KeycloakSession;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -40,6 +41,7 @@ public class L1CacheInterceptor implements InvocationHandler {
         CACHE_INVALIDATION_NAMES.add("make");
     }
 
+    private final KeycloakSession session;
     private final Object target;
 
     @Override
@@ -58,7 +60,7 @@ public class L1CacheInterceptor implements InvocationHandler {
                         .collect(Collectors.joining(", ")));
             }
 
-            ThreadLocalCache.reset(cacheName);
+            KeycloakSessionCache.reset(session, cacheName);
 
             return method.invoke(target, args);
         } else if (CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> method.getName().toLowerCase().contains(name))) {
@@ -71,17 +73,17 @@ public class L1CacheInterceptor implements InvocationHandler {
 
         CacheInvocationContext cacheInvocationContext = CacheInvocationContext.create(target, method, args);
 
-        Object result = ThreadLocalCache.get(cacheName, cacheInvocationContext);
+        Object result = KeycloakSessionCache.get(session, cacheName, cacheInvocationContext);
         long timestamp = System.currentTimeMillis();
 
-        if (ThreadLocalCache.NONE == result) {
+        if (KeycloakSessionCache.NONE == result) {
             result = method.invoke(target, args);
 
             if (log.isTraceEnabled()) {
                 log.tracef("Uncached Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
             }
 
-            ThreadLocalCache.put(cacheName, cacheInvocationContext, result);
+            KeycloakSessionCache.put(session, cacheName, cacheInvocationContext, result);
         } else if (log.isTraceEnabled()) {
             log.tracef("Cached Result for Call %s - %s", cacheInvocationContext.getTargetMethod(), (System.currentTimeMillis() - timestamp) + "ms");
         }

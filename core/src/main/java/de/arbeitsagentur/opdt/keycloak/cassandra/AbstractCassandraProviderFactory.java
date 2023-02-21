@@ -124,7 +124,7 @@ public abstract class AbstractCassandraProviderFactory {
         cassandraRepository.setClientRepository(clientRepository);
         cassandraRepository.setClientScopeRepository(clientScopeRepository);
 
-        L1CacheInterceptor intercepted = new L1CacheInterceptor(cassandraRepository);
+        L1CacheInterceptor intercepted = new L1CacheInterceptor(session, cassandraRepository);
         return (CompositeRepository) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{CompositeRepository.class}, intercepted);
     }
 }
