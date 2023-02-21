@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import lombok.EqualsAndHashCode;
@@ -34,8 +35,9 @@ import java.util.stream.Stream;
 @JBossLog
 @RequiredArgsConstructor
 public abstract class CassandraUserAdapter implements UserModel {
-    public static final String NOT_BEFORE = "notBefore";
-    public static final String ENTITY_VERSION = "entityVersion";
+    public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
+    public static final String ENTITY_VERSION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
+    public static final String ENTITY_VERSION_READONLY = AttributeTypes.READONLY_ATTRIBUTE_PREFIX + "entityVersion";
     private final RealmModel realm;
     private final UserRepository userRepository;
     private final User userEntity;
@@ -192,6 +194,10 @@ public abstract class CassandraUserAdapter implements UserModel {
         result.add(UserModel.EMAIL, userEntity.getEmail());
         result.add(UserModel.USERNAME, userEntity.getUsername());
 
+        if (userEntity.getVersion() != null) {
+            result.add(ENTITY_VERSION_READONLY, String.valueOf(userEntity.getVersion()));
+        }
+
         return result;
     }
 
@@ -199,7 +205,7 @@ public abstract class CassandraUserAdapter implements UserModel {
     public void setAttribute(String name, List<String> values) {
         log.debugv(realm.getId(), userEntity.getId(), name, values);
 
-        if (values == null) {
+        if (values == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
             return;
         }
 
@@ -217,7 +223,7 @@ public abstract class CassandraUserAdapter implements UserModel {
     public void setSingleAttribute(String name, String value) {
         log.debugv(realm.getId(), userEntity.getId(), name, value);
 
-        if (value == null) {
+        if (value == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
             return;
         }
 
@@ -442,7 +448,9 @@ public abstract class CassandraUserAdapter implements UserModel {
             return Optional.ofNullable(userEntity.getEmail());
         } else if (UserModel.USERNAME.equals(name)) {
             return Optional.ofNullable(userEntity.getUsername());
-        } else if(ENTITY_VERSION.equals(name)) {
+        } else if (ENTITY_VERSION.equals(name)) {
+            return Optional.of(String.valueOf(userEntity.getVersion()));
+        } else if (ENTITY_VERSION_READONLY.equals(name)) {
             return Optional.of(String.valueOf(userEntity.getVersion()));
         }
 
