@@ -20,7 +20,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelA
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.ObjectUtil;
@@ -32,16 +31,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@EqualsAndHashCode(of = "userEntity")
+@EqualsAndHashCode(callSuper = true)
 @JBossLog
-@RequiredArgsConstructor
-public abstract class CassandraUserAdapter extends TransactionalModelAdapter implements UserModel {
+public abstract class CassandraUserAdapter extends TransactionalModelAdapter<User> implements UserModel {
     public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
-    public static final String ENTITY_VERSION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
-    public static final String ENTITY_VERSION_READONLY = AttributeTypes.READONLY_ATTRIBUTE_PREFIX + "entityVersion";
+
+    @EqualsAndHashCode.Exclude
     private final RealmModel realm;
+
+    @EqualsAndHashCode.Exclude
     private final UserRepository userRepository;
-    private final User userEntity;
+
+    public CassandraUserAdapter(User entity, RealmModel realm, UserRepository userRepository) {
+        super(entity);
+        this.realm = realm;
+        this.userRepository = userRepository;
+    }
 
     public RealmModel getRealm() {
         return realm;
@@ -49,12 +54,12 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     @Override
     public String getId() {
-        return userEntity.getId();
+        return entity.getId();
     }
 
     @Override
     public String getUsername() {
-        return userEntity.getUsername();
+        return entity.getUsername();
     }
 
     public boolean hasUsername(String toCompare) {
@@ -63,8 +68,8 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
         }
 
         return KeycloakModelUtils.isUsernameCaseSensitive(realm)
-            ? KeycloakModelUtils.toLowerCaseSafe(toCompare).equals(userEntity.getUsernameCaseInsensitive())
-            : toCompare.equals(userEntity.getUsername());
+            ? KeycloakModelUtils.toLowerCaseSafe(toCompare).equals(entity.getUsernameCaseInsensitive())
+            : toCompare.equals(entity.getUsername());
     }
 
     @Override
@@ -78,8 +83,8 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
             : KeycloakModelUtils.toLowerCaseSafe(username);
 
         String currentUsername = KeycloakModelUtils.isUsernameCaseSensitive(realm)
-            ? userEntity.getUsername()
-            : userEntity.getUsernameCaseInsensitive();
+            ? entity.getUsername()
+            : entity.getUsernameCaseInsensitive();
 
         // Do not continue if current username of entity is the requested username
         if (usernameToCompare.equals(currentUsername)) return;
@@ -88,15 +93,15 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
             throw new ModelDuplicateException("A user with username " + username + " already exists");
         }
 
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.setUsername(username);
-        userEntity.setUsernameCaseInsensitive(KeycloakModelUtils.toLowerCaseSafe(username));
+        User userCopy = entity.toBuilder().build();
+        entity.setUsername(username);
+        entity.setUsernameCaseInsensitive(KeycloakModelUtils.toLowerCaseSafe(username));
         markUpdated(() -> userRepository.deleteUsernameSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
     public String getEmail() {
-        return userEntity.getEmail();
+        return entity.getEmail();
     }
 
     @Override
@@ -116,37 +121,37 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
             throw new ModelDuplicateException("A user with email " + email + " already exists");
         }
 
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.setEmail(email);
+        User userCopy = entity.toBuilder().build();
+        entity.setEmail(email);
 
         markUpdated(() -> userRepository.deleteEmailSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
     public String getFirstName() {
-        return userEntity.getFirstName();
+        return entity.getFirstName();
     }
 
     @Override
     public void setFirstName(String firstName) {
-        userEntity.setFirstName(firstName);
+        entity.setFirstName(firstName);
         markUpdated();
     }
 
     @Override
     public String getLastName() {
-        return userEntity.getLastName();
+        return entity.getLastName();
     }
 
     @Override
     public void setLastName(String lastName) {
-        userEntity.setLastName(lastName);
+        entity.setLastName(lastName);
         markUpdated();
     }
 
     @Override
     public Long getCreatedTimestamp() {
-        return userEntity.getCreatedTimestamp().getEpochSecond() * 1000; // Milliseconds
+        return entity.getCreatedTimestamp().getEpochSecond() * 1000; // Milliseconds
     }
 
     @Override
@@ -156,109 +161,85 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     @Override
     public boolean isEnabled() {
-        return userEntity.getEnabled() != null && userEntity.getEnabled();
+        return entity.getEnabled() != null && entity.getEnabled();
     }
 
     @Override
     public boolean isEmailVerified() {
-        return userEntity.getEmailVerified() != null && userEntity.getEmailVerified();
+        return entity.getEmailVerified() != null && entity.getEmailVerified();
     }
 
     @Override
     public void setEmailVerified(boolean verified) {
-        userEntity.setEmailVerified(verified);
+        entity.setEmailVerified(verified);
         markUpdated();
     }
 
     @Override
     public void setEnabled(boolean enabled) {
-        userEntity.setEnabled(enabled);
+        entity.setEnabled(enabled);
         markUpdated();
 
     }
 
     @Override
     public Map<String, List<String>> getAttributes() {
-        log.debugv("get attributes: realm={0} userId={1}", realm.getId(), userEntity.getId());
+        log.debugv("get attributes: realm={0} userId={1}", realm.getId(), entity.getId());
 
-        Map<String, List<String>> attributes = userEntity.getAttributes();
+        Map<String, List<String>> attributes = getAllAttributes();
         MultivaluedHashMap<String, String> result = attributes == null ? new MultivaluedHashMap<>() : new MultivaluedHashMap<>(attributes);
-        result.add(UserModel.FIRST_NAME, userEntity.getFirstName());
-        result.add(UserModel.LAST_NAME, userEntity.getLastName());
-        result.add(UserModel.EMAIL, userEntity.getEmail());
-        result.add(UserModel.USERNAME, userEntity.getUsername());
-
-        if (userEntity.getVersion() != null) {
-            result.add(ENTITY_VERSION_READONLY, String.valueOf(userEntity.getVersion()));
-        }
+        result.add(UserModel.FIRST_NAME, entity.getFirstName());
+        result.add(UserModel.LAST_NAME, entity.getLastName());
+        result.add(UserModel.EMAIL, entity.getEmail());
+        result.add(UserModel.USERNAME, entity.getUsername());
 
         return result;
     }
 
     @Override
     public void setAttribute(String name, List<String> values) {
-        log.debugv(realm.getId(), userEntity.getId(), name, values);
-
-        if (values == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
-            return;
-        }
-
-        String valueToSet = !values.isEmpty() ? values.get(0) : null;
+        String valueToSet = values != null && !values.isEmpty() ? values.get(0) : null;
         if (setSpecialAttributeValue(name, valueToSet)) return;
 
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.getAttributes().put(name, values);
+        User userCopy = entity.toBuilder().build();
+        super.setAttribute(name, values);
 
-        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        addPostUpdateTask(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
     public void setSingleAttribute(String name, String value) {
-        log.debugv(realm.getId(), userEntity.getId(), name, value);
-
-        if (value == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
-            return;
-        }
-
         if (setSpecialAttributeValue(name, value)) return;
 
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.getAttributes().put(name, Collections.singletonList(value));
+        User userCopy = entity.toBuilder().build();
+        super.setAttribute(name, value);
 
-        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        addPostUpdateTask(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
     public String getFirstAttribute(String name) {
-        return getSpecialAttributeValue(name).orElseGet(() -> {
-            List<String> attributeValues = userEntity.getAttribute(name);
-            if (attributeValues == null || attributeValues.isEmpty()) {
-                return null;
-            }
-            return attributeValues.get(0);
-        });
+        return getSpecialAttributeValue(name).orElseGet(() -> getAttribute(name));
     }
 
     @Override
     public void removeAttribute(String name) {
-        log.debugv("remove attribute: realm={0} userId={1} name={2}", realm.getId(), userEntity.getId(), name);
+        User userCopy = entity.toBuilder().build();
+        super.removeAttribute(name);
 
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.getAttributes().remove(name);
-
-        markUpdated(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
+        addPostUpdateTask(() -> userRepository.deleteAttributeSearchIndex(realm.getId(), userCopy, name));
     }
 
     @Override
     public void grantRole(RoleModel role) {
-        log.debugv("grant role mapping: realm={0} userId={1} role={2}", realm.getId(), userEntity.getId(), role.getName());
+        log.debugv("grant role mapping: realm={0} userId={1} role={2}", realm.getId(), entity.getId(), role.getName());
 
         if (role.isClientRole()) {
-            Set<String> clientRoles = userEntity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
+            Set<String> clientRoles = entity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
             clientRoles.add(role.getId());
-            userEntity.getClientRoles().put(role.getContainerId(), clientRoles);
+            entity.getClientRoles().put(role.getContainerId(), clientRoles);
         } else {
-            userEntity.getRealmRoles().add(role.getId());
+            entity.getRealmRoles().add(role.getId());
         }
 
         markUpdated();
@@ -268,14 +249,14 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
     public void deleteRoleMapping(RoleModel role) {
         log.debugv(
             "delete role mapping: realm={0} userId={1} role={2}",
-            realm.getId(), userEntity.getId(), role.getName());
+            realm.getId(), entity.getId(), role.getName());
 
         if (role.isClientRole()) {
-            Set<String> clientRoles = userEntity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
+            Set<String> clientRoles = entity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
             clientRoles.remove(role.getId());
-            userEntity.getClientRoles().put(role.getContainerId(), clientRoles);
+            entity.getClientRoles().put(role.getContainerId(), clientRoles);
         } else {
-            userEntity.getRealmRoles().remove(role.getId());
+            entity.getRealmRoles().remove(role.getId());
         }
 
         markUpdated();
@@ -283,50 +264,50 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     @Override
     public void addRequiredAction(RequiredAction action) {
-        userEntity.getRequiredActions().add(action.name());
+        entity.getRequiredActions().add(action.name());
         markUpdated();
     }
 
     @Override
     public void addRequiredAction(String action) {
-        userEntity.getRequiredActions().add(action);
+        entity.getRequiredActions().add(action);
         markUpdated();
     }
 
     @Override
     public void removeRequiredAction(RequiredAction action) {
-        userEntity.getRequiredActions().remove(action.name());
+        entity.getRequiredActions().remove(action.name());
         markUpdated();
     }
 
     @Override
     public void removeRequiredAction(String action) {
-        userEntity.getRequiredActions().remove(action);
+        entity.getRequiredActions().remove(action);
         markUpdated();
     }
 
     @Override
     public String getFederationLink() {
-        return userEntity.getFederationLink();
+        return entity.getFederationLink();
     }
 
     @Override
     public void setFederationLink(String link) {
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.setFederationLink(link);
+        User userCopy = entity.toBuilder().build();
+        entity.setFederationLink(link);
 
         markUpdated(() -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), userCopy));
     }
 
     @Override
     public String getServiceAccountClientLink() {
-        return userEntity.getServiceAccountClientLink();
+        return entity.getServiceAccountClientLink();
     }
 
     @Override
     public void setServiceAccountClientLink(String clientInternalId) {
-        User userCopy = userEntity.toBuilder().build();
-        userEntity.setServiceAccountClientLink(clientInternalId);
+        User userCopy = entity.toBuilder().build();
+        entity.setServiceAccountClientLink(clientInternalId);
 
         markUpdated(() -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
     }
@@ -334,12 +315,12 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     @Override
     public Stream<String> getAttributeStream(String name) {
-        return getSpecialAttributeValue(name).map(Collections::singletonList).orElseGet(() -> userEntity.getAttribute(name)).stream();
+        return getSpecialAttributeValue(name).map(Collections::singletonList).orElseGet(() -> entity.getAttribute(name)).stream();
     }
 
     @Override
     public Stream<String> getRequiredActionsStream() {
-        return userEntity.getRequiredActions().stream();
+        return entity.getRequiredActions().stream();
     }
 
     @Override
@@ -387,11 +368,11 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     @Override
     public Stream<RoleModel> getRoleMappingsStream() {
-        log.debugv("get role mappings: realm={0} userId={1}", realm.getId(), userEntity.getId());
+        log.debugv("get role mappings: realm={0} userId={1}", realm.getId(), entity.getId());
 
         List<String> roleIds = new ArrayList<>();
-        roleIds.addAll(userEntity.getRealmRoles());
-        roleIds.addAll(userEntity.getClientRoles().entrySet().stream().flatMap(e -> e.getValue().stream()).collect(Collectors.toSet()));
+        roleIds.addAll(entity.getRealmRoles());
+        roleIds.addAll(entity.getClientRoles().entrySet().stream().flatMap(e -> e.getValue().stream()).collect(Collectors.toSet()));
 
         // TODO: Remove and save Role-mappings for no longer existent roles...
         return roleIds.stream().map(realm::getRoleById).filter(Objects::nonNull);
@@ -406,36 +387,32 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     public boolean delete() {
         markDeleted(); // no more updates for this user
-        return userRepository.deleteUser(userEntity.getRealmId(), userEntity.getId());
+        return userRepository.deleteUser(entity.getRealmId(), entity.getId());
     }
 
     @Override
     protected void flushChanges() {
-        userRepository.insertOrUpdate(userEntity);
+        userRepository.insertOrUpdate(entity);
 
-        if (userEntity.getServiceAccountClientLink() != null && !userEntity.isServiceAccount()) {
-            userRepository.makeUserServiceAccount(userEntity, realm.getId());
+        if (entity.getServiceAccountClientLink() != null && !entity.isServiceAccount()) {
+            userRepository.makeUserServiceAccount(entity, realm.getId());
         }
     }
 
     private void setVersion(long version) {
-        userEntity.setVersion(version);
+        entity.setVersion(version);
         markUpdated();
     }
 
     private Optional<String> getSpecialAttributeValue(String name) {
         if (UserModel.FIRST_NAME.equals(name)) {
-            return Optional.ofNullable(userEntity.getFirstName());
+            return Optional.ofNullable(entity.getFirstName());
         } else if (UserModel.LAST_NAME.equals(name)) {
-            return Optional.ofNullable(userEntity.getLastName());
+            return Optional.ofNullable(entity.getLastName());
         } else if (UserModel.EMAIL.equals(name)) {
-            return Optional.ofNullable(userEntity.getEmail());
+            return Optional.ofNullable(entity.getEmail());
         } else if (UserModel.USERNAME.equals(name)) {
-            return Optional.ofNullable(userEntity.getUsername());
-        } else if (ENTITY_VERSION.equals(name)) {
-            return Optional.of(String.valueOf(userEntity.getVersion()));
-        } else if (ENTITY_VERSION_READONLY.equals(name)) {
-            return Optional.of(String.valueOf(userEntity.getVersion()));
+            return Optional.ofNullable(entity.getUsername());
         }
 
         return Optional.empty();
@@ -443,19 +420,16 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter imp
 
     private boolean setSpecialAttributeValue(String name, String value) {
         if (UserModel.FIRST_NAME.equals(name)) {
-            userEntity.setFirstName(value);
+            entity.setFirstName(value);
             return true;
         } else if (UserModel.LAST_NAME.equals(name)) {
-            userEntity.setLastName(value);
+            entity.setLastName(value);
             return true;
         } else if (UserModel.EMAIL.equals(name)) {
             setEmail(value);
             return true;
         } else if (UserModel.USERNAME.equals(name)) {
             setUsername(value);
-            return true;
-        } else if (ENTITY_VERSION.equals(name)) {
-            setVersion(Long.parseLong(value));
             return true;
         }
 

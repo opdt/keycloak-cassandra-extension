@@ -15,13 +15,10 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
-import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.map.common.TimeAdapter;
 

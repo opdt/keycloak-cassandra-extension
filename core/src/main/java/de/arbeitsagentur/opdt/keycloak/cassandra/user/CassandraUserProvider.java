@@ -47,7 +47,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     protected CassandraUserAdapter createNewModel(RealmModel realm, User entity) {
-        return new CassandraUserAdapter(realm, userRepository, entity) {
+        return new CassandraUserAdapter(entity, realm, userRepository) {
             @Override
             public boolean checkEmailUniqueness(RealmModel realm, String email) {
                 return getUserByEmail(realm, email) != null;

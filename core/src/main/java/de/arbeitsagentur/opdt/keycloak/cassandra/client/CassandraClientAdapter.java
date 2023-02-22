@@ -21,7 +21,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -37,9 +36,8 @@ import java.util.stream.Stream;
 import static de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX;
 
 @JBossLog
-@RequiredArgsConstructor
-@EqualsAndHashCode(of = "clientEntity")
-public class CassandraClientAdapter extends TransactionalModelAdapter implements ClientModel {
+@EqualsAndHashCode(callSuper = true)
+public class CassandraClientAdapter extends TransactionalModelAdapter<Client> implements ClientModel {
     public static final String CLIENT_ID = INTERNAL_ATTRIBUTE_PREFIX + "clientId";
     public static final String NAME = INTERNAL_ATTRIBUTE_PREFIX + "name";
     public static final String DESCRIPTION = INTERNAL_ATTRIBUTE_PREFIX + "description";
@@ -71,10 +69,22 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
     public static final String AUTHENTICATION_FLOW_BINDING_OVERRIDE = INTERNAL_ATTRIBUTE_PREFIX + "authenticationFlowBindingOverride";
     public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
     public static final String CLIENT_SCOPES = INTERNAL_ATTRIBUTE_PREFIX + "clientScopes";
+
+    @EqualsAndHashCode.Exclude
     private final KeycloakSession session;
-    private final Client clientEntity;
+
+    @EqualsAndHashCode.Exclude
     private final RealmModel realm;
+
+    @EqualsAndHashCode.Exclude
     private final ClientRepository clientRepository;
+
+    public CassandraClientAdapter(Client entity, KeycloakSession session, RealmModel realm, ClientRepository clientRepository) {
+        super(entity);
+        this.session = session;
+        this.realm = realm;
+        this.clientRepository = clientRepository;
+    }
 
     @Override
     public void updateClient() {
@@ -90,11 +100,6 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
                 return session;
             }
         });
-    }
-
-    @Override
-    public String getId() {
-        return clientEntity.getId();
     }
 
     @Override
@@ -242,21 +247,21 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
 
     @Override
     public void setWebOrigins(Set<String> webOrigins) {
-        setAttributeValues(WEB_ORIGINS, new ArrayList<>(webOrigins));
+        setAttribute(WEB_ORIGINS, new ArrayList<>(webOrigins));
     }
 
     @Override
     public void addWebOrigin(String webOrigin) {
         Set<String> webOrigins = new HashSet<>(getAttributeValues(WEB_ORIGINS));
         webOrigins.add(webOrigin);
-        setAttributeValues(WEB_ORIGINS, new ArrayList<>(webOrigins));
+        setAttribute(WEB_ORIGINS, new ArrayList<>(webOrigins));
     }
 
     @Override
     public void removeWebOrigin(String webOrigin) {
         Set<String> webOrigins = new HashSet<>(getAttributeValues(WEB_ORIGINS));
         webOrigins.remove(webOrigin);
-        setAttributeValues(WEB_ORIGINS, new ArrayList<>(webOrigins));
+        setAttribute(WEB_ORIGINS, new ArrayList<>(webOrigins));
     }
 
     @Override
@@ -266,14 +271,14 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
 
     @Override
     public void setRedirectUris(Set<String> redirectUris) {
-        setAttributeValues(REDIRECT_URIS, new ArrayList<>(redirectUris));
+        setAttribute(REDIRECT_URIS, new ArrayList<>(redirectUris));
     }
 
     @Override
     public void addRedirectUri(String redirectUri) {
         Set<String> rediretUris = new HashSet<>(getAttributeValues(REDIRECT_URIS));
         rediretUris.add(redirectUri);
-        setAttributeValues(REDIRECT_URIS, new ArrayList<>(rediretUris));
+        setAttribute(REDIRECT_URIS, new ArrayList<>(rediretUris));
 
     }
 
@@ -281,7 +286,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
     public void removeRedirectUri(String redirectUri) {
         Set<String> redirectUris = new HashSet<>(getAttributeValues(REDIRECT_URIS));
         redirectUris.remove(redirectUri);
-        setAttributeValues(REDIRECT_URIS, new ArrayList<>(redirectUris));
+        setAttribute(REDIRECT_URIS, new ArrayList<>(redirectUris));
 
     }
 
@@ -381,6 +386,11 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
     @Override
     public void setProtocol(String protocol) {
         setAttribute(PROTOCOL, protocol);
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        return getAttributeFirstValues();
     }
 
     @Override
@@ -714,7 +724,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
 
         Set<String> scopeMappings = new HashSet<>(getAttributeValues(SCOPE_MAPPINGS));
         scopeMappings.add(role.getId());
-        setAttributeValues(SCOPE_MAPPINGS, new ArrayList<>(scopeMappings));
+        setAttribute(SCOPE_MAPPINGS, new ArrayList<>(scopeMappings));
     }
 
     @Override
@@ -725,7 +735,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
 
         List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
         scopeMappings.remove(role.getId());
-        setAttributeValues(SCOPE_MAPPINGS, scopeMappings);
+        setAttribute(SCOPE_MAPPINGS, scopeMappings);
     }
 
     @Override
@@ -756,54 +766,6 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
         return getRolesStream().anyMatch(r -> (Objects.equals(r, role) || r.hasRole(role)));
     }
 
-    @Override
-    public void setAttribute(String name, String value) {
-        if (name == null || value == null) {
-            return;
-        }
-
-        clientEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
-        markUpdated();
-    }
-
-    @Override
-    public void removeAttribute(String name) {
-        if (name == null) {
-            return;
-        }
-
-        clientEntity.getAttributes().remove(name);
-        markUpdated();
-    }
-
-    @Override
-    public String getAttribute(String name) {
-        Set<String> values = clientEntity.getAttribute(name);
-        return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
-    }
-
-    @Override
-    public Map<String, String> getAttributes() {
-        return clientEntity.getAttributes().entrySet().stream()
-            .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
-            .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
-    }
-
-    public void setAttributeValues(String name, List<String> values) {
-        if (name == null || values == null) {
-            return;
-        }
-
-        clientEntity.getAttributes().put(name, new HashSet<>(values));
-        markUpdated();
-    }
-
-    private List<String> getAttributeValues(String name) {
-        Set<String> values = clientEntity.getAttribute(name);
-        return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
-    }
-
     private <T> void setSerializedAttributeValue(String name, T value) {
         if (value == null) {
             return;
@@ -812,20 +774,21 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
         setSerializedAttributeValues(name, value instanceof List ? (List<Object>) value : Arrays.asList(value));
     }
 
+
     private void setSerializedAttributeValues(String name, List<?> values) {
-        Set<String> attributeValues = values.stream()
+        List<String> attributeValues = values.stream()
             .filter(Objects::nonNull)
             .map(value -> {
                 try {
                     return CassandraJsonSerialization.writeValueAsString(value);
                 } catch (IOException e) {
-                    log.errorf("Cannot serialize %s (realm: %s, name: %s)", value, clientEntity.getId(), name);
+                    log.errorf("Cannot serialize %s (realm: %s, name: %s)", value, entity.getId(), name);
                     throw new RuntimeException(e);
                 }
             })
-            .collect(Collectors.toCollection(HashSet::new));
+            .collect(Collectors.toCollection(ArrayList::new));
 
-        clientEntity.getAttributes().put(name, attributeValues);
+        entity.getAttributes().put(name, attributeValues);
         markUpdated();
     }
 
@@ -834,7 +797,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
     }
 
     private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
-        Set<String> values = clientEntity.getAttribute(name);
+        List<String> values = entity.getAttribute(name);
         if (values == null) {
             return new ArrayList<>();
         }
@@ -844,7 +807,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
                 try {
                     return CassandraJsonSerialization.readValue(value, type);
                 } catch (IOException e) {
-                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, clientEntity.getId(), name);
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, entity.getId(), name);
                     throw new RuntimeException(e);
                 }
             })
@@ -853,14 +816,18 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
     }
 
     private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-        Set<String> values = clientEntity.getAttribute(name);
+        List<String> values = entity.getAttributes().get(name);
+
+        if(values == null) {
+            return new ArrayList<>();
+        }
 
         return values.stream()
             .map(value -> {
                 try {
                     return CassandraJsonSerialization.readValue(value, type);
                 } catch (IOException e) {
-                    log.errorf("Cannot deserialize %s (realm: %s, name: %s, type: %s)", value, clientEntity.getId(), name, type.getName());
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s, type: %s)", value, entity.getId(), name, type.getName());
                     throw new RuntimeException(e);
                 }
             })
@@ -888,6 +855,6 @@ public class CassandraClientAdapter extends TransactionalModelAdapter implements
 
     @Override
     protected void flushChanges() {
-        clientRepository.insertOrUpdate(clientEntity);
+        clientRepository.insertOrUpdate(entity);
     }
 }

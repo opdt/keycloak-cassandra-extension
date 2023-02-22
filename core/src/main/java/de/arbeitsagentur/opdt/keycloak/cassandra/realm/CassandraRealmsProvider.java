@@ -47,7 +47,7 @@ public class CassandraRealmsProvider extends TransactionalProvider<Realm, Cassan
 
     @Override
     protected CassandraRealmAdapter createNewModel(RealmModel realm, Realm entity) {
-        return new CassandraRealmAdapter(session, entity, realmRepository);
+        return new CassandraRealmAdapter(entity, session, realmRepository);
     }
 
     @Override
