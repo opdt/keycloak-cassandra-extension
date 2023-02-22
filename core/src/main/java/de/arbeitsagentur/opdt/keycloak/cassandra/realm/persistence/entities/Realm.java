@@ -21,10 +21,7 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import lombok.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -42,16 +39,16 @@ public class Realm implements TransactionalEntity {
     private Long version;
 
     @Builder.Default
-    private Map<String, Set<String>> attributes = new HashMap<>();
+    private Map<String, List<String>> attributes = new HashMap<>();
 
-    public Map<String, Set<String>> getAttributes() {
+    public Map<String, List<String>> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();
         }
         return attributes;
     }
 
-    public Set<String> getAttribute(String name) {
-        return attributes.getOrDefault(name, new HashSet<>());
+    public List<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new ArrayList<>());
     }
 }

@@ -44,7 +44,7 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
 
     @Override
     protected CassandraClientAdapter createNewModel(RealmModel realm, Client entity) {
-        return new CassandraClientAdapter(session, entity, realm, clientRepository);
+        return new CassandraClientAdapter(entity, session, realm, clientRepository);
     }
 
     @Override

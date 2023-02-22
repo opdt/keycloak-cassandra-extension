@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS client_scopes (
 CREATE TABLE IF NOT EXISTS clients (
     realm_id text,
     id text,
-    attributes map<text, frozen<set<text>>>,
+    attributes map<text, frozen<list<text>>>,
     PRIMARY KEY (realm_id, id)
 ) WITH CLUSTERING ORDER BY (id ASC);
 
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS name_to_realm (
 CREATE TABLE IF NOT EXISTS realms (
     id text PRIMARY KEY,
     name text,
-    attributes map<text, frozen<set<text>>>
+    attributes map<text, frozen<list<text>>>
 );
 
 CREATE TABLE IF NOT EXISTS realms_to_users (

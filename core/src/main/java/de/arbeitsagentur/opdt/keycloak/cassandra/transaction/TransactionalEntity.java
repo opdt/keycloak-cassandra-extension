@@ -16,6 +16,10 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
+import java.util.Dictionary;
+import java.util.List;
+import java.util.Map;
+
 public interface TransactionalEntity {
     String getId();
 
@@ -26,4 +30,6 @@ public interface TransactionalEntity {
     default void incrementVersion() {
         setVersion(getVersion() + 1L);
     }
+
+    Map<String, List<String>> getAttributes();
 }

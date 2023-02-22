@@ -21,9 +21,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.common.enums.SslRequired;
@@ -44,10 +44,9 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.nonNull;
 
-@EqualsAndHashCode(of = "realmEntity")
+@EqualsAndHashCode(callSuper = true)
 @JBossLog
-@RequiredArgsConstructor
-public class CassandraRealmAdapter extends TransactionalModelAdapter implements RealmModel {
+public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> implements RealmModel {
     private static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled"; // Copied from MapRealmAdapter
     public static final String COMPONENT_PROVIDER_TYPE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
     public static final String DEFAULT_GROUP_IDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
@@ -133,30 +132,30 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     public static final String DEFAULT_LOCALE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultLocale";
     public static final String LOCALIZATION_TEXTS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "localizationTexts";
 
-    public static final String ENTITY_VERSION = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "entityVersion";
-    public static final String ENTITY_VERSION_READONLY = AttributeTypes.READONLY_ATTRIBUTE_PREFIX + "entityVersion";
-
+    @EqualsAndHashCode.Exclude
     private final KeycloakSession session;
-    private final Realm realmEntity;
+
+    @EqualsAndHashCode.Exclude
     private final RealmRepository realmRepository;
 
-    @Override
-    public String getId() {
-        return realmEntity.getId();
+    public CassandraRealmAdapter(Realm entity, KeycloakSession session, RealmRepository realmRepository) {
+        super(entity);
+        this.session = session;
+        this.realmRepository = realmRepository;
     }
 
     @Override
     public String getName() {
-        return realmEntity.getName();
+        return entity.getName();
     }
 
     @Override
     public void setName(String name) {
-        String oldName = realmEntity.getName();
-        realmEntity.setName(name);
+        String oldName = entity.getName();
+        entity.setName(name);
 
         markUpdated(() -> {
-            if (!oldName.equals(realmEntity.getName())) {
+            if (!oldName.equals(entity.getName())) {
                 realmRepository.deleteNameToRealm(oldName);
             }
         });
@@ -601,7 +600,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public Map<String, Integer> getUserActionTokenLifespans() {
-        Map<String, Set<String>> attrs = realmEntity.getAttributes();
+        Map<String, List<String>> attrs = entity.getAttributes();
         if (attrs == null || attrs.isEmpty()) return Collections.emptyMap();
 
         Map<String, Integer> tokenLifespans = attrs.entrySet().stream()
@@ -1397,7 +1396,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public void setEventsListeners(Set<String> listeners) {
-        setAttributeValues(EVENT_LISTENERS, new ArrayList<>(listeners));
+        setAttribute(EVENT_LISTENERS, new ArrayList<>(listeners));
     }
 
     @Override
@@ -1407,7 +1406,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public void setEnabledEventTypes(Set<String> enabledEventTypes) {
-        setAttributeValues(ENABLED_EVENT_TYPES, new ArrayList<>(enabledEventTypes));
+        setAttribute(ENABLED_EVENT_TYPES, new ArrayList<>(enabledEventTypes));
     }
 
     @Override
@@ -1475,7 +1474,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public void setSupportedLocales(Set<String> locales) {
-        setAttributeValues(SUPPORTED_LOCALES, new ArrayList<>(locales));
+        setAttribute(SUPPORTED_LOCALES, new ArrayList<>(locales));
     }
 
     @Override
@@ -1543,7 +1542,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     public ClientInitialAccessModel createClientInitialAccessModel(int expiration, int count) {
         ClientInitialAccess clientInitialAccess = ClientInitialAccess.builder()
             .id(KeycloakModelUtils.generateId())
-            .realmId(realmEntity.getId())
+            .realmId(entity.getId())
             .timestamp(Time.currentTimeMillis())
             .expiration(expiration == 0 ? null : Time.currentTimeMillis() + TimeAdapter.fromSecondsToMilliseconds(expiration))
             .count(count)
@@ -1556,7 +1555,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public ClientInitialAccessModel getClientInitialAccessModel(String id) {
-        ClientInitialAccess clientInitialAccess = realmRepository.getClientInitialAccess(realmEntity.getId(), id);
+        ClientInitialAccess clientInitialAccess = realmRepository.getClientInitialAccess(entity.getId(), id);
         if (clientInitialAccess == null) {
             return null;
         }
@@ -1566,18 +1565,18 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public void removeClientInitialAccessModel(String id) {
-        realmRepository.deleteClientInitialAccess(realmEntity.getId(), id);
+        realmRepository.deleteClientInitialAccess(entity.getId(), id);
     }
 
     @Override
     public Stream<ClientInitialAccessModel> getClientInitialAccesses() {
-        return realmRepository.getAllClientInitialAccessesByRealmId(realmEntity.getId()).stream()
+        return realmRepository.getAllClientInitialAccessesByRealmId(entity.getId()).stream()
             .map(this::toModel);
     }
 
     @Override
     public void decreaseRemainingCount(ClientInitialAccessModel clientInitialAccess) {
-        ClientInitialAccess entity = realmRepository.getClientInitialAccess(realmEntity.getId(), clientInitialAccess.getId());
+        ClientInitialAccess entity = realmRepository.getClientInitialAccess(this.entity.getId(), clientInitialAccess.getId());
         entity.setCount(entity.getCount() - 1);
         realmRepository.insertOrUpdate(entity);
     }
@@ -1585,68 +1584,12 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     // Attributes
     @Override
     public void setAttribute(String name, String value) {
-        if (name == null || value == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
-            return;
-        }
-
-        if (ENTITY_VERSION.equals(name)) {
-            realmEntity.setVersion(Long.parseLong(value));
-        } else {
-            realmEntity.getAttributes().put(name, new HashSet<>(Arrays.asList(value)));
-        }
-
-        markUpdated();
-    }
-
-    @Override
-    public void removeAttribute(String name) {
-        if (name == null) {
-            return;
-        }
-
-        realmEntity.getAttributes().remove(name);
-        markUpdated();
-    }
-
-    @Override
-    public String getAttribute(String name) {
-        if (ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
-            return String.valueOf(realmEntity.getVersion());
-        }
-        Set<String> values = realmEntity.getAttribute(name);
-        return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
+        setSingleAttribute(name, value);
     }
 
     @Override
     public Map<String, String> getAttributes() {
-        Map<String, String> attributes = realmEntity.getAttributes().entrySet().stream()
-            .filter(e -> !e.getKey().startsWith(AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX))
-            .filter(e -> e.getValue() != null && !e.getValue().isEmpty() && !e.getValue().iterator().next().isEmpty())
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
-
-        if (realmEntity.getVersion() != null) {
-            attributes.put(ENTITY_VERSION_READONLY, String.valueOf(realmEntity.getVersion()));
-        }
-
-        return attributes;
-    }
-
-    private void setAttributeValues(String name, List<String> values) {
-        if (name == null || values == null) {
-            return;
-        }
-
-        realmEntity.getAttributes().put(name, new HashSet<>(values));
-        markUpdated();
-    }
-
-    private List<String> getAttributeValues(String name) {
-        if (ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
-            return Arrays.asList(String.valueOf(realmEntity.getVersion()));
-        }
-
-        Set<String> values = realmEntity.getAttribute(name);
-        return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
+        return getAttributeFirstValues();
     }
 
     private <T> void setSerializedAttributeValue(String name, T value) {
@@ -1654,18 +1597,18 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     }
 
     private void setSerializedAttributeValues(String name, List<?> values) {
-        Set<String> attributeValues = values.stream()
+        List<String> attributeValues = values.stream()
             .map(value -> {
                 try {
                     return CassandraJsonSerialization.writeValueAsString(value);
                 } catch (IOException e) {
-                    log.errorf("Cannot serialize %s (realm: %s, name: %s)", value, realmEntity.getId(), name);
+                    log.errorf("Cannot serialize %s (realm: %s, name: %s)", value, entity.getId(), name);
                     throw new RuntimeException(e);
                 }
             })
-            .collect(Collectors.toCollection(HashSet::new));
+            .collect(Collectors.toCollection(ArrayList::new));
 
-        realmEntity.getAttributes().put(name, attributeValues);
+        entity.getAttributes().put(name, attributeValues);
         markUpdated();
     }
 
@@ -1678,7 +1621,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     }
 
     private <T> List<T> getDeserializedAttributes(String name, TypeReference<T> type) {
-        Set<String> values = realmEntity.getAttribute(name);
+        List<String> values = entity.getAttribute(name);
         if (values == null) {
             return new ArrayList<>();
         }
@@ -1688,7 +1631,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
                 try {
                     return CassandraJsonSerialization.readValue(value, type);
                 } catch (IOException e) {
-                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, realmEntity.getId(), name);
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s)", value, entity.getId(), name);
                     throw new RuntimeException(e);
                 }
             })
@@ -1696,14 +1639,14 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     }
 
     private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-        Set<String> values = realmEntity.getAttribute(name);
+        List<String> values = entity.getAttribute(name);
 
         return values.stream()
             .map(value -> {
                 try {
                     return CassandraJsonSerialization.readValue(value, type);
                 } catch (IOException e) {
-                    log.errorf("Cannot deserialize %s (realm: %s, name: %s, type: %s)", value, realmEntity.getId(), name, type.getName());
+                    log.errorf("Cannot deserialize %s (realm: %s, name: %s, type: %s)", value, entity.getId(), name, type.getName());
                     throw new RuntimeException(e);
                 }
             })
@@ -1795,18 +1738,18 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
     @Override
     public void addDefaultClientScope(ClientScopeModel clientScope, boolean defaultScope) {
         String attrName = defaultScope ? DEFAULT_CLIENT_SCOPE_ID : OPTIONAL_CLIENT_SCOPE_ID;
-        Set<String> values = realmEntity.getAttribute(attrName);
+        List<String> values = entity.getAttribute(attrName);
         values.add(clientScope.getId());
-        realmEntity.getAttributes().put(attrName, values);
+        entity.getAttributes().put(attrName, values);
         markUpdated();
     }
 
     @Override
     public void removeDefaultClientScope(ClientScopeModel clientScope) {
-        if (realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).contains(clientScope.getId())) {
-            realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).remove(clientScope.getId());
+        if (entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).contains(clientScope.getId())) {
+            entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).remove(clientScope.getId());
         } else {
-            realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
+            entity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
         }
 
         markUpdated();
@@ -1814,29 +1757,29 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public Stream<ClientScopeModel> getDefaultClientScopesStream(boolean defaultScope) {
-        Set<String> values = defaultScope
-            ? realmEntity.getAttribute(DEFAULT_CLIENT_SCOPE_ID)
-            : realmEntity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID);
+        List<String> values = defaultScope
+            ? entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID)
+            : entity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID);
         return values.stream().map(this::getClientScopeById);
     }
 
     // Groups
     @Override
     public Stream<GroupModel> getDefaultGroupsStream() {
-        Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+        List<String> values = entity.getAttribute(DEFAULT_GROUP_IDS);
         return values.stream().map(this::getGroupById);
     }
 
     @Override
     public void addDefaultGroup(GroupModel group) {
-        Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+        List<String> values = entity.getAttribute(DEFAULT_GROUP_IDS);
         values.add(group.getId());
         markUpdated();
     }
 
     @Override
     public void removeDefaultGroup(GroupModel group) {
-        Set<String> values = realmEntity.getAttribute(DEFAULT_GROUP_IDS);
+        List<String> values = entity.getAttribute(DEFAULT_GROUP_IDS);
         values.remove(group.getId());
         markUpdated();
     }
@@ -1905,7 +1848,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     public void setDefaultRole(RoleModel role) {
-        realmEntity.getAttributes().put(DEFAULT_ROLE_ID, new HashSet<>(Arrays.asList(role.getId())));
+        entity.getAttributes().put(DEFAULT_ROLE_ID, new ArrayList<>(Arrays.asList(role.getId())));
         markUpdated();
     }
 
@@ -1983,7 +1926,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter implements 
 
     @Override
     protected void flushChanges() {
-        realmRepository.insertOrUpdate(realmEntity);
+        realmRepository.insertOrUpdate(entity);
     }
 
     private ClientInitialAccessModel toModel(ClientInitialAccess entity) {
