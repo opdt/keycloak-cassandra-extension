@@ -153,7 +153,7 @@ public class ClientScopeModelTest extends KeycloakModelTest {
     public void testScopeMappings() {
         ClientModel client = withRealm(realmId, (session, realm) -> session.clients().addClient(realm, "myClient"));
         RoleModel realmRole = withRealm(realmId, (session, realm) -> realm.addRole("realmRole"));
-        RoleModel clientRole = withRealm(realmId, (session, realm) -> client.addRole("clientRole"));
+        RoleModel clientRole = withRealm(realmId, (session, realm) -> session.roles().addClientRole(client, "clientRole"));
 
         withRealm(realmId, (session, realm) -> {
             ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");

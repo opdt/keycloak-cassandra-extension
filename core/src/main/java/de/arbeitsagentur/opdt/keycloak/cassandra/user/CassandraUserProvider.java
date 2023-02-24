@@ -375,6 +375,11 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
             return Stream.ofNullable(getUserByEmail(realm, email))
                 .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);
+        } else if (params.containsKey(UserModel.USERNAME)) {
+            String username = params.get(UserModel.USERNAME);
+
+            return Stream.ofNullable(getUserByUsername(realm, username))
+                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);
         } else {
             return Stream.ofNullable(getUserByUsername(realm, searchString))
                 .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);

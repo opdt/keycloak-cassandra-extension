@@ -16,22 +16,19 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import lombok.RequiredArgsConstructor;
 
 
-@RequiredArgsConstructor
-public class CassandraRoleRepository implements RoleRepository {
-    private final RoleDao roleDao;
+public class CassandraRoleRepository extends TransactionalRepository<Roles, RoleDao> implements RoleRepository {
 
-
-    @Override
-    public void addOrUpdateRoles(Roles role) {
-        roleDao.insertOrUpdate(role);
+    public CassandraRoleRepository(RoleDao dao) {
+        super(dao);
     }
 
     @Override
     public Roles getRolesByRealmId(String realmId) {
-        Roles rolesByRealmId = roleDao.getRolesByRealmId(realmId);
+        Roles rolesByRealmId = dao.getRolesByRealmId(realmId);
         if (rolesByRealmId == null) {
             rolesByRealmId = Roles.builder().realmId(realmId).build();
         }
@@ -41,6 +38,6 @@ public class CassandraRoleRepository implements RoleRepository {
 
     @Override
     public void deleteRealmRoles(String realmId) {
-        roleDao.deleteAllRealmRoles(realmId);
+        dao.deleteAllRealmRoles(realmId);
     }
 }

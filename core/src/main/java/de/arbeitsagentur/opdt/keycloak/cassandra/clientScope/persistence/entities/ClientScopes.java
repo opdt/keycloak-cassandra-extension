@@ -3,11 +3,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entiti
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @EqualsAndHashCode(of = "realmId")
 @Builder
@@ -16,12 +15,19 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @CqlName("client_scopes")
-public class ClientScopes {
+public class ClientScopes implements TransactionalEntity {
     @PartitionKey
     private String realmId;
 
+    private Long version;
+
     @Builder.Default
     private Set<ClientScopeValue> clientScopes = new HashSet<>();
+
+    @Override
+    public String getId() {
+        return realmId;
+    }
 
     public Set<ClientScopeValue> getClientScopes() {
         if (clientScopes == null) {
@@ -45,5 +51,10 @@ public class ClientScopes {
     public boolean removeClientScope(String id) {
         return clientScopes.removeIf(s -> Objects.equals(s.getId(), id));
     }
+
+    public Map<String, List<String>> getAttributes() {
+        return Collections.emptyMap();
+    }
+
 }
 

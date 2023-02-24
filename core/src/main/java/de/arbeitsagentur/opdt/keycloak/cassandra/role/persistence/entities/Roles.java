@@ -18,6 +18,8 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.Transient;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import lombok.*;
 
 import java.util.*;
@@ -30,15 +32,22 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Entity
 @CqlName("roles")
-public class Roles {
+public class Roles implements TransactionalEntity {
     @PartitionKey
     private String realmId;
+
+    private Long version;
 
     @Builder.Default
     private Set<RoleValue> realmRoles = new HashSet<>();
 
     @Builder.Default
     private Map<String, Set<RoleValue>> clientRoles = new HashMap<>();
+
+    @Override
+    public String getId() {
+        return realmId;
+    }
 
     public Set<RoleValue> getRealmRoles() {
         if (realmRoles == null) {
@@ -92,5 +101,10 @@ public class Roles {
             .skip(first == null || first < 0 ? 0 : first)
             .limit(max == null || max < 0 ? Long.MAX_VALUE : max)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, List<String>> getAttributes() {
+        return Collections.emptyMap();
     }
 }

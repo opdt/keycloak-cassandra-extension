@@ -15,20 +15,16 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence;
 
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
-public interface RoleDao {
-    @Update
-    void insertOrUpdate(Roles role);
-
+public interface RoleDao extends TransactionalDao<Roles> {
     @Select(customWhereClause = "realm_id = :realmId")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     Roles getRolesByRealmId(String realmId);
 
-    @Delete(entityClass = Roles.class)
+    @Delete(entityClass = Roles.class, ifExists = true)
     void deleteAllRealmRoles(String realmId);
 }

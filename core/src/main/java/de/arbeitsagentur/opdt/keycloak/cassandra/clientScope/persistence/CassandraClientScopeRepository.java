@@ -16,20 +16,18 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public class CassandraClientScopeRepository implements ClientScopeRepository {
-    private final ClientScopeDao clientScopeDao;
+public class CassandraClientScopeRepository extends TransactionalRepository<ClientScopes, ClientScopeDao> implements ClientScopeRepository {
 
-    @Override
-    public void addOrUpdateClientScopes(ClientScopes clientScopes) {
-        clientScopeDao.insertOrUpdate(clientScopes);
+    public CassandraClientScopeRepository(ClientScopeDao dao) {
+        super(dao);
     }
 
     @Override
     public ClientScopes getClientScopesByRealmId(String realmId) {
-        ClientScopes clientScopes = clientScopeDao.getClientScopesByRealmId(realmId);
+        ClientScopes clientScopes = dao.getClientScopesByRealmId(realmId);
         if (clientScopes == null) {
             clientScopes = ClientScopes.builder().realmId(realmId).build();
         }
@@ -39,6 +37,6 @@ public class CassandraClientScopeRepository implements ClientScopeRepository {
 
     @Override
     public void removeClientScopes(String realmId) {
-        clientScopeDao.deleteAllClientScopes(realmId);
+        dao.deleteAllClientScopes(realmId);
     }
 }
