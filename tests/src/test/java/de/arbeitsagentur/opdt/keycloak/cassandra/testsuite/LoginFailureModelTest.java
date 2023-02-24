@@ -75,6 +75,20 @@ public class LoginFailureModelTest extends KeycloakModelTest {
             assertThat(currentModel.getFailedLoginNotBefore(), is(50));
             assertThat(currentModel.getNumFailures(), is(1));
 
+            currentModel.clearFailures();
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
+
+            assertThat(currentModel.getLastFailure(), is(0L));
+            assertNull(currentModel.getLastIPFailure());
+            assertThat(currentModel.getFailedLoginNotBefore(), is(0));
+            assertThat(currentModel.getNumFailures(), is(0));
+
             loginFailureProvider.removeUserLoginFailure(realm, userId);
 
             return null;

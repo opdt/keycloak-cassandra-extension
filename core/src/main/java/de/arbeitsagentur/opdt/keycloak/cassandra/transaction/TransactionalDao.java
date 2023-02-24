@@ -20,8 +20,9 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
+import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 
-public interface TransactionalDao<T extends TransactionalEntity> {
+public interface TransactionalDao<T extends TransactionalEntity> extends BaseDao {
     @Insert(ifNotExists = true)
     void insert(T entity);
 

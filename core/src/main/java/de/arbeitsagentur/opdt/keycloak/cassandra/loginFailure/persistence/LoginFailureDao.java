@@ -20,10 +20,11 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
+import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 
 @Dao
-public interface LoginFailureDao {
+public interface LoginFailureDao extends BaseDao {
     @Update
     void insertOrUpdate(LoginFailure loginFailure);
 

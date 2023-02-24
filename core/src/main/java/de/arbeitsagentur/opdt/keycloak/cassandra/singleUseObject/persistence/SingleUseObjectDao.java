@@ -19,10 +19,11 @@ import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
+import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
 
 @Dao
-public interface SingleUseObjectDao {
+public interface SingleUseObjectDao extends BaseDao {
     @Select(customWhereClause = "key = :key")
     SingleUseObject findByKey(String key);
 

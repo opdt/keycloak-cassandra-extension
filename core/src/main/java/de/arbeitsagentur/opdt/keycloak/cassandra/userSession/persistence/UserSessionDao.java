@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
@@ -24,7 +25,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import java.util.List;
 
 @Dao
-public interface UserSessionDao {
+public interface UserSessionDao extends BaseDao {
     @Update
     void insertOrUpdate(UserSession session);
 
