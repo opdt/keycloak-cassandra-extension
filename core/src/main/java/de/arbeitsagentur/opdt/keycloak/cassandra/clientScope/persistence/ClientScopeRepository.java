@@ -18,7 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 
 public interface ClientScopeRepository {
-    void addOrUpdateClientScopes(ClientScopes clientScopes);
+    void insertOrUpdate(ClientScopes clientScopes);
 
     ClientScopes getClientScopesByRealmId(String realmId);
 

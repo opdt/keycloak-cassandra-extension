@@ -15,20 +15,16 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
-public interface ClientScopeDao {
-    @Update
-    void insertOrUpdate(ClientScopes role);
-
+public interface ClientScopeDao extends TransactionalDao<ClientScopes> {
     @Select(customWhereClause = "realm_id = :realmId")
+    @StatementAttributes(consistencyLevel = "SERIAL")
     ClientScopes getClientScopesByRealmId(String realmId);
 
-    @Delete(entityClass = ClientScopes.class)
+    @Delete(entityClass = ClientScopes.class, ifExists = true)
     void deleteAllClientScopes(String realmId);
 }

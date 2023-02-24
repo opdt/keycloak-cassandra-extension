@@ -229,8 +229,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     @L1Cached(cacheName = USER_CACHE)
     @InvalidateCache
-    public void addOrUpdateRoles(Roles role) {
-        this.roleRepository.addOrUpdateRoles(role);
+    public void insertOrUpdate(Roles role) {
+        this.roleRepository.insertOrUpdate(role);
     }
 
     @L1Cached(cacheName = ROLE_CACHE)
@@ -562,8 +562,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     @L1Cached(cacheName = CLIENT_SCOPE_CACHE)
     @InvalidateCache
-    public void addOrUpdateClientScopes(ClientScopes clientScopes) {
-        this.clientScopeRepository.addOrUpdateClientScopes(clientScopes);
+    public void insertOrUpdate(ClientScopes clientScopes) {
+        this.clientScopeRepository.insertOrUpdate(clientScopes);
     }
 
     @L1Cached(cacheName = CLIENT_SCOPE_CACHE)

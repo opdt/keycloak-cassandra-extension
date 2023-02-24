@@ -56,7 +56,7 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public RoleProvider roles() {
-        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository));
+        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository, session));
     }
 
     @Override

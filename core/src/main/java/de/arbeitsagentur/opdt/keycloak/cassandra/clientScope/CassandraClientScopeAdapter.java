@@ -35,19 +35,23 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX;
+
 @JBossLog
 @RequiredArgsConstructor
 @EqualsAndHashCode(of = "clientScopeEntity")
 public class CassandraClientScopeAdapter implements ClientScopeModel {
-    private static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
-    public static final String NAME = INTERNAL_ATTRIBUTE_PREFIX + "name";
     public static final String DESCRIPTION = INTERNAL_ATTRIBUTE_PREFIX + "description";
     public static final String PROTOCOL = INTERNAL_ATTRIBUTE_PREFIX + "protocol";
     public static final String PROTOCOL_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "protocolMappers";
     public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
     private final RealmModel realm;
     private final ClientScopeValue clientScopeEntity;
+
+    private final ClientScopes scopes;
     private final ClientScopeRepository clientScopeRepository;
+
+    private final CassandraClientScopeProvider provider;
 
     @Override
     public String getId() {
@@ -66,7 +70,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
 
     @Override
     public void setName(String name) {
-        updateAndRefresh(s -> s.setName(name));
+        clientScopeEntity.setName(name);
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
     @Override
@@ -203,7 +208,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             return;
         }
 
-        updateAndRefresh(s -> s.getAttributes().put(name, Arrays.asList(value)));
+        clientScopeEntity.getAttributes().put(name, Arrays.asList(value));
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
     @Override
@@ -211,7 +217,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
         if (name == null) {
             return;
         }
-        updateAndRefresh(s -> s.getAttributes().remove(name));
+        clientScopeEntity.getAttributes().remove(name);
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
     @Override
@@ -233,7 +240,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             return;
         }
 
-        updateAndRefresh(s -> s.getAttributes().put(name, values));
+        clientScopeEntity.getAttributes().put(name, values);
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
     private List<String> getAttributeValues(String name) {
@@ -253,7 +261,8 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
             })
             .collect(Collectors.toList());
 
-        updateAndRefresh(s -> s.getAttributes().put(name, attributeValues));
+        clientScopeEntity.getAttributes().put(name, attributeValues);
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
     private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
@@ -269,14 +278,5 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
                 }
             })
             .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private void updateAndRefresh(Consumer<ClientScopeValue> clientScopeUpdateFunc) {
-        // Read cached -> references stay intact
-        ClientScopes clientScopes = clientScopeRepository.getClientScopesByRealmId(realm.getId());
-        ClientScopeValue valueWithinClientScopes = clientScopes.getClientScopeById(clientScopeEntity.getId());
-        clientScopeUpdateFunc.accept(valueWithinClientScopes);
-        clientScopeUpdateFunc.accept(clientScopeEntity);
-        clientScopeRepository.addOrUpdateClientScopes(clientScopes);
     }
 }
