@@ -32,7 +32,6 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraLoginFailureProvider implements UserLoginFailureProvider {
-    private final KeycloakSession session;
     private final LoginFailureRepository loginFailureRepository;
 
     private Function<LoginFailure, UserLoginFailureModel> entityToAdapterFunc(RealmModel realm) {

@@ -37,7 +37,7 @@ public class CassandraMapLoginFailureProviderFactory extends AbstractCassandraPr
 
     @Override
     public CassandraLoginFailureProvider create(KeycloakSession session) {
-        return new CassandraLoginFailureProvider(session, createRepository(session));
+        return new CassandraLoginFailureProvider(createRepository(session));
     }
 
     @Override

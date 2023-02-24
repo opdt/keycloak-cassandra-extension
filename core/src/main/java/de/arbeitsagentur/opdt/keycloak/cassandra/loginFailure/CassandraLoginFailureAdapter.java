@@ -17,11 +17,13 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.map.common.TimeAdapter;
 
+@EqualsAndHashCode(of = "entity")
 @RequiredArgsConstructor
 public class CassandraLoginFailureAdapter implements UserLoginFailureModel {
     private final RealmModel realm;
