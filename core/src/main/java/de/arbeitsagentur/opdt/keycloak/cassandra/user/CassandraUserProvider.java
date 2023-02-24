@@ -29,6 +29,8 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -355,35 +357,75 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
-        String searchString = params.get(UserModel.SEARCH);
-        log.debugf("Search with searchString %s", searchString);
+        log.debugf("searchForUserStream(%s, %s, %d, %d)%s", realm, params, firstResult, maxResults, getShortStackTrace());
 
-        String serviceAccountParam = params.get(UserModel.INCLUDE_SERVICE_ACCOUNT);
-        Boolean includeServiceAccounts = serviceAccountParam == null
-            ? null
-            : Boolean.parseBoolean(serviceAccountParam);
+        int first = firstResult == null ? 0 : firstResult;
+        int resultCount = maxResults == null ? Integer.MAX_VALUE : maxResults;
 
-        if ((searchString == null) || searchString.isEmpty()) {
-            int first = firstResult == null ? 0 : firstResult;
-            int last = maxResults == null ? -1 : maxResults;
-            return userRepository.findUserIdsByRealmId(realm.getId(), first, last).stream()
-                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream())
-                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null)
-                .sorted(Comparator.comparing(UserModel::getUsername));
-        } else if (params.containsKey(UserModel.EMAIL)) {
-            String email = params.get(UserModel.EMAIL);
+        boolean isExactSearch = Boolean.parseBoolean(params.getOrDefault(UserModel.EXACT, "false"));
 
-            return Stream.ofNullable(getUserByEmail(realm, email))
-                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);
-        } else if (params.containsKey(UserModel.USERNAME)) {
-            String username = params.get(UserModel.USERNAME);
-
-            return Stream.ofNullable(getUserByUsername(realm, username))
-                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);
+        Stream<UserModel> userModelStream;
+        if (params.containsKey(UserModel.USERNAME) && isExactSearch) {
+            userModelStream = Stream.ofNullable(getUserByUsername(realm, params.get(UserModel.USERNAME)));
+        } else if (params.containsKey(UserModel.EMAIL) && isExactSearch) {
+            userModelStream = Stream.ofNullable(getUserByEmail(realm, params.get(UserModel.EMAIL)));
         } else {
-            return Stream.ofNullable(getUserByUsername(realm, searchString))
-                .filter(u -> includeServiceAccounts == null || includeServiceAccounts || u.getServiceAccountClientLink() == null);
+            userModelStream = userRepository.findUserIdsByRealmId(realm.getId(), 0, -1).stream()
+                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream());
         }
+
+        List<Predicate<UserModel>> filtersList = params.entrySet().stream()
+            .filter(entry -> !Objects.equals(entry.getKey(), UserModel.EXACT))
+            .map(entry -> {
+                if(entry.getValue() == null) {
+                    return (Predicate<UserModel>) (UserModel u) -> true;
+                }
+
+                BiFunction<String, String, Predicate<UserModel>> makeAttributeComparator =
+                    (attributeName, attributeValue) -> isExactSearch ?
+                        (Predicate<UserModel>) (user) -> Objects.equals(user.getFirstAttribute(attributeName), attributeValue) :
+                        (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).contains(attributeValue);
+                BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator =
+                    KeycloakModelUtils.isUsernameCaseSensitive(realm) ?
+                        makeAttributeComparator :
+                        (attributeName, attributeValue) -> isExactSearch ?
+                            (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).equalsIgnoreCase(attributeValue) :
+                            (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).toLowerCase().contains(attributeValue.toLowerCase());
+
+                switch(entry.getKey()) {
+                    case UserModel.SEARCH: {
+                        return makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue())
+                            .or(makeAttributeComparator.apply(UserModel.EMAIL, entry.getValue()))
+                            .or(makeAttributeComparator.apply(UserModel.FIRST_NAME, entry.getValue()))
+                            .or(makeAttributeComparator.apply(UserModel.LAST_NAME, entry.getValue()));
+                    }
+                    case UserModel.USERNAME: {
+                        return makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue());
+                    }
+                    case UserModel.IDP_ALIAS: {
+                        if(!params.containsKey(UserModel.IDP_USER_ID)) {
+                            return makeAttributeComparator.apply(UserModel.SearchableFields.IDP_AND_USER.getName(), entry.getValue());
+                        }
+                        return (Predicate<UserModel>) (UserModel u) -> true;
+                    }
+                    case UserModel.IDP_USER_ID: {
+                        return makeAttributeComparator.apply(UserModel.SearchableFields.IDP_AND_USER.getName(), params.get(UserModel.IDP_ALIAS));
+                    }
+                    case UserModel.INCLUDE_SERVICE_ACCOUNT: {
+                        return (Predicate<UserModel>) (UserModel u) -> Boolean.parseBoolean(entry.getValue()) || u.getServiceAccountClientLink() == null;
+                    }
+                    default: {
+                        return makeAttributeComparator.apply(entry.getKey(), entry.getValue());
+                    }
+                }
+            })
+            .collect(Collectors.toList());
+
+        return userModelStream
+            .filter(user -> filtersList.stream().allMatch(predicate -> predicate.test(user)))
+            .sorted(Comparator.comparing(UserModel::getUsername))
+            .skip(first)
+            .limit(resultCount);
     }
 
     @Override
