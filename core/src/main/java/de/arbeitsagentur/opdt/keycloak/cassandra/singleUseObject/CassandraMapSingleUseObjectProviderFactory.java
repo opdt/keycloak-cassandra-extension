@@ -37,7 +37,7 @@ public class CassandraMapSingleUseObjectProviderFactory extends AbstractCassandr
 
     @Override
     public CassandraSingleUseObjectProvider create(KeycloakSession session) {
-        return new CassandraSingleUseObjectProvider(session, createRepository(session));
+        return new CassandraSingleUseObjectProvider(createRepository(session));
     }
 
     @Override

@@ -19,12 +19,12 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.Sin
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.SingleUseObjectProvider;
 import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -33,7 +33,8 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider {
-    private final KeycloakSession session;
+    private static final String EMPTY_NOTE = "internal.emptyNote";
+
     private final SingleUseObjectRepository repository;
 
     @Override
@@ -48,7 +49,7 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
 
         singleUseEntity = SingleUseObject.builder()
             .key(key)
-            .notes(notes == null ? null : notes.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
+            .notes(getInternalNotes(notes))
             .build();
 
         int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanSeconds);
@@ -61,8 +62,7 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
 
         SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
         if (singleUseEntity != null) {
-            Map<String, String> notes = singleUseEntity.getNotes();
-            return notes == null ? Collections.emptyMap() : Collections.unmodifiableMap(notes);
+            return getExternalNotes(singleUseEntity.getNotes());
         }
 
         return null;
@@ -77,7 +77,7 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
         if (singleUseEntity != null) {
             Map<String, String> notes = singleUseEntity.getNotes();
             if (repository.deleteSingleUseObjectByKey(key)) {
-                return notes == null ? Collections.emptyMap() : Collections.unmodifiableMap(notes);
+                return getExternalNotes(notes);
             }
         }
         // the single-use entity expired or someone else already used and deleted it
@@ -90,7 +90,7 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
 
         SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
         if (singleUseEntity != null) {
-            singleUseEntity.setNotes(notes == null ? null : notes.entrySet().stream().filter(e -> e.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            singleUseEntity.setNotes(getInternalNotes(notes));
             repository.insertOrUpdate(singleUseEntity);
             return true;
         }
@@ -108,6 +108,7 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
         } else {
             singleUseEntity = SingleUseObject.builder()
                 .key(key)
+                .notes(getInternalNotes(null))
                 .build();
 
 
@@ -129,5 +130,23 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
     @Override
     public void close() {
         // Nothing to do
+    }
+
+    private Map<String, String> getInternalNotes(Map<String, String> notes) {
+        Map<String, String> result = notes == null ? new HashMap<>() : new HashMap<>(notes);
+
+        if(result.isEmpty()) {
+            result.put(EMPTY_NOTE, EMPTY_NOTE);
+        }
+
+        return result;
+    }
+
+    private Map<String, String> getExternalNotes(Map<String, String> notes) {
+        Map<String, String> result = notes == null ? new HashMap<>() : new HashMap<>(notes);
+
+        result.remove(EMPTY_NOTE);
+
+        return result;
     }
 }
