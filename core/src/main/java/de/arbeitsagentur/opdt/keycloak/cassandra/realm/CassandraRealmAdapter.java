@@ -36,6 +36,7 @@ import org.keycloak.models.map.common.TimeAdapter;
 import org.keycloak.models.utils.ComponentUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.ExcludeFromCodeCoverageGeneratedReport;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -1655,82 +1656,98 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
 
     // Clients
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientModel> getClientsStream() {
         return session.clients().getClientsStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientModel> getClientsStream(Integer firstResult, Integer maxResults) {
         return session.clients().getClientsStream(this, firstResult, maxResults);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Long getClientsCount() {
         return session.clients().getClientsCount(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientModel> getAlwaysDisplayInConsoleClientsStream() {
         return session.clients().getAlwaysDisplayInConsoleClientsStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientModel addClient(String name) {
         return session.clients().addClient(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientModel addClient(String id, String clientId) {
         return session.clients().addClient(this, id, clientId);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public boolean removeClient(String id) {
         return session.clients().removeClient(this, id);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientModel getClientById(String id) {
         return session.clients().getClientById(this, id);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientModel getClientByClientId(String clientId) {
         return session.clients().getClientByClientId(this, clientId);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientModel> searchClientByClientIdStream(String clientId, Integer firstResult, Integer maxResults) {
         return session.clients().searchClientsByClientIdStream(this, clientId, firstResult, maxResults);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientModel> searchClientByAttributes(Map<String, String> attributes, Integer firstResult, Integer maxResults) {
         return session.clients().searchClientsByAttributes(this, attributes, firstResult, maxResults);
     }
 
     // Client Scopes
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<ClientScopeModel> getClientScopesStream() {
         return session.clientScopes().getClientScopesStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientScopeModel addClientScope(String name) {
         return session.clientScopes().addClientScope(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientScopeModel addClientScope(String id, String name) {
         return session.clientScopes().addClientScope(this, id, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public boolean removeClientScope(String id) {
         return session.clientScopes().removeClientScope(this, id);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public ClientScopeModel getClientScopeById(String id) {
         return session.clientScopes().getClientScopeById(this, id);
     }
@@ -1785,52 +1802,62 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public GroupModel createGroup(String id, String name, GroupModel toParent) {
         return session.groups().createGroup(this, id, name, toParent);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public GroupModel getGroupById(String id) {
         return session.groups().getGroupById(this, id);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<GroupModel> getGroupsStream() {
         return session.groups().getGroupsStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Long getGroupsCount(Boolean onlyTopGroups) {
         return session.groups().getGroupsCount(this, onlyTopGroups);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Long getGroupsCountByNameContaining(String search) {
         return session.groups().getGroupsCountByNameContaining(this, search);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<GroupModel> getTopLevelGroupsStream() {
         return session.groups().getTopLevelGroupsStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<GroupModel> getTopLevelGroupsStream(Integer first, Integer max) {
         return session.groups().getTopLevelGroupsStream(this, first, max);
     }
 
     @Override
     @Deprecated
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<GroupModel> searchForGroupByNameStream(String search, Integer first, Integer max) {
         return session.groups().searchForGroupByNameStream(this, search, false, first, max);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public boolean removeGroup(GroupModel group) {
         return session.groups().removeGroup(this, group);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public void moveGroup(GroupModel group, GroupModel toParent) {
         session.groups().moveGroup(this, group, toParent);
     }
@@ -1853,36 +1880,43 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel getRole(String name) {
         return session.roles().getRealmRole(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel addRole(String name) {
         return session.roles().addRealmRole(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel addRole(String id, String name) {
         return session.roles().addRealmRole(this, id, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public boolean removeRole(RoleModel role) {
         return session.roles().removeRole(role);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> getRolesStream() {
         return session.roles().getRealmRolesStream(this);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> getRolesStream(Integer firstResult, Integer maxResults) {
         return session.roles().getRealmRolesStream(this, firstResult, maxResults);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> searchForRolesStream(String search, Integer first, Integer max) {
         return session.roles().searchForRolesStream(this, search, first, max);
     }

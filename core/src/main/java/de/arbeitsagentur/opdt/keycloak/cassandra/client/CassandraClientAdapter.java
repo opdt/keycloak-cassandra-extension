@@ -26,6 +26,7 @@ import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.ExcludeFromCodeCoverageGeneratedReport;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.*;
@@ -103,43 +104,45 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client> im
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel getRole(String name) {
         return session.roles().getClientRole(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel addRole(String name) {
         return session.roles().addClientRole(this, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public RoleModel addRole(String id, String name) {
         return session.roles().addClientRole(this, id, name);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public boolean removeRole(RoleModel role) {
         return session.roles().removeRole(role);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> getRolesStream() {
         return session.roles().getClientRolesStream(this, null, null);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> getRolesStream(Integer firstResult, Integer maxResults) {
         return session.roles().getClientRolesStream(this, firstResult, maxResults);
     }
 
     @Override
+    @ExcludeFromCodeCoverageGeneratedReport // ignore in test coverage calculation (empty delegate)
     public Stream<RoleModel> searchForRolesStream(String search, Integer first, Integer max) {
         return session.roles().searchForClientRolesStream(this, search, first, max);
-    }
-
-    @Override
-    public List<String> getDefaultRoles() {
-        return ClientModel.super.getDefaultRoles();
     }
 
     @Override
