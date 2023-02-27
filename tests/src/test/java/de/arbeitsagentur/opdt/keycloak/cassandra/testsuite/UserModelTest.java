@@ -443,6 +443,141 @@ public class UserModelTest extends KeycloakModelTest {
         });
     }
 
+
+
+    @Test
+    public void testSearchByParams() {
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user1 = currentSession.users().addUser(realm, "user1");
+            user1.setSingleAttribute(UserModel.SearchableFields.IDP_AND_USER.getName(), null);
+
+            UserModel user2 = currentSession.users().addUser(realm, "user2");
+            user2.setEmail("user2@example.com");
+            user2.setSingleAttribute(UserModel.SearchableFields.IDP_AND_USER.getName(), "fakeIDPValue");
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            realm.setAttribute("keycloak.username-search.case-sensitive", "false");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.USERNAME, "UsEr2");
+            params.put(UserModel.EXACT, "true");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            realm.setAttribute("keycloak.username-search.case-sensitive", "true");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.USERNAME, "UsEr2");
+            params.put(UserModel.EXACT, "false");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(0));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            realm.setAttribute("keycloak.username-search.case-sensitive", "false");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.USERNAME, "UsEr2");
+            params.put(UserModel.EXACT, "false");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            realm.setAttribute("keycloak.username-search.case-sensitive", "true");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.USERNAME, "UsEr2");
+            params.put(UserModel.EXACT, "true");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(0));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.EMAIL, "user2@example.com");
+            params.put(UserModel.EXACT, "true");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.SEARCH, "user2");
+            params.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "false");
+            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
+            params.put(UserModel.IDP_USER_ID, "fakeIDPValue");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
+
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
+            params.put(UserModel.IDP_USER_ID, "fakeIDPValue");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(1));
+            Assert.assertThat(users, contains(user2));
+            return null;
+        });
+
+        withRealm(originalRealmId, (currentSession, realm) -> {
+            Map<String, String> params = new HashMap<>();
+            params.put(UserModel.USERNAME, "user1");
+            params.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "true");
+            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
+            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
+                .collect(Collectors.toList());
+            Assert.assertThat(users, hasSize(0));
+            return null;
+        });
+    }
+
     @Test
     public void testSearchByUserAttribute() throws Exception {
 

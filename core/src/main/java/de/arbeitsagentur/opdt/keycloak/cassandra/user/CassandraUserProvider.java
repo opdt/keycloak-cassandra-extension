@@ -383,14 +383,12 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
                 BiFunction<String, String, Predicate<UserModel>> makeAttributeComparator =
                     (attributeName, attributeValue) -> isExactSearch ?
-                        (Predicate<UserModel>) (user) -> Objects.equals(user.getFirstAttribute(attributeName), attributeValue) :
-                        (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).contains(attributeValue);
-                BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator =
-                    KeycloakModelUtils.isUsernameCaseSensitive(realm) ?
-                        makeAttributeComparator :
-                        (attributeName, attributeValue) -> isExactSearch ?
-                            (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).equalsIgnoreCase(attributeValue) :
-                            (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).toLowerCase().contains(attributeValue.toLowerCase());
+                        (Predicate<UserModel>) user -> Objects.equals(user.getFirstAttribute(attributeName), attributeValue) :
+                        (Predicate<UserModel>) user -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).contains(attributeValue);
+                BiFunction<String, String, Predicate<UserModel>> makeAttributeComparatorIgnoreCase = (attributeName, attributeValue) -> isExactSearch ?
+                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).equalsIgnoreCase(attributeValue) :
+                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).toLowerCase().contains(attributeValue.toLowerCase());
+                BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator = KeycloakModelUtils.isUsernameCaseSensitive(realm) ? makeAttributeComparator : makeAttributeComparatorIgnoreCase;
 
                 switch(entry.getKey()) {
                     case UserModel.SEARCH: {
