@@ -20,6 +20,12 @@ import com.google.common.collect.ImmutableSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
 import org.keycloak.authorization.store.StoreFactorySpi;
+import org.keycloak.credential.CredentialSpi;
+import org.keycloak.credential.OTPCredentialProviderFactory;
+import org.keycloak.credential.PasswordCredentialProviderFactory;
+import org.keycloak.credential.hash.PasswordHashSpi;
+import org.keycloak.credential.hash.Pbkdf2PasswordHashProviderFactory;
+import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
 import org.keycloak.events.EventStoreSpi;
 import org.keycloak.keys.*;
 import org.keycloak.models.*;
@@ -40,10 +46,13 @@ import org.keycloak.models.map.storage.MapStorageSpi;
 import org.keycloak.models.map.storage.chm.ConcurrentHashMapStorageProviderFactory;
 import org.keycloak.models.map.user.MapUserProviderFactory;
 import org.keycloak.models.map.userSession.MapUserSessionProviderFactory;
+import org.keycloak.policy.*;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 import org.keycloak.services.clientpolicy.ClientPolicyManagerSpi;
 import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
+import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicySpi;
+import org.keycloak.services.clientregistration.policy.impl.*;
 import org.keycloak.services.managers.RealmManagerProviderFactory;
 import org.keycloak.services.managers.RealmManagerSpi;
 import org.keycloak.sessions.AuthenticationSessionSpi;
@@ -62,6 +71,11 @@ public class Map extends KeycloakModelParameters {
         .add(MapStorageSpi.class)
         .add(ClientPolicyManagerSpi.class)
         .add(KeySpi.class)
+        .add(ClientRegistrationPolicySpi.class)
+        .add(CredentialSpi.class)
+        .add(PasswordPolicyManagerSpi.class)
+        .add(PasswordHashSpi.class)
+        .add(PasswordPolicySpi.class)
         .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
@@ -88,6 +102,21 @@ public class Map extends KeycloakModelParameters {
         .add(ImportedRsaKeyProviderFactory.class)
         .add(GeneratedRsaEncKeyProviderFactory.class)
         .add(GeneratedRsaKeyProviderFactory.class)
+        .add(ProtocolMappersClientRegistrationPolicyFactory.class)
+        .add(ClientDisabledClientRegistrationPolicyFactory.class)
+        .add(TrustedHostClientRegistrationPolicyFactory.class)
+        .add(ConsentRequiredClientRegistrationPolicyFactory.class)
+        .add(ClientScopesClientRegistrationPolicyFactory.class)
+        .add(ScopeClientRegistrationPolicyFactory.class)
+        .add(MaxClientsClientRegistrationPolicyFactory.class)
+        .add(OTPCredentialProviderFactory.class)
+        .add(PasswordCredentialProviderFactory.class)
+        .add(DefaultPasswordPolicyManagerProviderFactory.class)
+        .add(Pbkdf2Sha256PasswordHashProviderFactory.class)
+        .add(HashAlgorithmPasswordPolicyProviderFactory.class)
+        .add(HashIterationsPasswordPolicyProviderFactory.class)
+        .add(HistoryPasswordPolicyProviderFactory.class)
+        .add(ForceExpiredPasswordPolicyProviderFactory.class)
         .build();
 
     public Map() {
@@ -112,6 +141,17 @@ public class Map extends KeycloakModelParameters {
             .spi(EventStoreSpi.NAME).defaultProvider(MapEventStoreProviderFactory.PROVIDER_ID)
             .spi("publicKeyStorage").defaultProvider(MapPublicKeyStorageProviderFactory.PROVIDER_ID)
             .spi("client-policy-manager").defaultProvider("default")
+            .spi("password-hashing")
+                .provider(Pbkdf2Sha256PasswordHashProviderFactory.ID)
+            .spi("password-policy-manager").defaultProvider("default")
+            .spi("password-policy")
+                .provider(PasswordPolicy.PASSWORD_HISTORY_ID)
+                .provider(PasswordPolicy.FORCE_EXPIRED_ID)
+                .provider(PasswordPolicy.HASH_ALGORITHM_ID)
+                .provider(PasswordPolicy.HASH_ITERATIONS_ID)
+            .spi("credential")
+                .provider(PasswordCredentialProviderFactory.PROVIDER_ID)
+                .provider(OTPCredentialProviderFactory.PROVIDER_ID)
             .spi("keys")
                 .provider(GeneratedAesKeyProviderFactory.ID)
                 .provider(GeneratedHmacKeyProviderFactory.ID)
@@ -120,6 +160,14 @@ public class Map extends KeycloakModelParameters {
                 .provider(ImportedRsaKeyProviderFactory.ID)
                 .provider(GeneratedRsaEncKeyProviderFactory.ID)
                 .provider(GeneratedRsaKeyProviderFactory.ID)
+            .spi("client-registration-policy")
+                .provider(ProtocolMappersClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(ClientDisabledClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(TrustedHostClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(ConsentRequiredClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(ClientScopesClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(ScopeClientRegistrationPolicyFactory.PROVIDER_ID)
+                .provider(MaxClientsClientRegistrationPolicyFactory.PROVIDER_ID)
         ;
         cf.spi(MapStorageSpi.NAME).provider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID).config("keyType.single-use-objects", "string");
     }
