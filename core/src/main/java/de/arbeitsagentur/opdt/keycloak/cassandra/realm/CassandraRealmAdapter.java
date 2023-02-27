@@ -663,8 +663,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     @Override
     public void updateRequiredCredentials(Set<String> creds) {
         List<RequiredCredentialModel> result = getRequiredCredentialsStream().collect(Collectors.toList());
+        Set<RequiredCredentialModel> currentRequiredCredentials = new HashSet<>(result);
 
-        Set<RequiredCredentialModel> currentRequiredCredentials = getRequiredCredentialsStream().collect(Collectors.toSet());
         Consumer<RequiredCredentialModel> updateCredentialFnc = e -> {
             Optional<RequiredCredentialModel> existingEntity = currentRequiredCredentials.stream()
                 .filter(existing -> Objects.equals(e.getType(), existing.getType()))
@@ -683,6 +683,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
                 if (c == null) throw new RuntimeException("Unknown credential type " + c.getType());
             })
             .forEach(updateCredentialFnc);
+
+        setSerializedAttributeValues(REQUIRED_CREDENTIALS, result);
     }
 
     private void updateRequiredCredential(RequiredCredentialModel existing, RequiredCredentialModel newValue) {

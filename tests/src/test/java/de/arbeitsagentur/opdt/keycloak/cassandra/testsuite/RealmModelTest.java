@@ -26,13 +26,14 @@ import org.keycloak.provider.ProviderEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RequireProvider(RealmProvider.class)
 public class RealmModelTest extends KeycloakModelTest {
@@ -157,6 +158,7 @@ public class RealmModelTest extends KeycloakModelTest {
             return null;
         });
     }
+
     @Test
     public void testRealmLocalizationTexts() {
         withRealm(realmId, (session, realm) -> {
@@ -173,6 +175,7 @@ public class RealmModelTest extends KeycloakModelTest {
             assertThat(realm.getRealmLocalizationTexts(),
                 hasEntry(equalTo("en"), allOf(aMapWithSize(1),
                     hasEntry(equalTo("key-a"), equalTo("text-a_en")))));
+            assertThat(session.realms().getLocalizationTextsById(realm, "en", "key-a"), is("text-a_en"));
 
             // Add another localization text to previous locale
             session.realms().saveLocalizationText(realm, "en", "key-b", "text-b_en");
@@ -201,6 +204,38 @@ public class RealmModelTest extends KeycloakModelTest {
             assertThat(realm.getRealmLocalizationTexts(),
                 hasEntry(equalTo("de"), allOf(aMapWithSize(1),
                     hasEntry(equalTo("key-a"), equalTo("text-a_de")))));
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            session.realms().updateLocalizationText(realm, "en", "key-b", "updated");
+            assertThat(session.realms().getLocalizationTextsById(realm, "en", "key-b"), is("updated"));
+
+            session.realms().deleteLocalizationText(realm, "en", "key-a");
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            assertThat(realm.getRealmLocalizationTexts(), aMapWithSize(2));
+            assertThat(realm.getRealmLocalizationTexts(),
+                hasEntry(equalTo("en"), allOf(aMapWithSize(1),
+                    hasEntry(equalTo("key-b"), equalTo("updated")))));
+            assertThat(realm.getRealmLocalizationTexts(),
+                hasEntry(equalTo("de"), allOf(aMapWithSize(1),
+                    hasEntry(equalTo("key-a"), equalTo("text-a_de")))));
+
+            assertThat(session.realms().getLocalizationTextsById(realm, "en", "key-b"), is("updated"));
+
+            session.realms().deleteLocalizationTextsByLocale(realm, "de");
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            assertThat(realm.getRealmLocalizationTexts(), aMapWithSize(1));
+            assertThat(realm.getRealmLocalizationTexts(),
+                hasEntry(equalTo("en"), allOf(aMapWithSize(1),
+                    hasEntry(equalTo("key-b"), equalTo("updated")))));
 
             return null;
         });
@@ -277,5 +312,65 @@ public class RealmModelTest extends KeycloakModelTest {
                 getFactory().unregister(providerEventListener);
             }
         }
+    }
+
+    @Test
+    public void testActionTokens() {
+        withRealm(realmId, (s, realm) -> {
+            realm.setActionTokenGeneratedByUserLifespan(42);
+            realm.setActionTokenGeneratedByAdminLifespan(43);
+            realm.setActionTokenGeneratedByUserLifespan("myTokenType", 100);
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertThat(realm.getActionTokenGeneratedByUserLifespan(), is(42));
+            assertThat(realm.getActionTokenGeneratedByAdminLifespan(), is(43));
+            assertThat(realm.getActionTokenGeneratedByUserLifespan("myTokenType"), is(100));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testRequiredCredentials() {
+        withRealm(realmId, (s, realm) -> {
+            assertThrows(RuntimeException.class, () -> realm.addRequiredCredential("unknown"));
+            realm.addRequiredCredential(RequiredCredentialModel.KERBEROS.getType());
+
+            assertThrows(ModelDuplicateException.class, () -> realm.addRequiredCredential(RequiredCredentialModel.KERBEROS.getType()));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertThat(realm.getRequiredCredentialsStream().collect(Collectors.toList()), hasSize(1));
+
+            RequiredCredentialModel requiredCredentialModel = realm.getRequiredCredentialsStream().collect(Collectors.toList()).get(0);
+            assertThat(requiredCredentialModel.getType(), is(RequiredCredentialModel.KERBEROS.getType()));
+            assertThat(requiredCredentialModel.getFormLabel(), is(RequiredCredentialModel.KERBEROS.getFormLabel()));
+            assertThat(requiredCredentialModel.isInput(), is(RequiredCredentialModel.KERBEROS.isInput()));
+            assertThat(requiredCredentialModel.isSecret(), is(RequiredCredentialModel.KERBEROS.isSecret()));
+
+            RequiredCredentialModel.KERBEROS.setInput(true);
+            RequiredCredentialModel.KERBEROS.setSecret(true);
+            RequiredCredentialModel.KERBEROS.setFormLabel("changed");
+            realm.updateRequiredCredentials(Set.of(RequiredCredentialModel.KERBEROS.getType()));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertThat(realm.getRequiredCredentialsStream().collect(Collectors.toList()), hasSize(1));
+
+            RequiredCredentialModel requiredCredentialModel = realm.getRequiredCredentialsStream().collect(Collectors.toList()).get(0);
+            assertThat(requiredCredentialModel.getType(), is(RequiredCredentialModel.KERBEROS.getType()));
+            assertThat(requiredCredentialModel.getFormLabel(), is("changed"));
+            assertThat(requiredCredentialModel.isInput(), is(true));
+            assertThat(requiredCredentialModel.isSecret(), is(true));
+
+            return null;
+        });
     }
 }
