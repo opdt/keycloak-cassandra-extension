@@ -236,7 +236,15 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     public Map<String, Long> getActiveClientSessionStats(RealmModel realm, boolean offline) {
         log.tracef("getActiveClientSessionStats(%s, %s)%s", realm, offline, getShortStackTrace());
 
-        return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == offline).map(entityToAdapterFunc(realm)).filter(Objects::nonNull).map(UserSessionModel::getAuthenticatedClientSessions).map(Map::keySet).flatMap(Collection::stream).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return userSessionRepository.findAll().stream()
+            .filter(s -> s.getRealmId().equals(realm.getId()))
+            .filter(s -> s.getOffline() == offline)
+            .map(entityToAdapterFunc(realm))
+            .filter(Objects::nonNull)
+            .map(UserSessionModel::getAuthenticatedClientSessions)
+            .map(Map::keySet)
+            .flatMap(Collection::stream)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     @Override
@@ -421,6 +429,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
         persistentUserSessions.stream().map(pus -> {
             UserSession userSessionEntity = createUserSessionEntityInstance(null, pus.getRealm().getId(), pus.getUser().getId(), pus.getLoginUsername(), pus.getIpAddress(), pus.getAuthMethod(), pus.isRememberMe(), pus.getBrokerSessionId(), pus.getBrokerUserId(), offline);
+            userSessionEntity.setPersistenceState(UserSessionModel.SessionPersistenceState.PERSISTENT);
 
             for (Map.Entry<String, AuthenticatedClientSessionModel> entry : pus.getAuthenticatedClientSessions().entrySet()) {
                 AuthenticatedClientSessionValue clientSession = createAuthenticatedClientSessionInstance(entry.getValue(), offline);
@@ -500,11 +509,29 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     private UserSession createUserSessionEntityInstance(String id, String realmId, String userId, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId, boolean offline) {
         long timestamp = Time.currentTimeMillis();
 
-        return UserSession.builder().id(id == null ? KeycloakModelUtils.generateId() : id).realmId(realmId).userId(userId).loginUsername(loginUsername).ipAddress(ipAddress).authMethod(authMethod).rememberMe(rememberMe).brokerSessionId(brokerSessionId).brokerUserId(brokerUserId).offline(offline).timestamp(timestamp).lastSessionRefresh(timestamp).notes(new HashMap<>()).build();
+        return UserSession.builder()
+            .id(id == null ? KeycloakModelUtils.generateId() : id)
+            .realmId(realmId).userId(userId)
+            .loginUsername(loginUsername)
+            .ipAddress(ipAddress)
+            .authMethod(authMethod)
+            .rememberMe(rememberMe)
+            .brokerSessionId(brokerSessionId)
+            .brokerUserId(brokerUserId)
+            .offline(offline)
+            .timestamp(timestamp)
+            .lastSessionRefresh(timestamp)
+            .notes(new HashMap<>())
+            .build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionEntityInstance(String id, String clientId, boolean offline) {
-        return AuthenticatedClientSessionValue.builder().id(id == null ? KeycloakModelUtils.generateId() : id).clientId(clientId).offline(offline).timestamp(Time.currentTimeMillis()).notes(new HashMap<>()).build();
+        return AuthenticatedClientSessionValue.builder()
+            .id(id == null ? KeycloakModelUtils.generateId() : id)
+            .clientId(clientId).offline(offline)
+            .timestamp(Time.currentTimeMillis())
+            .notes(new HashMap<>())
+            .build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionInstance(AuthenticatedClientSessionModel clientSession, boolean offline) {

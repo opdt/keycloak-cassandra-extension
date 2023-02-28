@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertNull;
 
 @RequireProvider(RealmProvider.class)
 @RequireProvider(ClientProvider.class)
@@ -76,6 +77,21 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             assertThat(clientScope.getProtocol(), is("openid-connect"));
             assertThat(clientScope.getAttribute("testKey"), is("testVal"));
             assertThat(clientScope.getAttributes().get("testKey"), is("testVal"));
+
+            clientScope.removeAttribute("testKey");
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
+                .map(ClientScopeModel::getId)
+                .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(1));
+
+            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+            assertNull(clientScope.getAttribute("testKey"));
+            assertThat(clientScope.getAttributes().entrySet(), hasSize(1)); // entityVersion
 
             session.clientScopes().removeClientScope(realm, clientScopes.get(0));
 

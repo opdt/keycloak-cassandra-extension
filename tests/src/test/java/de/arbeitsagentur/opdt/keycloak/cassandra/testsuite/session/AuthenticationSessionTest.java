@@ -25,15 +25,21 @@ import org.junit.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.sessions.AuthenticationSessionModel;
+import org.keycloak.sessions.CommonClientSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session.SessionTestUtils.createClients;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertNull;
 
 @RequireProvider(UserSessionProvider.class)
 public class AuthenticationSessionTest extends KeycloakModelTest {
@@ -87,9 +93,10 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
             assertThat(ras.getAuthenticationSessions(), Matchers.aMapWithSize(300));
 
             Assert.assertEquals(tabId, ras.getAuthenticationSession(client, tabId).getTabId());
+            Assert.assertEquals(ras, ras.getAuthenticationSession(client, tabId).getParentSession());
 
             // assert the first authentication session was deleted
-            Assert.assertNull(ras.getAuthenticationSession(client, tabIds.get(0)));
+            assertNull(ras.getAuthenticationSession(client, tabIds.get(0)));
 
             return null;
         });
@@ -144,8 +151,8 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
 
             assertThat(rootAuthSession.getAuthenticationSessions(), Matchers.aMapWithSize(3));
 
-            Assert.assertNull(rootAuthSession.getAuthenticationSessions().get(tabIds.get(0)));
-            Assert.assertNull(rootAuthSession.getAuthenticationSessions().get(tabIds.get(1)));
+            assertNull(rootAuthSession.getAuthenticationSessions().get(tabIds.get(0)));
+            assertNull(rootAuthSession.getAuthenticationSessions().get(tabIds.get(1)));
             IntStream.range(2, 4).mapToObj(i -> rootAuthSession.getAuthenticationSessions().get(tabIds.get(i))).forEach(Assert::assertNotNull);
 
             session.authenticationSessions().removeRootAuthenticationSession(realm, rootAuthSession);
@@ -155,7 +162,7 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
 
         withRealm(realmId, (session, realm) -> {
             RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
-            Assert.assertNull(rootAuthSession);
+            assertNull(rootAuthSession);
 
             return null;
         });
@@ -184,7 +191,111 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
 
         withRealm(realmId, (session, realm) -> {
             RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
-            Assert.assertNull(rootAuthSession);
+            assertNull(rootAuthSession);
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testAuthSessionProperties() {
+        String rootSessionId = withRealm(realmId, (session, realm) -> {
+            UserModel user = session.users().addUser(realm, "testuser");
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm);
+            ClientModel client = realm.getClientByClientId("test-app");
+            AuthenticationSessionModel authenticationSession = rootAuthSession.createAuthenticationSession(client);
+
+            authenticationSession.setAuthenticatedUser(user);
+            authenticationSession.setUserSessionNote("key1", "value1");
+            authenticationSession.setUserSessionNote("key2", "value2");
+            authenticationSession.setAuthNote("key1", "val1");
+            authenticationSession.setAuthNote("key2", "val2");
+            authenticationSession.setClientNote("key1", "val1");
+            authenticationSession.setClientNote("key2", "val2");
+            authenticationSession.setExecutionStatus("test-auth", CommonClientSessionModel.ExecutionStatus.CHALLENGED);
+            authenticationSession.setClientScopes(Set.of("scope1", "scope2"));
+            authenticationSession.setAction("act");
+            authenticationSession.setProtocol("openid");
+            authenticationSession.setRedirectUri("http://localhost:8080");
+            authenticationSession.addRequiredAction("VERIFY_EMAIL");
+            authenticationSession.addRequiredAction(UserModel.RequiredAction.CONFIGURE_TOTP);
+
+            return rootAuthSession.getId();
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            ClientModel client = realm.getClientByClientId("test-app");
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootSessionId);
+            assertThat(rootAuthSession.getAuthenticationSessions().entrySet(), hasSize(1));
+
+            AuthenticationSessionModel authSession = rootAuthSession.getAuthenticationSessions().values().iterator().next();
+            assertThat(rootAuthSession.getAuthenticationSession(client, authSession.getTabId()), is(authSession));
+
+            assertThat(authSession.getAuthenticatedUser().getUsername(), is("testuser"));
+            assertThat(authSession.getAction(), is("act"));
+            assertThat(authSession.getProtocol(), is("openid"));
+            assertThat(authSession.getRedirectUri(), is("http://localhost:8080"));
+            assertThat(authSession.getUserSessionNotes().entrySet(), hasSize(2));
+            assertThat(authSession.getUserSessionNotes().get("key1"), is("value1"));
+            assertThat(authSession.getUserSessionNotes().get("key2"), is("value2"));
+            assertThat(authSession.getAuthNote("key1"), is("val1"));
+            assertThat(authSession.getAuthNote("key2"), is("val2"));
+            assertThat(authSession.getClientNotes().entrySet(), hasSize(2));
+            assertThat(authSession.getClientNote("key1"), is("val1"));
+            assertThat(authSession.getClientNote("key2"), is("val2"));
+            assertThat(authSession.getExecutionStatus().entrySet(), hasSize(1));
+            assertThat(authSession.getExecutionStatus().get("test-auth"), is(CommonClientSessionModel.ExecutionStatus.CHALLENGED));
+            assertThat(authSession.getClientScopes(), hasSize(2));
+            assertThat(authSession.getClientScopes(), containsInAnyOrder("scope1", "scope2"));
+            assertThat(authSession.getRequiredActions(), hasSize(2));
+            assertThat(authSession.getRequiredActions(), containsInAnyOrder("VERIFY_EMAIL", "CONFIGURE_TOTP"));
+
+
+            authSession.removeAuthNote("key1");
+            authSession.removeClientNote("key2");
+            authSession.removeRequiredAction("CONFIGURE_TOTP");
+            authSession.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootSessionId);
+            assertThat(rootAuthSession.getAuthenticationSessions().entrySet(), hasSize(1));
+
+            AuthenticationSessionModel authSession = rootAuthSession.getAuthenticationSessions().values().iterator().next();
+
+            assertThat(authSession.getUserSessionNotes().entrySet(), hasSize(2));
+            assertThat(authSession.getUserSessionNotes().get("key1"), is("value1"));
+            assertThat(authSession.getUserSessionNotes().get("key2"), is("value2"));
+            assertNull(authSession.getAuthNote("key1"));
+            assertThat(authSession.getAuthNote("key2"), is("val2"));
+            assertThat(authSession.getClientNotes().entrySet(), hasSize(1));
+            assertThat(authSession.getClientNote("key1"), is("val1"));
+            assertThat(authSession.getExecutionStatus().entrySet(), hasSize(1));
+            assertThat(authSession.getExecutionStatus().get("test-auth"), is(CommonClientSessionModel.ExecutionStatus.CHALLENGED));
+            assertThat(authSession.getRequiredActions(), hasSize(0));
+
+
+            authSession.clearAuthNotes();
+            authSession.clearClientNotes();
+            authSession.clearUserSessionNotes();
+            authSession.clearExecutionStatus();
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootSessionId);
+            assertThat(rootAuthSession.getAuthenticationSessions().entrySet(), hasSize(1));
+
+            AuthenticationSessionModel authSession = rootAuthSession.getAuthenticationSessions().values().iterator().next();
+
+            assertThat(authSession.getUserSessionNotes().entrySet(), hasSize(0));
+            assertNull(authSession.getAuthNote("key1"));
+            assertNull(authSession.getAuthNote("key2"));
+            assertThat(authSession.getClientNotes().entrySet(), hasSize(0));
+            assertThat(authSession.getExecutionStatus().entrySet(), hasSize(0));
+            assertThat(authSession.getRequiredActions(), hasSize(0));
 
             return null;
         });

@@ -168,15 +168,11 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
     @Override
     public void deleteCorrespondingUserSession(UserSession session) {
-        UserSessionToAttributeMapping correspondingIdAttribute = findUserSessionAttribute(session.getId(), CORRESPONDING_SESSION_ID);
-        if (correspondingIdAttribute == null) {
+        if (!session.getNotes().containsKey(CORRESPONDING_SESSION_ID)) {
             return;
         }
 
-        deleteUserSession(correspondingIdAttribute.getUserSessionId());
-        session.getNotes().remove(CORRESPONDING_SESSION_ID);
-        update(session);
-        deleteUserSessionAttribute(session.getId(), CORRESPONDING_SESSION_ID);
+        deleteUserSession(session.getNotes().get(CORRESPONDING_SESSION_ID));
     }
 
     // Attributes

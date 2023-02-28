@@ -48,7 +48,6 @@ import static java.util.Objects.nonNull;
 @JBossLog
 public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> implements RealmModel {
     private static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled"; // Copied from MapRealmAdapter
-    public static final String COMPONENT_PROVIDER_TYPE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "componentProviderType";
     public static final String DEFAULT_GROUP_IDS = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultGroupIds";
     public static final String DEFAULT_ROLE_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultRoleId";
     public static final String DEFAULT_CLIENT_SCOPE_ID = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultClientScopeId";
@@ -1548,6 +1547,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
             .timestamp(Time.currentTimeMillis())
             .expiration(expiration == 0 ? null : Time.currentTimeMillis() + TimeAdapter.fromSecondsToMilliseconds(expiration))
             .count(count)
+            .remainingCount(count)
             .build();
 
         realmRepository.insertOrUpdate(clientInitialAccess);
@@ -1579,7 +1579,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     @Override
     public void decreaseRemainingCount(ClientInitialAccessModel clientInitialAccess) {
         ClientInitialAccess entity = realmRepository.getClientInitialAccess(this.entity.getId(), clientInitialAccess.getId());
-        entity.setCount(entity.getCount() - 1);
+        entity.setRemainingCount(entity.getRemainingCount() - 1);
         realmRepository.insertOrUpdate(entity);
     }
 
@@ -1743,18 +1743,19 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         List<String> values = entity.getAttribute(attrName);
         values.add(clientScope.getId());
         entity.getAttributes().put(attrName, values);
-        markUpdated();
+        setAttribute(attrName, values);
     }
 
     @Override
     public void removeDefaultClientScope(ClientScopeModel clientScope) {
         if (entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).contains(clientScope.getId())) {
             entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID).remove(clientScope.getId());
+            setAttribute(DEFAULT_CLIENT_SCOPE_ID, entity.getAttribute(DEFAULT_CLIENT_SCOPE_ID));
         } else {
             entity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID).remove(clientScope.getId());
+            setAttribute(OPTIONAL_CLIENT_SCOPE_ID, entity.getAttribute(OPTIONAL_CLIENT_SCOPE_ID));
         }
 
-        markUpdated();
     }
 
     @Override
@@ -1776,14 +1777,14 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     public void addDefaultGroup(GroupModel group) {
         List<String> values = entity.getAttribute(DEFAULT_GROUP_IDS);
         values.add(group.getId());
-        markUpdated();
+        setAttribute(DEFAULT_GROUP_IDS, values);
     }
 
     @Override
     public void removeDefaultGroup(GroupModel group) {
         List<String> values = entity.getAttribute(DEFAULT_GROUP_IDS);
         values.remove(group.getId());
-        markUpdated();
+        setAttribute(DEFAULT_GROUP_IDS, values);
     }
 
     @Override
@@ -1851,7 +1852,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     @Override
     public void setDefaultRole(RoleModel role) {
         entity.getAttributes().put(DEFAULT_ROLE_ID, new ArrayList<>(Arrays.asList(role.getId())));
-        markUpdated();
+        setAttribute(DEFAULT_ROLE_ID, new ArrayList<>(Arrays.asList(role.getId())));
     }
 
     @Override

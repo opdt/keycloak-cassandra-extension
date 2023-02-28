@@ -18,6 +18,8 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.RequireProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
+import lombok.Data;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -735,4 +737,202 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
             return session.getId();
         });
     }
+
+    @Test
+    public void testBrokerUserSessions() {
+        withRealm(realmId, (s, realm) -> {
+            UserModel testuser = s.users().getUserByUsername(realm, "user1");
+            UserSessionModel session = s.sessions().createUserSession(realm, testuser, "testuser", "127.0.0.1", "test", false, "brokerSession", "brokerUserId");
+
+
+            UserSessionModel currentSession = s.sessions().getUserSessionByBrokerSessionId(realm, "brokerSession");
+            assertThat(currentSession.getBrokerSessionId(), is("brokerSession"));
+            assertThat(currentSession.getBrokerUserId(), is("brokerUserId"));
+
+
+            List<UserSessionModel> brokerSessions = s.sessions().getUserSessionByBrokerUserIdStream(realm, "brokerUserId").collect(Collectors.toList());
+            assertThat(brokerSessions, hasSize(1));
+            assertThat(brokerSessions.get(0).getBrokerSessionId(), is("brokerSession"));
+            assertThat(brokerSessions.get(0).getBrokerUserId(), is("brokerUserId"));
+
+            UserSessionModel sessionByPredicate = s.sessions().getUserSessionWithPredicate(realm, session.getId(), false, s2 -> s2.getBrokerUserId().equals("brokerUserId"));
+            assertThat(sessionByPredicate.getBrokerSessionId(), is("brokerSession"));
+            assertThat(sessionByPredicate.getBrokerUserId(), is("brokerUserId"));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserModel testuser = s.users().getUserByUsername(realm, "user1");
+            UserSessionModel session = s.sessions().createUserSession(realm, testuser, "testuser", "127.0.0.1", "test", false, "brokerSession", "brokerUserId");
+            s.sessions().createOfflineUserSession(session);
+
+            UserSessionModel currentSession = s.sessions().getOfflineUserSessionByBrokerSessionId(realm, "brokerSession");
+            assertThat(currentSession.getBrokerSessionId(), is("brokerSession"));
+            assertThat(currentSession.getBrokerUserId(), is("brokerUserId"));
+
+
+            List<UserSessionModel> brokerSessions = s.sessions().getOfflineUserSessionByBrokerUserIdStream(realm, "brokerUserId").collect(Collectors.toList());
+            assertThat(brokerSessions, hasSize(1));
+            assertThat(brokerSessions.get(0).getBrokerSessionId(), is("brokerSession"));
+            assertThat(brokerSessions.get(0).getBrokerUserId(), is("brokerUserId"));
+
+            UserSessionModel sessionByPredicate = s.sessions().getUserSessionWithPredicate(realm, session.getId(), true, s2 -> s2.getBrokerUserId().equals("brokerUserId"));
+            assertThat(sessionByPredicate.getBrokerSessionId(), is("brokerSession"));
+            assertThat(sessionByPredicate.getBrokerUserId(), is("brokerUserId"));
+
+            return session.getId();
+        });
+    }
+
+    @Test
+    public void testActiveClientSessionStats() {
+        withRealm(realmId, (s, r) -> {
+            RealmModel realm = s.realms().getRealmByName("test");
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            UserSessionModel userSession = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null);
+
+            ClientModel client1 = realm.getClientByClientId("test-app");
+            ClientModel client2 = realm.getClientByClientId("third-party");
+
+            // Create client1 session
+            AuthenticatedClientSessionModel clientSession1 = s.sessions().createClientSession(realm, client1, userSession);
+            clientSession1.setAction("foo1");
+            int currentTime1 = Time.currentTime();
+            clientSession1.setTimestamp(currentTime1);
+
+            // Create client2 session
+            AuthenticatedClientSessionModel clientSession2 = s.sessions().createClientSession(realm, client2, userSession);
+            clientSession2.setAction("foo2");
+            int currentTime2 = Time.currentTime();
+            clientSession2.setTimestamp(currentTime2);
+
+            return null;
+        });
+
+        withRealm(realmId, (s, r) -> {
+            RealmModel realm = s.realms().getRealmByName("test");
+            ClientModel client1 = realm.getClientByClientId("test-app");
+            ClientModel client2 = realm.getClientByClientId("third-party");
+
+            Map<String, Long> stats = s.sessions().getActiveClientSessionStats(realm, false);
+            assertThat(stats.entrySet(), hasSize(2));
+            assertThat(stats.get(client1.getId()), is(1L));
+            assertThat(stats.get(client2.getId()), is(1L));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testRemoveSessions() {
+        String sessionId = withRealm(realmId, (s, realm) -> s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null).getId());
+        withRealm(realmId, (s, realm) -> s.clients().addClient(realm, "clientId"));
+
+        withRealm(realmId, (s, realm) -> {
+            assertNotNull(s.sessions().getUserSession(realm, sessionId));
+            s.sessions().removeUserSessions(realm, s.users().getUserByUsername(realm, "user1"));
+
+            return null;
+        });
+
+        String session2Id = withRealm(realmId, (s, realm) -> {
+            assertNull(s.sessions().getUserSession(realm, sessionId));
+
+            UserSessionModel userSession = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null);
+            ClientModel client1 = realm.getClientByClientId("clientId");
+
+            s.sessions().createClientSession(realm, client1, userSession);
+            return userSession.getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertNotNull(s.sessions().getUserSession(realm, session2Id));
+            s.sessions().onClientRemoved(realm, realm.getClientByClientId("clientId"));
+
+            return null;
+        });
+
+        String offlineSessionId = withRealm(realmId, (s, realm) -> {
+            assertNull(s.sessions().getUserSession(realm, session2Id));
+
+            UserSessionModel userSession = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null);
+            return s.sessions().createOfflineUserSession(userSession).getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserSessionModel offlineUserSession = s.sessions().getOfflineUserSession(realm, offlineSessionId);
+            assertTrue(offlineUserSession.isOffline());
+
+            s.sessions().removeOfflineUserSession(realm, offlineUserSession);
+
+            return null;
+        });
+
+        String offlineSessionId2 = withRealm(realmId, (s, realm) -> {
+            UserSessionModel offlineUserSession = s.sessions().getOfflineUserSession(realm, offlineSessionId);
+            assertFalse(offlineUserSession.isOffline()); // Returned corresponding live session
+
+            UserSessionModel userSession = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null);
+            return s.sessions().createOfflineUserSession(userSession).getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserSessionModel offlineUserSession = s.sessions().getOfflineUserSession(realm, offlineSessionId2);
+            assertTrue(offlineUserSession.isOffline());
+
+            s.sessions().removeOfflineUserSession(realm, s.sessions().getUserSession(realm, offlineUserSession.getNote(UserSessionModel.CORRESPONDING_SESSION_ID)));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserSessionModel offlineUserSession = s.sessions().getOfflineUserSession(realm, offlineSessionId2);
+            assertFalse(offlineUserSession.isOffline()); // Returned corresponding live session
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testImportUserSessions() {
+        withRealm(realmId, (s, realm) -> s.clients().addClient(realm, "clientId"));
+        UserSessionModel userSession1 = withRealm(realmId, (s, realm) -> {
+            UserSessionModel model = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.2", "form", true, null, null);
+            s.sessions().createClientSession(realm, s.clients().getClientByClientId(realm, "clientId"), model);
+
+            return model;
+        });
+
+        UserSessionModel userSession2 = withRealm(realmId, (s, realm) -> {
+            UserSessionModel model = s.sessions().createUserSession(realm, s.users().getUserByUsername(realm, "user2"), "user2", "127.0.0.2", "form", true, null, null);
+            s.sessions().createClientSession(realm, s.clients().getClientByClientId(realm, "clientId"), model);
+
+            return model;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            s.sessions().removeUserSessions(realm);
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertThat(s.sessions().getUserSessionsStream(realm, s.users().getUserByUsername(realm, "user1")).collect(Collectors.toList()), hasSize(0));
+            assertThat(s.sessions().getUserSessionsStream(realm, s.users().getUserByUsername(realm, "user2")).collect(Collectors.toList()), hasSize(0));
+
+            s.sessions().importUserSessions(Arrays.asList(userSession1, userSession2), false);
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            assertThat(s.sessions().getUserSessionsStream(realm, s.users().getUserByUsername(realm, "user1")).collect(Collectors.toList()), hasSize(1));
+            assertThat(s.sessions().getUserSessionsStream(realm, s.users().getUserByUsername(realm, "user2")).collect(Collectors.toList()), hasSize(1));
+            Map<String, Long> stats = s.sessions().getActiveClientSessionStats(realm, false);
+            assertThat(stats.get(s.clients().getClientByClientId(realm, "clientId").getId()), is(2L));
+
+            return null;
+        });
+    }
+
 }

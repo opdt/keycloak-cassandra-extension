@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -629,6 +630,248 @@ public class ClientModelTest extends KeycloakModelTest {
 
             realm.removeDefaultClientScope(scope3Atomic.get());
             realm.removeClientScope(scope3Atomic.get().getId());
+            return null;
+        });
+    }
+
+    @Test
+    public void testDefaultRole() {
+        String clientId = withRealm(realmId, (s, realm) -> {
+            realm.setDefaultRole(s.roles().addRealmRole(realm, "defaultRole"));
+            ClientModel client = setUpClient(realm);
+            client.addDefaultRole("testRole1");
+            client.addDefaultRole("testRole2");
+
+            return client.getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            assertThat(client.getDefaultRoles(), hasSize(2));
+            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole1", "testRole2"));
+            assertThat(client.getDefaultRoles(), hasSize(2));
+            assertThat(client.getDefaultRolesStream().collect(Collectors.toList()), hasSize(2));
+            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole1", "testRole2"));
+
+            client.removeDefaultRoles("testRole1");
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            assertThat(client.getDefaultRoles(), hasSize(1));
+            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole2"));
+
+            return null;
+        });
+
+    }
+
+    @Test
+    public void testProperties() {
+        String clientId = withRealm(realmId, (s, realm) -> {
+            ClientModel client = setUpClient(realm);
+            client.removeRedirectUri("redirect-1");
+            client.setSecret("4711");
+            client.setRegistrationToken("42");
+            client.setAuthenticationFlowBindingOverride("binding1", "flow1");
+
+            return client.getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            assertThat(client.getRedirectUris(), hasSize(1));
+            assertThat(client.getRedirectUris(), containsInAnyOrder("redirect-2"));
+            assertTrue(client.validateSecret("4711"));
+            assertThat(client.getRegistrationToken(), is("42"));
+            assertThat(client.getAuthenticationFlowBindingOverride("binding1"), is("flow1"));
+            assertThat(client.getAuthenticationFlowBindingOverrides().entrySet(), hasSize(1));
+            assertThat(client.getAuthenticationFlowBindingOverrides().values(), containsInAnyOrder("flow1"));
+
+            client.removeAuthenticationFlowBindingOverride("binding1");
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            assertNull(client.getAuthenticationFlowBindingOverride("binding1"));
+            assertThat(client.getAuthenticationFlowBindingOverrides().entrySet(), hasSize(0));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testProtocolMappers() {
+        String clientId = withRealm(realmId, (s, realm) -> realm.addClient("testClient").getId());
+
+        String mapperId = withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            ProtocolMapperModel mapper = new ProtocolMapperModel();
+            mapper.setName("test");
+            mapper.setProtocol("oidc");
+            mapper.setProtocolMapper("username");
+            mapper.setConfig(Map.of("key1", "value1"));
+
+            client.setProtocol("oidc");
+            return client.addProtocolMapper(mapper).getId();
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            ProtocolMapperModel mapper = client.getProtocolMapperById(mapperId);
+            assertThat(mapper.getName(), is("test"));
+            assertThat(mapper.getProtocol(), is("oidc"));
+            assertThat(mapper.getProtocolMapper(), is("username"));
+            assertThat(mapper.getConfig().entrySet(), hasSize(1));
+            assertThat(mapper.getConfig().get("key1"), is("value1"));
+
+            mapper.getConfig().put("key2", "value2");
+
+            client.updateProtocolMapper(mapper);
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            ProtocolMapperModel mapper = client.getProtocolMapperByName("oidc", "test");
+            assertThat(mapper.getName(), is("test"));
+            assertThat(mapper.getProtocol(), is("oidc"));
+            assertThat(mapper.getProtocolMapper(), is("username"));
+            assertThat(mapper.getConfig().entrySet(), hasSize(2));
+            assertThat(mapper.getConfig().get("key1"), is("value1"));
+            assertThat(mapper.getConfig().get("key2"), is("value2"));
+
+            client.removeProtocolMapper(mapper);
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            assertThat(client.getProtocolMappersStream().collect(Collectors.toList()), hasSize(0));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testScopeMappings() {
+        String clientId = withRealm(realmId, (s, realm) -> realm.addClient("testClient").getId());
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            RoleModel realmRole = s.roles().addRealmRole(realm, "realmRole");
+            realmRole.addCompositeRole(s.roles().addRealmRole(realm, "compositeRole"));
+            client.addScopeMapping(realmRole);
+            client.addScopeMapping(s.roles().addClientRole(client, "clientRole"));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+
+            assertTrue(client.hasScope(s.roles().getRealmRole(realm, "realmRole")));
+            assertTrue(client.hasScope(s.roles().getRealmRole(realm, "compositeRole")));
+            assertTrue(client.hasScope(s.roles().getClientRole(client, "clientRole")));
+            assertTrue(client.hasDirectScope(s.roles().getRealmRole(realm, "realmRole")));
+            assertFalse(client.hasDirectScope(s.roles().getRealmRole(realm, "compositeRole")));
+            assertTrue(client.hasDirectScope(s.roles().getClientRole(client, "clientRole")));
+
+            client.deleteScopeMapping(s.roles().getRealmRole(realm, "realmRole"));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+
+            assertFalse(client.hasScope(s.roles().getRealmRole(realm, "realmRole")));
+            assertFalse(client.hasScope(s.roles().getRealmRole(realm, "compositeRole")));
+            assertTrue(client.hasScope(s.roles().getClientRole(client, "clientRole")));
+            assertFalse(client.hasDirectScope(s.roles().getRealmRole(realm, "realmRole")));
+            assertFalse(client.hasDirectScope(s.roles().getRealmRole(realm, "compositeRole")));
+            assertTrue(client.hasDirectScope(s.roles().getClientRole(client, "clientRole")));
+
+            client.deleteScopeMapping(s.roles().getRealmRole(realm, "realmRole"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testClientScopesCrud() {
+        String clientId = withRealm(realmId, (s, realm) -> realm.addClient("testClient").getId());
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            ClientScopeModel scope1 = s.clientScopes().addClientScope(realm, "scope1");
+            scope1.setProtocol("openid-connect");
+            ClientScopeModel scope2 = s.clientScopes().addClientScope(realm, "scope2");
+            scope2.setProtocol("openid-connect");
+            ClientScopeModel scope3 = s.clientScopes().addClientScope(realm, "scope3");
+            scope3.setProtocol("openid-connect");
+            s.clients().addClientScopes(realm, client, Set.of(scope1, scope2), true);
+            s.clients().addClientScopes(realm, client, Set.of(scope3), false);
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            Map<String, ClientScopeModel> defaultScopes = s.clients().getClientScopes(realm, client, true);
+            Map<String, ClientScopeModel> nonDefaultScopes = s.clients().getClientScopes(realm, client, false);
+
+            assertThat(defaultScopes.values(), hasSize(2));
+            assertThat(defaultScopes.keySet(), containsInAnyOrder("scope1", "scope2"));
+            assertThat(nonDefaultScopes.values(), hasSize(1));
+            assertThat(nonDefaultScopes.keySet(), containsInAnyOrder("scope3"));
+
+            s.clients().removeClientScope(realm, client, defaultScopes.get("scope2"));
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            Map<String, ClientScopeModel> defaultScopes = s.clients().getClientScopes(realm, client, true);
+            Map<String, ClientScopeModel> nonDefaultScopes = s.clients().getClientScopes(realm, client, false);
+
+            assertThat(defaultScopes.values(), hasSize(1));
+            assertThat(defaultScopes.keySet(), containsInAnyOrder("scope1"));
+            assertThat(nonDefaultScopes.values(), hasSize(1));
+            assertThat(nonDefaultScopes.keySet(), containsInAnyOrder("scope3"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testClientSearch() {
+        String clientId = withRealm(realmId, (s, realm) -> realm.addClient("testClient").getId());
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+            client.setAttribute("key1", "val1");
+
+            return null;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            ClientModel client = s.clients().getClientById(realm, clientId);
+
+            assertThat(s.clients().getClientsCount(realm), is(1L));
+            List<ClientModel> clientsByClientId = s.clients().searchClientsByClientIdStream(realm, "testClient", 0, 10).collect(Collectors.toList());
+            assertThat(clientsByClientId, hasSize(1));
+            assertThat(clientsByClientId.get(0), is(client));
+
+            List<ClientModel> clientsByAttribute = s.clients().searchClientsByAttributes(realm, Map.of("key1", "val1"), 0, 10).collect(Collectors.toList());
+            assertThat(clientsByAttribute, hasSize(1));
+            assertThat(clientsByAttribute.get(0), is(client));
+
             return null;
         });
     }
