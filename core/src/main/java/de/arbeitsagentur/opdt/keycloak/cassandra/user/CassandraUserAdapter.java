@@ -399,11 +399,6 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
         }
     }
 
-    private void setVersion(long version) {
-        entity.setVersion(version);
-        markUpdated();
-    }
-
     private Optional<String> getSpecialAttributeValue(String name) {
         if (UserModel.FIRST_NAME.equals(name)) {
             return Optional.ofNullable(entity.getFirstName());
