@@ -119,10 +119,8 @@ public class CassandraRealmsProvider extends TransactionalProvider<Realm, Cassan
 
     @Override
     public Stream<RealmModel> getRealmsWithProviderTypeStream(Class<?> type) {
-        return realmRepository.getAllRealms().stream()
-            .filter(r -> r.getAttributes().containsKey(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE))
-            .filter(r -> r.getAttributes().get(CassandraRealmAdapter.COMPONENT_PROVIDER_TYPE).contains(type.getName()))
-            .map(entityToAdapterFunc(null));
+        return getRealmsStream()
+            .filter(r -> r.getComponentsStream().anyMatch(c -> c.getProviderType().equals(type.getName())));
     }
 
     @Override
