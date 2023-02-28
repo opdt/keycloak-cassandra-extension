@@ -13,8 +13,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Ported from:
@@ -342,11 +341,19 @@ public class UserModelTest extends KeycloakModelTest {
             UserModel user = currentSession.users().addUser(realm, "user");
 
             user.setSingleAttribute("key1", "value1");
+            user.setSingleAttribute(UserModel.USERNAME, "userUpdated");
+            user.setSingleAttribute(UserModel.FIRST_NAME, "fn");
+            user.setSingleAttribute(UserModel.LAST_NAME, "ln");
+            user.setSingleAttribute(UserModel.EMAIL, "e@f.de");
             return null;
         });
 
         withRealm(originalRealmId, (currentSession, realm) -> {
-            UserModel user = currentSession.users().getUserByUsername(realm, "user");
+            UserModel user = currentSession.users().getUserByUsername(realm, "userUpdated");
+
+            assertThat(user.getFirstName(), is("fn"));
+            assertThat(user.getLastName(), is("ln"));
+            assertThat(user.getEmail(), is("e@f.de"));
 
             // Update attribute
             List<String> attrVals = new ArrayList<>(Arrays.asList("val2"));
@@ -725,7 +732,17 @@ public class UserModelTest extends KeycloakModelTest {
 
             RealmModel realm2 = currentSession.realms().getRealmByName("realm2");
             UserModel realm2User1 = currentSession.users().getUserByUsername(realm2, "user1");
-            Assert.assertFalse(realm2User1.hasRole(role1));
+            assertFalse(realm2User1.hasRole(role1));
+
+            user1.deleteRoleMapping(role1);
+            return null;
+        });
+
+        withRealm(realm1RealmId, (currentSession, realm1) -> {
+            RealmModel realm2 = currentSession.realms().getRealmByName("realm2");
+            RoleModel role1 = realm1.getRole("role1");
+            UserModel user1 = currentSession.users().getUserByUsername(realm1, "user1");
+            assertFalse(user1.hasRole(role1));
 
             currentSession.realms().removeRealm(realm1.getId());
             currentSession.realms().removeRealm(realm2.getId());
