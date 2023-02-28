@@ -81,19 +81,36 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
         ClientModel client1 = s.clients().addClient(realm, "client1");
         s.clients().addClient(realm, "client2");
+        client1.setServiceAccountsEnabled(true);
+        UserModel client1Svc = s.users().addUser(realm, "client1Svc");
+        client1Svc.setServiceAccountClientLink(client1.getId());
 
         ClientScopeModel scope1 = s.clientScopes().addClientScope(realm, "scope1");
         ClientScopeModel scope2 = s.clientScopes().addClientScope(realm, "scope2");
         client1.addClientScope(scope1, true);
         client1.addClientScope(scope2, false);
 
+        RoleModel scopeMappingRealmRole = s.roles().addRealmRole(realm, "scopeMappingRole");
+        RoleModel scopeMappingClientRole1 = s.roles().addClientRole(client1, "scopeMappingRoleClient");
+        RoleModel scopeMappingClientRole2 = s.roles().addClientRole(client1, "scopeMappingRoleClient2");
+        scopeMappingRealmRole.addCompositeRole(scopeMappingClientRole1);
+        scopeMappingRealmRole.addCompositeRole(s.roles().addRealmRole(realm, "compositeRealmRole"));
+
+        client1.addScopeMapping(scopeMappingRealmRole);
+        client1.addScopeMapping(scopeMappingClientRole1);
+        client1.addScopeMapping(scopeMappingClientRole2);
+
         s.roles().addClientRole(client1, "clientRole1");
         s.roles().addClientRole(client1, "clientRole2");
-        s.roles().addRealmRole(realm, "realmRole1");
+        RoleModel realmRole1 = s.roles().addRealmRole(realm, "realmRole1");
         RoleModel realmRole2 = s.roles().addRealmRole(realm, "realmRole2");
 
         realm.setDefaultRole(realmRole2);
         defaultRole = realmRole2;
+
+        // Client Scope
+        ClientScopeModel clientScope1 = s.clientScopes().addClientScope(realm, "realmScope");
+        clientScope1.addScopeMapping(realmRole1);
 
         // Auth Flows and Clients copied from Keycloak-Tests
 
@@ -201,6 +218,8 @@ public class ExportImportManagerTest extends KeycloakModelTest {
         // User
         UserModel user = s.users().addUser(realm, "testuser");
         user.setAttribute("testKey", Arrays.asList("testValue"));
+
+        s.users().addFederatedIdentity(realm, user, new FederatedIdentityModel("idpId", "idpUserId", "idpUserName"));
     }
 
     @Override
@@ -251,7 +270,9 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
             ExportImportManager exportImportManager = session.getProvider(DatastoreProvider.class).getExportImportManager();
             exportImportManager.importRealm(rep, newRealm, false);
+        });
 
+        inComittedTransaction(session -> {
             RealmModel importedRealm = session.realms().getRealm(originalRealm.getId());
             assertThat(importedRealm.getName(), is(originalRealm.getName()));
             assertThat(importedRealm.getSslRequired(), is(originalRealm.getSslRequired()));
@@ -275,20 +296,34 @@ public class ExportImportManagerTest extends KeycloakModelTest {
             assertThat(importedRealm.getSsoSessionMaxLifespanRememberMe(), is(originalRealm.getSsoSessionMaxLifespanRememberMe()));
             assertThat(importedRealm.getAttribute("testAttribute"), is(originalRealm.getAttribute("testAttribute")));
 
+            List<ClientScopeModel> realmScopes = importedRealm.getClientScopesStream().collect(Collectors.toList());
+            assertThat(realmScopes, hasSize(3));
+            assertThat(realmScopes.stream().map(ClientScopeModel::getName).collect(Collectors.toList()), containsInAnyOrder("realmScope", "scope1", "scope2"));
+
+            List<RoleModel> scopeRoles = realmScopes.stream().filter(c -> c.getName().equals("realmScope"))
+                .flatMap(ClientScopeModel::getRealmScopeMappingsStream)
+                .collect(Collectors.toList());
+            assertThat(scopeRoles, hasSize(1));
+            assertThat(scopeRoles.get(0).getName(), is("realmRole1"));
+
             ClientModel importedClient = session.clients().getClientByClientId(importedRealm, "client1");
             assertThat(importedClient.getClientScopes(true).values(), hasSize(1));
             assertThat(importedClient.getClientScopes(true).values().iterator().next().getName(), is("scope1"));
             assertThat(importedClient.getClientScopes(false).values(), hasSize(1));
             assertThat(importedClient.getClientScopes(false).values().iterator().next().getName(), is("scope2"));
+            assertThat(importedClient.getScopeMappingsStream().collect(Collectors.toList()), hasSize(3));
+            assertThat(importedClient.getScopeMappingsStream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("scopeMappingRole", "scopeMappingRoleClient", "scopeMappingRoleClient2"));
 
             List<RoleModel> clientRoles = session.roles().getClientRolesStream(importedClient).collect(Collectors.toList());
-            assertThat(clientRoles, hasSize(2));
-            assertThat(clientRoles.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("clientRole1", "clientRole2"));
+            assertThat(clientRoles, hasSize(4));
+            assertThat(clientRoles.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("clientRole1", "clientRole2", "scopeMappingRoleClient", "scopeMappingRoleClient2"));
 
             List<RoleModel> realmRoles = session.roles().getRealmRolesStream(importedRealm).collect(Collectors.toList());
-            assertThat(realmRoles, hasSize(2));
-            assertThat(realmRoles.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("realmRole1", "realmRole2"));
-
+            assertThat(realmRoles, hasSize(4));
+            assertThat(realmRoles.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("realmRole1", "realmRole2", "scopeMappingRole", "compositeRealmRole"));
+            List<RoleModel> compositeRoles = realmRoles.stream().filter(r -> r.getName().equals("scopeMappingRole")).flatMap(RoleModel::getCompositesStream).collect(Collectors.toList());
+            assertThat(compositeRoles, hasSize(2));
+            assertThat(compositeRoles.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("scopeMappingRoleClient", "compositeRealmRole"));
             assertThat(importedRealm.getDefaultRole().getName(), is("realmRole2"));
 
             AuthenticationFlowModel browserFlow = importedRealm.getBrowserFlow();
@@ -321,6 +356,14 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
             UserModel testuser = session.users().getUserByUsername(importedRealm, "testuser");
             assertThat(testuser.getFirstAttribute("testKey"), is("testValue"));
+
+            FederatedIdentityModel importedFederatedIdentity = session.users().getFederatedIdentity(importedRealm, testuser, "idpId");
+            assertThat(importedFederatedIdentity.getUserId(), is("idpUserId"));
+            assertThat(importedFederatedIdentity.getUserName(), is("idpUserName"));
+
+            UserModel importedServiceAccount = session.users().getServiceAccount(importedClient);
+            assertThat(importedServiceAccount.getUsername(), is("client1Svc"));
+
 
             return null;
         });
