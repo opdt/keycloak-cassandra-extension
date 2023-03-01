@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension-parent</artifactId>
-    <version>0.8.2-20.0.3</version>
+    <version>0.8.3-20.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
@@ -46,7 +46,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- keycloak -->
-        <keycloak.version>20.0.3</keycloak.version>
+        <keycloak.version>20.0.5</keycloak.version>
         <quarkus.version>2.13.3.Final</quarkus.version>
 
         <!-- testing -->
