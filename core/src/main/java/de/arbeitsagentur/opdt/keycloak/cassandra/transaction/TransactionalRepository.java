@@ -17,6 +17,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
+import org.keycloak.models.ModelIllegalStateException;
 
 public abstract class TransactionalRepository<TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> {
     protected final TDao dao;
@@ -36,7 +37,7 @@ public abstract class TransactionalRepository<TEntity extends TransactionalEntit
             ResultSet result = dao.update(entity, currentVersion);
 
             if (!result.wasApplied()) {
-                throw new EntityStaleException("Entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database", currentVersion);
+                throw new ModelIllegalStateException("Entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database");
             }
         }
     }
