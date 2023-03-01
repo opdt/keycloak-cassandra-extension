@@ -15,13 +15,10 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.EntityStaleException;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
