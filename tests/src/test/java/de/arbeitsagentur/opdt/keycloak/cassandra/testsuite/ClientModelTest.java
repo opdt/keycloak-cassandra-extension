@@ -388,6 +388,7 @@ public class ClientModelTest extends KeycloakModelTest {
     }
 
     @Test
+    @SuppressWarnings("java:S2699")
     public void testCircularClientScopes() {
 
         withRealm(realmId, (session, realm) -> {

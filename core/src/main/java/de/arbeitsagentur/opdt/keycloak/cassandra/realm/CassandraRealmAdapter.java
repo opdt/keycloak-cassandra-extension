@@ -21,7 +21,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import lombok.EqualsAndHashCode;
 import lombok.extern.jbosslog.JBossLog;
@@ -1224,7 +1223,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
             ComponentFactory componentFactory = ComponentUtil.getComponentFactory(session, model);
             if (componentFactory == null && System.getProperty(COMPONENT_PROVIDER_EXISTS_DISABLED) == null) {
                 throw new IllegalArgumentException("Invalid component type");
-            } else {
+            } else if (componentFactory != null) {
                 componentFactory.validateConfiguration(session, this, model);
             }
         } catch (IllegalArgumentException | ComponentValidationException e) {

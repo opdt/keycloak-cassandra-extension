@@ -155,6 +155,7 @@ public class SingleUseObjectModelTest extends KeycloakModelTest {
     }
 
     @Test
+    @SuppressWarnings("java:S2699")
     public void testCluster() throws InterruptedException {
         AtomicInteger index = new AtomicInteger();
         CountDownLatch afterFirstNodeLatch = new CountDownLatch(1);
