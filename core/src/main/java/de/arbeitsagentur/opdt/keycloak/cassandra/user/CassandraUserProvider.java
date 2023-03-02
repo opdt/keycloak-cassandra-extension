@@ -359,8 +359,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
         log.debugf("searchForUserStream(%s, %s, %d, %d)%s", realm, params, firstResult, maxResults, getShortStackTrace());
 
-        int first = firstResult == null ? 0 : firstResult;
-        int resultCount = maxResults == null ? Integer.MAX_VALUE : maxResults;
+        int first = firstResult == null || firstResult < 0 ? 0 : firstResult;
+        int resultCount = maxResults == null || maxResults < 0 ? Integer.MAX_VALUE : maxResults;
 
         boolean isExactSearch = Boolean.parseBoolean(params.getOrDefault(UserModel.EXACT, "false"));
 
