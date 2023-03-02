@@ -23,7 +23,6 @@ import org.keycloak.models.ModelDuplicateException;
 import org.keycloak.models.SingleUseObjectProvider;
 import org.keycloak.models.map.common.TimeAdapter;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -133,9 +132,11 @@ public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider
     }
 
     private Map<String, String> getInternalNotes(Map<String, String> notes) {
-        Map<String, String> result = notes == null ? new HashMap<>() : new HashMap<>(notes);
+        Map<String, String> result = notes == null ? new HashMap<>() : notes.entrySet().stream()
+            .filter(e -> e.getValue() != null)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        if(result.isEmpty()) {
+        if (result.isEmpty()) {
             result.put(EMPTY_NOTE, EMPTY_NOTE);
         }
 
