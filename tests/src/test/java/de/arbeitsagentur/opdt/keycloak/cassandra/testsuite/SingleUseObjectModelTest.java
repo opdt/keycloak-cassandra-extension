@@ -155,6 +155,18 @@ public class SingleUseObjectModelTest extends KeycloakModelTest {
     }
 
     @Test
+    public void testNullValueInNotes() {
+        inComittedTransaction(session -> {
+            SingleUseObjectProvider singleUseStore = session.getProvider(SingleUseObjectProvider.class);
+            Map<String, String> nullNotes = new HashMap<>();
+            nullNotes.put("key1", null);
+            singleUseStore.put("key", 5, nullNotes);
+
+            Assert.assertNull(singleUseStore.get("key").get("key1"));
+        });
+    }
+
+    @Test
     @SuppressWarnings("java:S2699")
     public void testCluster() throws InterruptedException {
         AtomicInteger index = new AtomicInteger();
