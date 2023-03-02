@@ -46,7 +46,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- keycloak -->
-        <keycloak.version>20.0.3</keycloak.version>
+        <keycloak.version>20.0.4</keycloak.version>
         <quarkus.version>2.13.3.Final</quarkus.version>
 
         <!-- testing -->
