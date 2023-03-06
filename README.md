@@ -63,6 +63,9 @@ Due to Cassandras query first nature, users can only be looked up by specific fi
 `UserProvider::searchForUserByUserAttributeStream` by default iterates all users in the entire database to filter for the requested attribute in-memory.
 For efficient searches, attributes can be defined as **indexed attributes** by prefixing their name with **indexed.**, e.g. **indexed.businessKey**
 
+### Transactions
+We don't support transactions.
+
 ## Local development
 
 ### Private image registries
