@@ -131,6 +131,7 @@ public class CassandraAuthSessionProvider implements AuthenticationSessionProvid
         Objects.requireNonNull(authenticationSession, "The provided root authentication session can't be null!");
         authSessionRepository.deleteRootAuthSession(authenticationSession.getId());
         sessionModels.remove(authenticationSession.getId());
+        ((CassandraRootAuthSessionAdapter) authenticationSession).markDeleted();
     }
 
     @Override

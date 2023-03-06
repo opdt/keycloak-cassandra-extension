@@ -62,6 +62,12 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
                 } else {
                     userSessionRepository.deleteUserSession(origEntity);
                 }
+
+                CassandraUserSessionAdapter model = sessionModels.get(origEntity.getId());
+                if (model != null) {
+                    model.markAsDeleted();
+                }
+
                 sessionModels.remove(origEntity.getId());
                 return null;
             } else {
@@ -192,7 +198,6 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     public Stream<UserSessionModel> getUserSessionsStream(RealmModel realm, ClientModel client, Integer firstResult, Integer maxResults) {
         log.tracef("getUserSessionsStream(%s, %s, %s, %s)%s", realm, client, firstResult, maxResults, getShortStackTrace());
 
-        // TODO: perf
         return getUserSessionsStream(realm, client).filter(s -> s.getRealm().equals(realm)).filter(s -> !s.isOffline()).skip(firstResult != null && firstResult > 0 ? firstResult : 0).limit(maxResults != null && maxResults > 0 ? maxResults : Long.MAX_VALUE);
     }
 
@@ -236,15 +241,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     public Map<String, Long> getActiveClientSessionStats(RealmModel realm, boolean offline) {
         log.tracef("getActiveClientSessionStats(%s, %s)%s", realm, offline, getShortStackTrace());
 
-        return userSessionRepository.findAll().stream()
-            .filter(s -> s.getRealmId().equals(realm.getId()))
-            .filter(s -> s.getOffline() == offline)
-            .map(entityToAdapterFunc(realm))
-            .filter(Objects::nonNull)
-            .map(UserSessionModel::getAuthenticatedClientSessions)
-            .map(Map::keySet)
-            .flatMap(Collection::stream)
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() == offline).map(entityToAdapterFunc(realm)).filter(Objects::nonNull).map(UserSessionModel::getAuthenticatedClientSessions).map(Map::keySet).flatMap(Collection::stream).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     @Override
@@ -254,6 +251,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         log.tracef("removeUserSession(%s, %s)%s", realm, session, getShortStackTrace());
 
         userSessionRepository.deleteUserSession(session.getId());
+        ((CassandraUserSessionAdapter) session).markAsDeleted();
         sessionModels.remove(session.getId());
     }
 
@@ -263,6 +261,12 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
         userSessionRepository.findUserSessionsByUserId(user.getId()).forEach(session -> {
             userSessionRepository.deleteUserSession(session.getId());
+
+            CassandraUserSessionAdapter model = sessionModels.get(session.getId());
+            if (model != null) {
+                model.markAsDeleted();
+            }
+
             sessionModels.remove(session.getId());
         });
     }
@@ -272,6 +276,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
         realm.getClientsStream().flatMap(c -> userSessionRepository.findUserSessionsByClientId(c.getId()).stream()).forEach(session -> {
             userSessionRepository.deleteUserSession(session.getId());
+            CassandraUserSessionAdapter model = sessionModels.get(session.getId());
+            if (model != null) {
+                model.markAsDeleted();
+            }
+
             sessionModels.remove(session.getId());
         });
     }
@@ -292,6 +301,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     public void removeUserSessions(RealmModel realm) {
         userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).forEach(session -> {
             userSessionRepository.deleteUserSession(session.getId());
+            CassandraUserSessionAdapter model = sessionModels.get(session.getId());
+            if (model != null) {
+                model.markAsDeleted();
+            }
+
             sessionModels.remove(session.getId());
         });
     }
@@ -417,7 +431,6 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     public Stream<UserSessionModel> getOfflineUserSessionsStream(RealmModel realm, ClientModel client, Integer firstResult, Integer maxResults) {
         log.tracef("getOfflineUserSessionsStream(%s, %s, %s, %s)%s", realm, client, firstResult, maxResults, getShortStackTrace());
 
-        // TODO: perf
         return userSessionRepository.findAll().stream().filter(s -> s.getRealmId().equals(realm.getId())).filter(s -> s.getOffline() != null && s.getOffline()).filter(s -> s.getClientSessions().containsKey(client.getId())).skip(firstResult == null || firstResult < 0 ? 0 : firstResult).limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults).sorted(Comparator.comparing(UserSession::getLastSessionRefresh)).map(entityToAdapterFunc(realm));
     }
 
@@ -509,29 +522,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     private UserSession createUserSessionEntityInstance(String id, String realmId, String userId, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId, boolean offline) {
         long timestamp = Time.currentTimeMillis();
 
-        return UserSession.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
-            .realmId(realmId).userId(userId)
-            .loginUsername(loginUsername)
-            .ipAddress(ipAddress)
-            .authMethod(authMethod)
-            .rememberMe(rememberMe)
-            .brokerSessionId(brokerSessionId)
-            .brokerUserId(brokerUserId)
-            .offline(offline)
-            .timestamp(timestamp)
-            .lastSessionRefresh(timestamp)
-            .notes(new HashMap<>())
-            .build();
+        return UserSession.builder().id(id == null ? KeycloakModelUtils.generateId() : id).realmId(realmId).userId(userId).loginUsername(loginUsername).ipAddress(ipAddress).authMethod(authMethod).rememberMe(rememberMe).brokerSessionId(brokerSessionId).brokerUserId(brokerUserId).offline(offline).timestamp(timestamp).lastSessionRefresh(timestamp).notes(new HashMap<>()).build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionEntityInstance(String id, String clientId, boolean offline) {
-        return AuthenticatedClientSessionValue.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
-            .clientId(clientId).offline(offline)
-            .timestamp(Time.currentTimeMillis())
-            .notes(new HashMap<>())
-            .build();
+        return AuthenticatedClientSessionValue.builder().id(id == null ? KeycloakModelUtils.generateId() : id).clientId(clientId).offline(offline).timestamp(Time.currentTimeMillis()).notes(new HashMap<>()).build();
     }
 
     private AuthenticatedClientSessionValue createAuthenticatedClientSessionInstance(AuthenticatedClientSessionModel clientSession, boolean offline) {
