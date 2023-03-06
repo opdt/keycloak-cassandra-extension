@@ -52,6 +52,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
 
     private Map<String, CassandraAuthSessionAdapter> sessionModels = new HashMap<>();
     private boolean updated = false;
+    private boolean deleted = false;
 
     private static final Comparator<AuthenticationSession> TIMESTAMP_COMPARATOR = Comparator.comparingLong(AuthenticationSession::getTimestamp);
 
@@ -71,6 +72,10 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
 
             return adapter;
         };
+    }
+
+    public void markDeleted() {
+        deleted = true;
     }
 
     @Override
@@ -166,10 +171,17 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
             .orElse(null);
 
         authSessionRepository.deleteAuthSession(toDelete);
+
+        CassandraAuthSessionAdapter model = sessionModels.get(tabId);
+        if(model != null) {
+            model.markDeleted();
+        }
         sessionModels.remove(tabId);
+
         if (toDelete != null) {
             if (allAuthSessions.size() == 1) {
                 session.authenticationSessions().removeRootAuthenticationSession(realm, this);
+                deleted = true;
             } else {
                 long timestamp = Time.currentTimeMillis();
                 rootAuthenticationSession.setTimestamp(timestamp);
@@ -196,7 +208,7 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
     }
 
     public void flush() {
-        if (updated) {
+        if (updated && !deleted) {
             authSessionRepository.insertOrUpdate(rootAuthenticationSession);
             updated = false;
         }
