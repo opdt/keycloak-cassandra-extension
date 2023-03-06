@@ -39,7 +39,11 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     private final AuthSessionRepository authSessionRepository;
 
     private boolean updated = false;
+    private boolean deleted = false;
 
+    public void markDeleted() {
+        deleted = true;
+    }
     @Override
     public String getTabId() {
         return authenticationSession.getTabId();
@@ -252,7 +256,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     }
 
     public void flush() {
-        if(updated) {
+        if(updated && !deleted) {
             authSessionRepository.insertOrUpdate(authenticationSession);
             updated = false;
         }

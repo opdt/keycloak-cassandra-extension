@@ -39,6 +39,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
     private final UserSessionRepository userSessionRepository;
 
     private boolean updated = false;
+    private boolean deleted = false;
 
     public CassandraUserSessionAdapter(KeycloakSession session, RealmModel realm, UserSession userSessionEntity, UserSessionRepository userSessionRepository) {
         this.session = session;
@@ -52,8 +53,12 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
     }
 
     // Updates in AuthenticatedClientSession
-    protected void markAsUpdated() {
+    public void markAsUpdated() {
         updated = true;
+    }
+
+    public void markAsDeleted() {
+        deleted = true;
     }
 
     @Override
@@ -212,7 +217,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
     }
 
     public void flush() {
-        if (updated) {
+        if (updated && !deleted) {
             userSessionRepository.update(userSessionEntity);
             updated = false;
         }
