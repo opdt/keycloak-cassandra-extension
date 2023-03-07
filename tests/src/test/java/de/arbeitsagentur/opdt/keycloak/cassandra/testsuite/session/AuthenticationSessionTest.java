@@ -198,6 +198,78 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
     }
 
     @Test
+    public void testRemoveAuthSession() {
+        AtomicReference<String> rootAuthSessionId = new AtomicReference<>();
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm);
+            ClientModel client = realm.getClientByClientId("test-app");
+            rootAuthSession.createAuthenticationSession(client);
+            rootAuthSession.createAuthenticationSession(client);
+            rootAuthSessionId.set(rootAuthSession.getId());
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
+            Assert.assertNotNull(rootAuthSession);
+            assertThat(rootAuthSession.getAuthenticationSessions().values(), hasSize(2));
+
+            String tabId = rootAuthSession.getAuthenticationSessions().values().iterator().next().getTabId();
+            rootAuthSession.removeAuthenticationSessionByTabId(tabId);
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
+            Assert.assertNotNull(rootAuthSession);
+            assertThat(rootAuthSession.getAuthenticationSessions().values(), hasSize(1));
+
+            String tabId = rootAuthSession.getAuthenticationSessions().values().iterator().next().getTabId();
+            rootAuthSession.removeAuthenticationSessionByTabId(tabId);
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
+            Assert.assertNull(rootAuthSession);
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testRemoveRootAuthSession() {
+        AtomicReference<String> rootAuthSessionId = new AtomicReference<>();
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm);
+            ClientModel client = realm.getClientByClientId("test-app");
+            rootAuthSession.createAuthenticationSession(client);
+            rootAuthSessionId.set(rootAuthSession.getId());
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
+            Assert.assertNotNull(rootAuthSession);
+
+            session.authenticationSessions().removeRootAuthenticationSession(realm, rootAuthSession);
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, rootAuthSessionId.get());
+            Assert.assertNull(rootAuthSession);
+
+            return null;
+        });
+    }
+
+    @Test
     public void testAuthSessionProperties() {
         String rootSessionId = withRealm(realmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "testuser");
