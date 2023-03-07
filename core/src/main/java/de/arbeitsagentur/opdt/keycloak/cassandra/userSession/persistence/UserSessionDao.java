@@ -48,12 +48,18 @@ public interface UserSessionDao extends BaseDao {
     void deleteUserSession(String id);
 
     // Attributes
-    @Insert
     // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
+    @Insert
     void insert(AttributeToUserSessionMapping mapping);
 
+    @Insert(ttl = ":ttl")
+    void insert(AttributeToUserSessionMapping mapping, int ttl);
+
     @Update
-    void insert(UserSessionToAttributeMapping mapping);
+    void insertOrUpdate(UserSessionToAttributeMapping mapping);
+
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(UserSessionToAttributeMapping mapping, int ttl);
 
     @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
     UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);

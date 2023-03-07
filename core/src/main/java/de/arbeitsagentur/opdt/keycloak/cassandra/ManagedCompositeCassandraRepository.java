@@ -418,18 +418,6 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
         return this.userSessionRepository.findUserSessionAttribute(userSessionId, attributeName);
     }
 
-    @L1Cached(cacheName = USER_SESSION_CACHE)
-    @InvalidateCache
-    public void insertOrUpdate(UserSessionToAttributeMapping mapping) {
-        this.userSessionRepository.insertOrUpdate(mapping);
-    }
-
-    @L1Cached(cacheName = USER_SESSION_CACHE)
-    @InvalidateCache
-    public boolean deleteUserSessionAttribute(String userSessionId, String attributeName) {
-        return this.userSessionRepository.deleteUserSessionAttribute(userSessionId, attributeName);
-    }
-
     @L1Cached(cacheName = AUTH_SESSION_CACHE)
     @InvalidateCache
     public void insertOrUpdate(RootAuthenticationSession session) {
