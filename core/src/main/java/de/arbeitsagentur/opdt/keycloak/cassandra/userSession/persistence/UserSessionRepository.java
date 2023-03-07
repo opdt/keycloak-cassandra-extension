@@ -61,8 +61,4 @@ public interface UserSessionRepository {
     MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
 
     UserSessionToAttributeMapping findUserSessionAttribute(String userSessionId, String attributeName);
-
-    void insertOrUpdate(UserSessionToAttributeMapping mapping);
-
-    boolean deleteUserSessionAttribute(String userSessionId, String attributeName);
 }

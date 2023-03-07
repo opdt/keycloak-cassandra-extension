@@ -22,17 +22,13 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.RequireProvider;
 import org.junit.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
-import org.keycloak.models.utils.ResetTimeOffsetEvent;
-import org.keycloak.models.utils.SessionTimeoutHelper;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.stream.Collectors;
 
-import static de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session.SessionTestUtils.createSessions;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.hasSize;
 
 @RequireProvider(UserSessionProvider.class)
 @RequireProvider(RealmProvider.class)
@@ -84,11 +80,38 @@ public class UserSessionExpirationTest extends KeycloakModelTest {
         String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
 
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
 
         Time.setOffset(3);
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
 
         Time.setOffset(5);
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
+    }
+
+    @Test
+    public void testDeleteSession() {
+        withRealm(realmId, (session, realm) -> {
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            realm.setClientSessionIdleTimeout(5);
+            return null;
+        });
+
+        String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        withRealm(realmId, (session, realm) -> {
+            UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
+            session.sessions().removeUserSession(realm, userSession);
+            return null;
+        });
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
     }
 }
