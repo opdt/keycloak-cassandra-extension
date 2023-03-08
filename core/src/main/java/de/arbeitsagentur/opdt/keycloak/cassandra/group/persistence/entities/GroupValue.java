@@ -14,9 +14,9 @@ public class GroupValue {
     private String name;
     private String parentId;
     private String realmId;
-    @Singular
+    @Builder.Default
     private Map<String, List<String>> attributes = new HashMap<>();
-    @Singular
+    @Builder.Default
     private Set<String> grantedRoles = new HashSet<>();
 
     public Map<String, List<String>> getAttributes() {

@@ -30,6 +30,8 @@ import org.keycloak.authorization.DefaultAuthorizationProviderFactory;
 import org.keycloak.authorization.policy.provider.PolicyProviderFactory;
 import org.keycloak.authorization.policy.provider.PolicySpi;
 import org.keycloak.authorization.store.StoreFactorySpi;
+import org.keycloak.common.Profile;
+import org.keycloak.common.profile.PropertiesProfileConfigResolver;
 import org.keycloak.common.util.Time;
 import org.keycloak.component.ComponentFactoryProviderFactory;
 import org.keycloak.component.ComponentFactorySpi;
@@ -37,7 +39,7 @@ import org.keycloak.events.EventStoreSpi;
 import org.keycloak.executors.DefaultExecutorsProviderFactory;
 import org.keycloak.executors.ExecutorsSpi;
 import org.keycloak.models.*;
-import org.keycloak.models.dblock.DBLockSpi;
+import org.keycloak.models.locking.GlobalLockProviderSpi;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.PostMigrationEvent;
 import org.keycloak.provider.Provider;
@@ -80,7 +82,6 @@ import java.util.stream.Stream;
  * @author hmlnarik
  */
 public abstract class KeycloakModelTest {
-
     private static final Logger LOG = Logger.getLogger(KeycloakModelParameters.class);
     private static final AtomicInteger FACTORY_COUNT = new AtomicInteger();
     protected final Logger log = Logger.getLogger(getClass());
@@ -97,9 +98,7 @@ public abstract class KeycloakModelTest {
                 testClass = testClass.getSuperclass();
             }
             List<Class<? extends Provider>> notFound = st
-                .filter(rp -> rp.only().length == 0
-                    ? getFactory().getProviderFactory(rp.value()) == null
-                    : Stream.of(rp.only()).allMatch(provider -> getFactory().getProviderFactory(rp.value(), provider) == null))
+                .filter(KeycloakModelTest::checkProviderAvailability)
                 .map(RequireProvider::value)
                 .collect(Collectors.toList());
             Assume.assumeThat("Some required providers not found", notFound, Matchers.empty());
@@ -111,6 +110,25 @@ public abstract class KeycloakModelTest {
             return res;
         }
     };
+
+    // Returns true if annotation requirement is not met
+    private static boolean checkProviderAvailability(RequireProvider annotation) {
+        Set<String> allFactories = getFactory().getProviderFactoriesStream(annotation.value()).map(ProviderFactory::getId).collect(Collectors.toSet());
+        List<String> only = Arrays.asList(annotation.only());
+        List<String> exclude = Arrays.asList(annotation.exclude());
+
+        // There is no factory for required provider
+        if (allFactories.isEmpty()) return true;
+
+        // Remove excluded ids
+        allFactories.removeIf(exclude::contains);
+
+        // Remove not matching only
+        allFactories.removeIf(id -> !only.isEmpty() && !only.contains(id));
+
+        // If there is no factory return true
+        return allFactories.isEmpty();
+    }
 
     @Rule
     public final TestRule guaranteeRequiredFactoryOnMethod = new TestRule() {
@@ -180,7 +198,7 @@ public abstract class KeycloakModelTest {
         .add(ClientScopeSpi.class)
         .add(ClientSpi.class)
         .add(ComponentFactorySpi.class)
-        .add(DBLockSpi.class)
+        .add(GlobalLockProviderSpi.class)
         .add(EventStoreSpi.class)
         .add(ExecutorsSpi.class)
         .add(GroupSpi.class)
@@ -268,6 +286,12 @@ public abstract class KeycloakModelTest {
         LOG.debugf("Creating factory %d in %s using the following configuration:\n    %s", factoryIndex, threadName, CONFIG);
 
         DefaultKeycloakSessionFactory res = new DefaultKeycloakSessionFactory() {
+            @Override
+            public void init() {
+                Profile.configure(new PropertiesProfileConfigResolver(System.getProperties()));
+                super.init();
+            }
+
             @Override
             protected boolean isEnabled(ProviderFactory factory, Scope scope) {
                 return super.isEnabled(factory, scope) && isFactoryAllowed(factory);
@@ -484,10 +508,10 @@ public abstract class KeycloakModelTest {
 
     @After
     public final void cleanEnvironment() {
-        Time.setOffset(0);
         if (getFactory() == null) {
             reinitializeKeycloakSessionFactory();
         }
+        Time.setOffset(0);
         KeycloakModelUtils.runJobInTransaction(getFactory(), this::cleanEnvironment);
     }
 
@@ -558,4 +582,13 @@ public abstract class KeycloakModelTest {
         }
     }
 
+    protected static RealmModel createRealm(KeycloakSession s, String name) {
+        RealmModel realm = s.realms().getRealmByName(name);
+        if (realm != null) {
+            // The previous test didn't clean up the realm for some reason, cleanup now
+            s.realms().removeRealm(realm.getId());
+        }
+        realm = s.realms().createRealm(name);
+        return realm;
+    }
 }

@@ -20,6 +20,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.RequireProvider;
 import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.keycloak.device.DeviceRepresentationProvider;
 import org.keycloak.models.*;
 import org.keycloak.services.managers.RealmManager;
 
@@ -39,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @RequireProvider(UserProvider.class)
 @RequireProvider(RealmProvider.class)
 @RequireProvider(UserSessionProvider.class)
+@RequireProvider(DeviceRepresentationProvider.class)
 public class OfflineSessionPersistenceTest extends KeycloakModelTest {
 
     private static final int USER_COUNT = 50;
@@ -59,7 +61,7 @@ public class OfflineSessionPersistenceTest extends KeycloakModelTest {
     }
 
     private static RealmModel prepareRealm(KeycloakSession s, String name) {
-        RealmModel realm = s.realms().createRealm(name);
+        RealmModel realm = createRealm(s, name);
         realm.setDefaultRole(s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
         realm.setSsoSessionMaxLifespan(10 * 60 * 60);
         realm.setSsoSessionIdleTimeout(1 * 60 * 60);

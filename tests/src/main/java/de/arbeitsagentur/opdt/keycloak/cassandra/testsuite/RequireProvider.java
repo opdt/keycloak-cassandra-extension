@@ -38,4 +38,16 @@ public @interface RequireProvider {
      */
     String[] only() default {};
 
+    /**
+     * Specifies provider IDs that does not satisfy this requirement. In other words, there must be another provider
+     * of type {@code value()} for satisfying this requirement. If this is used together with
+     * {@link #only()} both rules are applied.
+     * <p />
+     * For example,
+     * When possible providers are: {@code provider1}, {@code provider2}, {@code provider3}
+     * and rules: {@code @RequireProvider{value = MyFactory.class, only = [provider1, provider2], exclude = [provider2]}}
+     * The test will be running only when {@code provider1} is available on the session factory
+     */
+    String[] exclude() default {};
+
 }

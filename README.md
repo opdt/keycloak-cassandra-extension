@@ -8,7 +8,7 @@
 :warning: Work in progress! Do not use in production right now.
 
 Uses Apache Cassandra to store and retrieve entities of all storage areas shown below.
-Requires Keycloak 20.0.x with enabled Map-Storage feature.
+Requires Keycloak 21.0.x with enabled Map-Storage feature.
 
 ## Currently covered storage areas
 
