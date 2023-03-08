@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.SessionExpirationData;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -33,8 +34,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setClientSessionExpiration;
-import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setUserSessionExpiration;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setClientSessionExpiration;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setUserSessionExpiration;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.TRANSIENT;
@@ -109,7 +110,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         AuthenticatedClientSessionValue entity = createAuthenticatedClientSessionEntityInstance(null, client.getId(), false);
         String started = entity.getTimestamp() != null ? String.valueOf(TimeAdapter.fromMilliSecondsToSeconds(entity.getTimestamp())) : String.valueOf(0);
         entity.getNotes().put(AuthenticatedClientSessionModel.STARTED_AT_NOTE, started);
-        setClientSessionExpiration(entity, realm, client);
+        setClientSessionExpiration(entity, SessionExpirationData.builder().realm(realm).build(), client);
 
         userSessionRepository.addClientSession(userSessionEntity, entity);
 
@@ -141,7 +142,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         UserSession entity = createUserSessionEntityInstance(id, realm.getId(), user.getId(), loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId, false);
 
         entity.setPersistenceState(persistenceState);
-        setUserSessionExpiration(entity, realm);
+        setUserSessionExpiration(entity, SessionExpirationData.builder().realm(realm).build());
         if (TRANSIENT == persistenceState) {
             if (id == null) {
                 entity.setId(UUID.randomUUID().toString());
@@ -339,7 +340,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         long currentTime = Time.currentTimeMillis();
         offlineUserSession.setTimestamp(currentTime);
         offlineUserSession.setLastSessionRefresh(currentTime);
-        setUserSessionExpiration(offlineUserSession, userSession.getRealm());
+        setUserSessionExpiration(offlineUserSession, SessionExpirationData.builder().realm(userSession.getRealm()).build());
 
         userSessionRepository.insert(offlineUserSession, userSession.getId());
 
@@ -383,7 +384,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         clientSessionEntity.getNotes().put(AuthenticatedClientSessionModel.STARTED_AT_NOTE, String.valueOf(currentTime));
         clientSessionEntity.setTimestamp(Time.currentTimeMillis());
         RealmModel realm = clientSession.getRealm();
-        setClientSessionExpiration(clientSessionEntity, realm, clientSession.getClient());
+        setClientSessionExpiration(clientSessionEntity, SessionExpirationData.builder().realm(realm).build(), clientSession.getClient());
 
         Optional<UserSession> userSessionEntity = getOfflineUserSessionEntityStream(realm, offlineUserSession.getId()).findFirst();
         if (userSessionEntity.isPresent()) {

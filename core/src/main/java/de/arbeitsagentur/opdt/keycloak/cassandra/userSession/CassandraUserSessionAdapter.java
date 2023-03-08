@@ -15,10 +15,11 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.SessionExpirationData;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
@@ -27,15 +28,28 @@ import org.keycloak.models.map.common.TimeAdapter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setUserSessionExpiration;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setUserSessionExpiration;
 import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 
 @EqualsAndHashCode(of = "userSessionEntity")
 public class CassandraUserSessionAdapter implements UserSessionModel {
+    public static final String SESSION_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxLifespanOverride";
+    public static final String SESSION_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "offlineMaxLifespanOverride";
+    public static final String SESSION_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "idleTimeoutOverride";
+    public static final String SESSION_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "offlineIdleTimeoutOverride";
+    public static final String CLIENT_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientMaxLifespanOverride";
+    public static final String CLIENT_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineMaxLifespanOverride";
+    public static final String CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientIdleTimeoutOverride";
+    public static final String CLIENT_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientOfflineIdleTimeoutOverride";
+
+    private static final Set<String> SESSION_EXPIRATION_ATTRIBUTES = Set.of(SESSION_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE, SESSION_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE,
+        SESSION_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, SESSION_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, CLIENT_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE, CLIENT_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE,
+        CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, CLIENT_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE);
+
     private final KeycloakSession session;
     private final RealmModel realm;
-    private UserSession userSessionEntity;
+    private final UserSession userSessionEntity;
     private final UserSessionRepository userSessionRepository;
 
     private boolean updated = false;
@@ -124,7 +138,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
         userSessionEntity.setLastSessionRefresh(TimeAdapter.fromSecondsToMilliseconds(seconds));
 
         // whenever the lastSessionRefresh is changed recompute the expiration time
-        setUserSessionExpiration(userSessionEntity, realm);
+        setUserSessionExpiration(userSessionEntity, getSessionExpirationData());
         updated = true;
     }
 
@@ -166,6 +180,22 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
         }
 
         userSessionEntity.getNotes().put(name, value);
+
+        if(SESSION_EXPIRATION_ATTRIBUTES.contains(name)) {
+            restartExpirationWithLifespanOverride();
+        }
+
+        updated = true;
+    }
+
+    private void restartExpirationWithLifespanOverride() {
+        long timestamp = Time.currentTimeMillis();
+        userSessionEntity.setTimestamp(timestamp);
+        userSessionEntity.setLastSessionRefresh(timestamp);
+
+        getAuthenticatedClientSessions().values()
+            .forEach(s -> s.setTimestamp(TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(timestamp))));
+
         updated = true;
     }
 
@@ -218,6 +248,7 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
     public void flush() {
         if (updated && !deleted) {
+            setUserSessionExpiration(userSessionEntity, getSessionExpirationData());
             userSessionRepository.update(userSessionEntity);
             updated = false;
         }
@@ -274,5 +305,33 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
                 this.userSession = null;
             }
         };
+    }
+
+    public SessionExpirationData getSessionExpirationData() {
+        Integer lifespanOverride = getOverride(SESSION_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE);
+        Integer idleTimeoutOverride = getOverride(SESSION_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE);
+        Integer offlineLifespanOverride = getOverride(SESSION_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE);
+        Integer offlineIdleTimeoutOverride = getOverride(SESSION_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE);
+        Integer clientLifespanOverride = getOverride(CLIENT_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE);
+        Integer clientIdleTimeoutOverride = getOverride(CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE);
+        Integer clientOfflineLifespanOverride = getOverride(CLIENT_OFFLINE_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE);
+        Integer clientOfflineIdleTimeoutOverride = getOverride(CLIENT_OFFLINE_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE);
+
+        return SessionExpirationData.builder()
+            .realm(realm)
+            .maxLifespanOverride(lifespanOverride)
+            .idleTimeoutOverride(idleTimeoutOverride)
+            .offlineMaxLifespanOverride(offlineLifespanOverride)
+            .offlineIdleTimeoutOverride(offlineIdleTimeoutOverride)
+            .clientMaxLifespanOverride(clientLifespanOverride)
+            .clientIdleTimeoutOverride(clientIdleTimeoutOverride)
+            .offlineClientMaxLifespanOverride(clientOfflineLifespanOverride)
+            .offlineClientIdleTimeoutOverride(clientOfflineIdleTimeoutOverride)
+            .build();
+    }
+
+    private Integer getOverride(String sessionMaxLifespanOverrideAttribute) {
+        String lifespanNote = getNote(sessionMaxLifespanOverrideAttribute);
+        return lifespanNote == null ? null : Integer.parseInt(lifespanNote);
     }
 }
