@@ -24,12 +24,15 @@ import org.keycloak.credential.CredentialSpi;
 import org.keycloak.credential.OTPCredentialProviderFactory;
 import org.keycloak.credential.PasswordCredentialProviderFactory;
 import org.keycloak.credential.hash.PasswordHashSpi;
-import org.keycloak.credential.hash.Pbkdf2PasswordHashProviderFactory;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
+import org.keycloak.device.DeviceRepresentationProviderFactory;
+import org.keycloak.device.DeviceRepresentationProviderFactoryImpl;
+import org.keycloak.device.DeviceRepresentationSpi;
 import org.keycloak.events.EventStoreSpi;
 import org.keycloak.keys.*;
 import org.keycloak.models.*;
-import org.keycloak.models.dblock.NoLockingDBLockProviderFactory;
+import org.keycloak.models.locking.GlobalLockProviderSpi;
+import org.keycloak.models.locking.NoneGlobalLockProviderFactory;
 import org.keycloak.models.map.authSession.MapRootAuthenticationSessionProviderFactory;
 import org.keycloak.models.map.authorization.MapAuthorizationStoreFactory;
 import org.keycloak.models.map.client.MapClientProviderFactory;
@@ -53,8 +56,6 @@ import org.keycloak.services.clientpolicy.ClientPolicyManagerSpi;
 import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicySpi;
 import org.keycloak.services.clientregistration.policy.impl.*;
-import org.keycloak.services.managers.RealmManagerProviderFactory;
-import org.keycloak.services.managers.RealmManagerSpi;
 import org.keycloak.sessions.AuthenticationSessionSpi;
 
 import java.util.Set;
@@ -76,6 +77,7 @@ public class Map extends KeycloakModelParameters {
         .add(PasswordPolicyManagerSpi.class)
         .add(PasswordHashSpi.class)
         .add(PasswordPolicySpi.class)
+        .add(DeviceRepresentationSpi.class)
         .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
@@ -90,7 +92,7 @@ public class Map extends KeycloakModelParameters {
         .add(MapUserProviderFactory.class)
         .add(MapUserSessionProviderFactory.class)
         .add(MapUserLoginFailureProviderFactory.class)
-        .add(NoLockingDBLockProviderFactory.class)
+        .add(NoneGlobalLockProviderFactory.class)
         .add(MapEventStoreProviderFactory.class)
         .add(SingleUseObjectProviderFactory.class)
         .add(MapPublicKeyStorageProviderFactory.class)
@@ -117,6 +119,7 @@ public class Map extends KeycloakModelParameters {
         .add(HashIterationsPasswordPolicyProviderFactory.class)
         .add(HistoryPasswordPolicyProviderFactory.class)
         .add(ForceExpiredPasswordPolicyProviderFactory.class)
+        .add(DeviceRepresentationProviderFactoryImpl.class)
         .build();
 
     public Map() {
@@ -137,7 +140,7 @@ public class Map extends KeycloakModelParameters {
             .spi("user").defaultProvider(MapUserProviderFactory.PROVIDER_ID)
             .spi(UserSessionSpi.NAME).defaultProvider(MapUserSessionProviderFactory.PROVIDER_ID)
             .spi(UserLoginFailureSpi.NAME).defaultProvider(MapUserLoginFailureProviderFactory.PROVIDER_ID)
-            .spi("dblock").defaultProvider(NoLockingDBLockProviderFactory.PROVIDER_ID)
+            .spi(GlobalLockProviderSpi.GLOBAL_LOCK).defaultProvider(NoneGlobalLockProviderFactory.PROVIDER_ID)
             .spi(EventStoreSpi.NAME).defaultProvider(MapEventStoreProviderFactory.PROVIDER_ID)
             .spi("publicKeyStorage").defaultProvider(MapPublicKeyStorageProviderFactory.PROVIDER_ID)
             .spi("client-policy-manager").defaultProvider("default")
@@ -168,6 +171,8 @@ public class Map extends KeycloakModelParameters {
                 .provider(ClientScopesClientRegistrationPolicyFactory.PROVIDER_ID)
                 .provider(ScopeClientRegistrationPolicyFactory.PROVIDER_ID)
                 .provider(MaxClientsClientRegistrationPolicyFactory.PROVIDER_ID)
+            .spi(DeviceRepresentationSpi.NAME)
+            .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID)
         ;
         cf.spi(MapStorageSpi.NAME).provider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID).config("keyType.single-use-objects", "string");
     }

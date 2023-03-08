@@ -35,10 +35,10 @@ public class RoleValue {
     private String clientId;
     private String realmId;
 
-    @Singular
+    @Builder.Default
     private Map<String, List<String>> attributes = new HashMap<>();
 
-    @Singular
+    @Builder.Default
     private List<String> childRoles = new ArrayList<>();
 
     public Map<String, List<String>> getAttributes() {

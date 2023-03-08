@@ -24,6 +24,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.keycloak.common.util.Time;
+import org.keycloak.device.DeviceRepresentationProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.map.storage.chm.ConcurrentHashMapStorageProviderFactory;
 import org.keycloak.models.map.userSession.MapUserSessionProviderFactory;
@@ -45,12 +46,13 @@ import static org.junit.Assume.assumeFalse;
 
 @RequireProvider(UserProvider.class)
 @RequireProvider(UserSessionProvider.class)
+@RequireProvider(DeviceRepresentationProvider.class)
 public class UserSessionProviderModelTest extends KeycloakModelTest {
     private String realmId;
 
     @Override
     public void createEnvironment(KeycloakSession s) {
-        RealmModel realm = s.realms().createRealm("test");
+        RealmModel realm = createRealm(s, "test");
         realm.setOfflineSessionIdleTimeout(Constants.DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT);
         realm.setDefaultRole(s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
         realm.setSsoSessionIdleTimeout(1800);

@@ -43,8 +43,8 @@ public class CassandraGroupAdapter implements GroupModel {
 
     @Override
     public void setSingleAttribute(String name, String value) {
-        groupValue.getAttributes().put(name, Collections.singletonList(value));
-        provider.markChanged(realm.getId());
+        groupValue.getAttributes().remove(name);
+        setAttribute(name, Collections.singletonList(value));
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.empty;
 
@@ -35,6 +36,8 @@ public class GroupModelTest extends KeycloakModelTest {
     private String firstGroupId;
     private String secondGroupId;
     private String thirdGroupId;
+    private static final String OLD_VALUE = "oldValue";
+    private static final String NEW_VALUE = "newValue";
 
     @Override
     public void createEnvironment(KeycloakSession s) {
@@ -467,6 +470,29 @@ public class GroupModelTest extends KeycloakModelTest {
 
             return null;
         });
+    }
 
+    @Test
+    public void testGroupAttributesSetter() {
+        String groupId = withRealm(realmId, (session, realm) -> {
+            GroupModel groupModel = session.groups().createGroup(realm, "my-group");
+            groupModel.setSingleAttribute("key", OLD_VALUE);
+
+            return groupModel.getId();
+        });
+        withRealm(realmId, (session, realm) -> {
+            GroupModel groupModel = session.groups().getGroupById(realm, groupId);
+            assertThat(groupModel.getAttributes().get("key"), contains(OLD_VALUE));
+
+            // Change value to NEW_VALUE
+            groupModel.setSingleAttribute("key", NEW_VALUE);
+
+            // Check all getters return the new value
+            assertThat(groupModel.getAttributes().get("key"), contains(NEW_VALUE));
+            assertThat(groupModel.getFirstAttribute("key"), equalTo(NEW_VALUE));
+            assertThat(groupModel.getAttributeStream("key").findFirst().get(), equalTo(NEW_VALUE));
+
+            return null;
+        });
     }
 }
