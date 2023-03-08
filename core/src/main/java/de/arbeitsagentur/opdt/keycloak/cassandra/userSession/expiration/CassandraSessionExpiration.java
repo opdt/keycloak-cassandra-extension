@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 IT-Systemhaus der Bundesagentur fuer Arbeit
+ * Copyright 2023 IT-Systemhaus der Bundesagentur fuer Arbeit
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
+package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -24,19 +24,19 @@ import org.keycloak.models.map.common.TimeAdapter;
 import org.keycloak.protocol.oidc.OIDCConfigAttributes;
 
 public class CassandraSessionExpiration {
-    public static void setClientSessionExpiration(AuthenticatedClientSessionValue entity, RealmModel realm, ClientModel client) {
+    public static void setClientSessionExpiration(AuthenticatedClientSessionValue entity, SessionExpirationData expirationData, ClientModel client) {
         long timestampMillis = entity.getTimestamp() != null ? entity.getTimestamp() : 0L;
         if (Boolean.TRUE.equals(entity.isOffline())) {
-            long sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
-            if (realm.isOfflineSessionMaxLifespanEnabled()) {
-                sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionMaxLifespan());
+            long sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionIdleTimeout());
+            if (expirationData.isOfflineSessionMaxLifespanEnabled()) {
+                sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionMaxLifespan());
 
                 long clientOfflineSessionMaxLifespan;
                 String clientOfflineSessionMaxLifespanPerClient = client.getAttribute(OIDCConfigAttributes.CLIENT_OFFLINE_SESSION_MAX_LIFESPAN);
                 if (clientOfflineSessionMaxLifespanPerClient != null && !clientOfflineSessionMaxLifespanPerClient.trim().isEmpty()) {
                     clientOfflineSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(Long.parseLong(clientOfflineSessionMaxLifespanPerClient));
                 } else {
-                    clientOfflineSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(realm.getClientOfflineSessionMaxLifespan());
+                    clientOfflineSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientOfflineSessionMaxLifespan());
                 }
 
                 if (clientOfflineSessionMaxLifespan > 0) {
@@ -45,14 +45,14 @@ public class CassandraSessionExpiration {
                 }
             }
 
-            long expiration = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
+            long expiration = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionIdleTimeout());
 
             long clientOfflineSessionIdleTimeout;
             String clientOfflineSessionIdleTimeoutPerClient = client.getAttribute(OIDCConfigAttributes.CLIENT_OFFLINE_SESSION_IDLE_TIMEOUT);
             if (clientOfflineSessionIdleTimeoutPerClient != null && !clientOfflineSessionIdleTimeoutPerClient.trim().isEmpty()) {
                 clientOfflineSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(Long.parseLong(clientOfflineSessionIdleTimeoutPerClient));
             } else {
-                clientOfflineSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(realm.getClientOfflineSessionIdleTimeout());
+                clientOfflineSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientOfflineSessionIdleTimeout());
             }
 
             if (clientOfflineSessionIdleTimeout > 0) {
@@ -62,15 +62,15 @@ public class CassandraSessionExpiration {
 
             entity.setExpiration(Math.min(expiration, sessionExpires));
         } else {
-            long sessionExpires = timestampMillis + (realm.getSsoSessionMaxLifespanRememberMe() > 0
-                ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespanRememberMe()) : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespan()));
+            long sessionExpires = timestampMillis + (expirationData.getSsoSessionMaxLifespanRememberMe() > 0
+                ? TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionMaxLifespanRememberMe()) : TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionMaxLifespan()));
 
             long clientSessionMaxLifespan;
             String clientSessionMaxLifespanPerClient = client.getAttribute(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN);
             if (clientSessionMaxLifespanPerClient != null && !clientSessionMaxLifespanPerClient.trim().isEmpty()) {
                 clientSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(Long.parseLong(clientSessionMaxLifespanPerClient));
             } else {
-                clientSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(realm.getClientSessionMaxLifespan());
+                clientSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientSessionMaxLifespan());
             }
 
             if (clientSessionMaxLifespan > 0) {
@@ -78,15 +78,15 @@ public class CassandraSessionExpiration {
                 sessionExpires = Math.min(sessionExpires, clientSessionMaxExpiration);
             }
 
-            long expiration = timestampMillis + (realm.getSsoSessionIdleTimeoutRememberMe() > 0
-                ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeoutRememberMe()) : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeout()));
+            long expiration = timestampMillis + (expirationData.getSsoSessionIdleTimeoutRememberMe() > 0
+                ? TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionIdleTimeoutRememberMe()) : TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionIdleTimeout()));
 
             long clientSessionIdleTimeout;
             String clientSessionIdleTimeoutPerClient = client.getAttribute(OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT);
             if (clientSessionIdleTimeoutPerClient != null && !clientSessionIdleTimeoutPerClient.trim().isEmpty()) {
                 clientSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(Long.parseLong(clientSessionIdleTimeoutPerClient));
             } else {
-                clientSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(realm.getClientSessionIdleTimeout());
+                clientSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientSessionIdleTimeout());
             }
 
             if (clientSessionIdleTimeout > 0) {
@@ -98,15 +98,15 @@ public class CassandraSessionExpiration {
         }
     }
 
-    public static void setUserSessionExpiration(UserSession entity, RealmModel realm) {
+    public static void setUserSessionExpiration(UserSession entity, SessionExpirationData expirationData) {
         long timestampMillis = entity.getTimestamp() != null ? entity.getTimestamp() : 0L;
         long lastSessionRefreshMillis = entity.getLastSessionRefresh() != null ? entity.getLastSessionRefresh() : 0L;
         if (Boolean.TRUE.equals(entity.getOffline())) {
-            long sessionExpires = lastSessionRefreshMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
-            if (realm.isOfflineSessionMaxLifespanEnabled()) {
-                sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionMaxLifespan());
+            long sessionExpires = lastSessionRefreshMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionIdleTimeout());
+            if (expirationData.isOfflineSessionMaxLifespanEnabled()) {
+                sessionExpires = timestampMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionMaxLifespan());
 
-                long clientOfflineSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(realm.getClientOfflineSessionMaxLifespan());
+                long clientOfflineSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientOfflineSessionMaxLifespan());
 
                 if (clientOfflineSessionMaxLifespan > 0) {
                     long clientOfflineSessionMaxExpiration = timestampMillis + clientOfflineSessionMaxLifespan;
@@ -114,9 +114,9 @@ public class CassandraSessionExpiration {
                 }
             }
 
-            long expiration = lastSessionRefreshMillis + TimeAdapter.fromSecondsToMilliseconds(realm.getOfflineSessionIdleTimeout());
+            long expiration = lastSessionRefreshMillis + TimeAdapter.fromSecondsToMilliseconds(expirationData.getOfflineSessionIdleTimeout());
 
-            long clientOfflineSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(realm.getClientOfflineSessionIdleTimeout());
+            long clientOfflineSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientOfflineSessionIdleTimeout());
 
             if (clientOfflineSessionIdleTimeout > 0) {
                 long clientOfflineSessionIdleExpiration = Time.currentTimeMillis() + clientOfflineSessionIdleTimeout;
@@ -126,22 +126,22 @@ public class CassandraSessionExpiration {
             entity.setExpiration(Math.min(expiration, sessionExpires));
         } else {
             long sessionExpires = timestampMillis
-                + (Boolean.TRUE.equals(entity.getRememberMe()) && realm.getSsoSessionMaxLifespanRememberMe() > 0
-                ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespanRememberMe())
-                : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionMaxLifespan()));
+                + (Boolean.TRUE.equals(entity.getRememberMe()) && expirationData.getSsoSessionMaxLifespanRememberMe() > 0
+                ? TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionMaxLifespanRememberMe())
+                : TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionMaxLifespan()));
 
-            long clientSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(realm.getClientSessionMaxLifespan());
+            long clientSessionMaxLifespan = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientSessionMaxLifespan());
 
             if (clientSessionMaxLifespan > 0) {
                 long clientSessionMaxExpiration = timestampMillis + clientSessionMaxLifespan;
                 sessionExpires = Math.min(sessionExpires, clientSessionMaxExpiration);
             }
 
-            long expiration = lastSessionRefreshMillis + (Boolean.TRUE.equals(entity.getRememberMe()) && realm.getSsoSessionIdleTimeoutRememberMe() > 0
-                ? TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeoutRememberMe())
-                : TimeAdapter.fromSecondsToMilliseconds(realm.getSsoSessionIdleTimeout()));
+            long expiration = lastSessionRefreshMillis + (Boolean.TRUE.equals(entity.getRememberMe()) && expirationData.getSsoSessionIdleTimeoutRememberMe() > 0
+                ? TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionIdleTimeoutRememberMe())
+                : TimeAdapter.fromSecondsToMilliseconds(expirationData.getSsoSessionIdleTimeout()));
 
-            long clientSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(realm.getClientSessionIdleTimeout());
+            long clientSessionIdleTimeout = TimeAdapter.fromSecondsToMilliseconds(expirationData.getClientSessionIdleTimeout());
 
             if (clientSessionIdleTimeout > 0) {
                 long clientSessionIdleExpiration = lastSessionRefreshMillis + clientSessionIdleTimeout;

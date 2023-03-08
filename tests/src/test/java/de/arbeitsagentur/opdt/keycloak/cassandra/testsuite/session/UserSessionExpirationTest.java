@@ -19,6 +19,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.RequireProvider;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionAdapter;
 import org.junit.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
@@ -87,6 +88,74 @@ public class UserSessionExpirationTest extends KeycloakModelTest {
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
 
         Time.setOffset(5);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
+    }
+
+    @Test
+    public void testClientSessionIdleTimeoutOverride() {
+
+        // Set low ClientSessionIdleTimeout
+        withRealm(realmId, (session, realm) -> {
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            realm.setClientSessionIdleTimeout(10);
+            return null;
+        });
+
+        String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(3);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        withRealm(realmId, (session, realm) -> {
+            session.sessions().getUserSession(realm, uSId).setNote(CassandraUserSessionAdapter.CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, "5");
+            return null;
+        });
+
+        Time.setOffset(6);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(8);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
+    }
+
+    @Test
+    public void testClientSessionIdleTimeoutOverrideTtl() throws InterruptedException {
+
+        // Set low ClientSessionIdleTimeout
+        withRealm(realmId, (session, realm) -> {
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            realm.setClientSessionIdleTimeout(10);
+            return null;
+        });
+
+        String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Thread.sleep(3000);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        withRealm(realmId, (session, realm) -> {
+            session.sessions().getUserSession(realm, uSId).setNote(CassandraUserSessionAdapter.CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, "5");
+            return null;
+        });
+
+        Thread.sleep(3000);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Thread.sleep(2000);
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
         assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
     }

@@ -15,7 +15,6 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -24,7 +23,7 @@ import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.Map;
 
-import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraSessionExpiration.setClientSessionExpiration;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setClientSessionExpiration;
 
 @EqualsAndHashCode(of = "userSession")
 @AllArgsConstructor
@@ -50,7 +49,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
         clientSessionEntity.setTimestamp(TimeAdapter.fromSecondsToMilliseconds(timestamp));
 
         // whenever the timestamp is changed recompute the expiration time
-        setClientSessionExpiration(clientSessionEntity, realm, getClient());
+        setClientSessionExpiration(clientSessionEntity, userSession.getSessionExpirationData(), getClient());
         userSession.markAsUpdated();
     }
 
@@ -95,6 +94,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter implements Auth
         }
 
         clientSessionEntity.getNotes().put(name, value);
+
         userSession.markAsUpdated();
     }
 
