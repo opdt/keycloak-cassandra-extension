@@ -63,6 +63,10 @@ Due to Cassandras query first nature, users can only be looked up by specific fi
 `UserProvider::searchForUserByUserAttributeStream` by default iterates all users in the entire database to filter for the requested attribute in-memory.
 For efficient searches, attributes can be defined as **indexed attributes** by prefixing their name with **indexed.**, e.g. **indexed.businessKey**
 
+### Conditional updates / optimistic locking
+All write-queries are done conditionally via Cassandra Lightweight Transactions. Therefore we store a version column in each of the tables. To be able to use this to get notified if a conflicting change occured after data was read, the entityVersion is exposed via a **readonly attribute readonly.entityVersion**.
+In order to pass a version in update operations, one can use the corresponding attribute **internal.entityVersion**.
+
 ## Local development
 
 ### Private image registries
