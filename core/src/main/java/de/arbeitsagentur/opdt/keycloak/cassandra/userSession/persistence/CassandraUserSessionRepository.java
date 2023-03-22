@@ -207,11 +207,16 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     }
 
     private void insertOrUpdate(UserSession session) {
+        Integer ttl = session.getExpiration() == null ? null : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
+
+        if (ttl != null && ttl <= 0) {
+            return;
+        }
+
         if ((session.getOffline() != null && session.getOffline()) || PERSISTENT.equals(session.getPersistenceState())) {
-            if (session.getExpiration() == null) {
+            if (ttl == null) {
                 dao.insertOrUpdate(session);
             } else {
-                int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
                 dao.insertOrUpdate(session, ttl);
             }
         }
@@ -220,6 +225,10 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     private void insertOrUpdate(UserSession session, UserSessionToAttributeMapping mapping) {
         Integer ttl = session.getExpiration() == null ? null : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
         UserSessionToAttributeMapping oldAttribute = dao.findAttribute(mapping.getUserSessionId(), mapping.getAttributeName());
+
+        if (ttl != null && ttl <= 0) {
+            return;
+        }
 
         if(ttl == null) {
             dao.insertOrUpdate(mapping);

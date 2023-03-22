@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import lombok.*;
+import org.keycloak.models.map.common.ExpirableEntity;
 
 import java.time.Instant;
 import java.util.*;
@@ -33,8 +34,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Entity
 @CqlName("users")
-public class User implements TransactionalEntity {
-
+public class User implements TransactionalEntity, ExpirableEntity {
     @PartitionKey(0)
     private String realmId;
     @PartitionKey(1)
@@ -49,6 +49,8 @@ public class User implements TransactionalEntity {
     private String usernameCaseInsensitive;
     private String serviceAccountClientLink;
     private String federationLink;
+
+    private Long expiration;
 
     @Builder.Default
     private Boolean enabled = true;

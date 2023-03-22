@@ -27,14 +27,27 @@ public abstract class TransactionalRepository<TEntity extends TransactionalEntit
     }
 
     public void insertOrUpdate(TEntity entity) {
+        insertOrUpdate(entity, null);
+    }
+
+    public void insertOrUpdate(TEntity entity, Integer ttl) {
+        if(ttl != null && ttl <= 0) {
+            return;
+        }
+
         if (entity.getVersion() == null) {
             entity.setVersion(1L);
-            dao.insert(entity);
+
+            if(ttl == null) {
+                dao.insert(entity);
+            } else {
+                dao.insert(entity, ttl);
+            }
         } else {
             Long currentVersion = entity.getVersion();
             entity.incrementVersion();
 
-            ResultSet result = dao.update(entity, currentVersion);
+            ResultSet result = ttl == null ? dao.update(entity, currentVersion) : dao.update(entity, ttl, currentVersion);
 
             if (!result.wasApplied()) {
                 throw new ModelIllegalStateException("Entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database");

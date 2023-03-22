@@ -67,6 +67,20 @@ For efficient searches, attributes can be defined as **indexed attributes** by p
 All write-queries are done conditionally via Cassandra Lightweight Transactions. Therefore we store a version column in each of the tables. To be able to use this to get notified if a conflicting change occured after data was read, the entityVersion is exposed via a **readonly attribute readonly.entityVersion**.
 In order to pass a version in update operations, one can use the corresponding attribute **internal.entityVersion**.
 
+### Session lifespan/timeout overrides
+You can override session timeouts/lifespans per session-instance by setting special attributes:
+- internal.maxLifespanOverride
+- internal.offlineMaxLifespanOverride
+- internal.idleTimeoutOverride
+- internal.offlineIdleTimeoutOverride
+- internal.clientMaxLifespanOverride
+- internal.clientOfflineMaxLifespanOverride
+- internal.clientIdleTimeoutOverride
+- internal.clientOfflineIdleTimeoutOverride
+
+### Temporary users
+You can add a time-to-live to users by setting the `internal.ttl` to a millisecond-value.
+
 ## Local development
 
 ### Private image registries

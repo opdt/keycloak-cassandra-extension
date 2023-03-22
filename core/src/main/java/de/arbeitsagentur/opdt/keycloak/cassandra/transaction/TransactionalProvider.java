@@ -19,11 +19,14 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.map.common.ExpirableEntity;
 import org.keycloak.provider.Provider;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
 
 @JBossLog
 public abstract class TransactionalProvider<TEntity extends TransactionalEntity, TModel extends TransactionalModelAdapter> implements Provider {
@@ -44,6 +47,15 @@ public abstract class TransactionalProvider<TEntity extends TransactionalEntity,
             }
 
             TModel existingModel = models.get(origEntity.getId());
+            if(origEntity instanceof ExpirableEntity e && isExpired(e, false)) {
+                if(existingModel != null) {
+                    existingModel.markDeleted();
+                }
+
+                models.remove(origEntity.getId());
+                return null;
+            }
+
             if (existingModel != null) {
                 log.tracef("Return cached model for id %s", origEntity.getId());
                 return existingModel;

@@ -28,11 +28,20 @@ public interface UserDao extends TransactionalDao<User> {
     @Update
     void update(FederatedIdentity federatedIdentity);
 
+    @Update(ttl = ":ttl")
+    void update(FederatedIdentity federatedIdentity, int ttl);
+
     @Update
     void update(FederatedIdentityToUserMapping identityToUserMapping);
 
+    @Update(ttl = ":ttl")
+    void update(FederatedIdentityToUserMapping identityToUserMapping, int ttl);
+
     @Insert
     void insert(RealmToUserMapping realmToUserMapping);
+
+    @Insert(ttl = ":ttl")
+    void insert(RealmToUserMapping realmToUserMapping, int ttl);
 
     @Query("SELECT COUNT(id) FROM users")
     @StatementAttributes(consistencyLevel = "SERIAL")
@@ -85,6 +94,9 @@ public interface UserDao extends TransactionalDao<User> {
     @Insert
     void insertOrUpdate(UserSearchIndex searchIndex);
 
+    @Insert(ttl = ":ttl")
+    void insertOrUpdate(UserSearchIndex searchIndex, int ttl);
+
     @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
     PagingIterable<UserSearchIndex> findUsers(String realmId, String name, String value);
 
@@ -96,6 +108,9 @@ public interface UserDao extends TransactionalDao<User> {
 
     @Insert
     void insertOrUpdate(UserConsent userConsent);
+
+    @Insert(ttl = ":ttl")
+    void insertOrUpdate(UserConsent userConsent, int ttl);
 
     @Delete
     void delete(UserConsent userConsent);

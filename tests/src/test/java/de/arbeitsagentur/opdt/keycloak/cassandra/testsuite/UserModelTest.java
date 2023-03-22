@@ -17,6 +17,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter.TIME_TO_LIVE_ATTRIBUTE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -208,6 +210,73 @@ public class UserModelTest extends KeycloakModelTest {
                 .collect(Collectors.toList());
             Assert.assertThat(search, hasSize(1));
             Assert.assertThat(search.get(0).getUsername(), equalTo("user"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testPersistUserWithTtl() {
+        UserModel user = withRealm(originalRealmId, (session, realm) -> {
+            UserModel createdUser = session.users().addUser(realm, "user");
+            createdUser.setFirstName("first-name");
+            createdUser.setLastName("last-name");
+            createdUser.setEmail("email");
+            createdUser.setSingleAttribute(TIME_TO_LIVE_ATTRIBUTE, "10000");
+            return createdUser;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel persisted = session.users().getUserByUsername(realm, "user");
+
+            assertUserModel(user, persisted);
+
+            UserModel persisted2 = session.users().getUserById(realm, user.getId());
+            assertUserModel(user, persisted2);
+
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put(UserModel.EMAIL, "email");
+            List<UserModel> search = session.users().searchForUserStream(realm, attributes)
+                .collect(Collectors.toList());
+            Assert.assertThat(search, hasSize(1));
+            Assert.assertThat(search.get(0).getUsername(), equalTo("user"));
+
+            return null;
+        });
+
+        sleep(5000);
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel persisted = session.users().getUserByUsername(realm, "user");
+            assertUserModel(user, persisted);
+
+            UserModel persisted2 = session.users().getUserById(realm, user.getId());
+            assertUserModel(user, persisted2);
+
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put(UserModel.EMAIL, "email");
+            List<UserModel> search = session.users().searchForUserStream(realm, attributes)
+                .collect(Collectors.toList());
+            Assert.assertThat(search, hasSize(1));
+            Assert.assertThat(search.get(0).getUsername(), equalTo("user"));
+
+            return null;
+        });
+
+        sleep(6000);
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel persisted = session.users().getUserByUsername(realm, "user");
+            assertNull(persisted);
+
+            UserModel persisted2 = session.users().getUserById(realm, user.getId());
+            assertNull(persisted2);
+
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put(UserModel.EMAIL, "email");
+            List<UserModel> search = session.users().searchForUserStream(realm, attributes)
+                .collect(Collectors.toList());
+            Assert.assertThat(search, hasSize(0));
 
             return null;
         });

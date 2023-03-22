@@ -29,10 +29,16 @@ public class CassandraAuthSessionRepository implements AuthSessionRepository {
 
     @Override
     public void insertOrUpdate(RootAuthenticationSession session) {
-        if (session.getExpiration() == null) {
+        Integer ttl =  session.getExpiration() == null ? null : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
+
+        if(ttl != null && ttl <= 0) {
+            return;
+        }
+
+        if (ttl == null) {
             dao.insertOrUpdate(session);
         } else {
-            int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
+
             dao.insertOrUpdate(session, ttl);
         }
 
@@ -42,10 +48,11 @@ public class CassandraAuthSessionRepository implements AuthSessionRepository {
 
     @Override
     public void insertOrUpdate(AuthenticationSession session, RootAuthenticationSession parent) {
-        if (parent.getExpiration() == null) {
+        Integer ttl = parent.getExpiration() == null ? null : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(parent.getExpiration() - Time.currentTimeMillis()));
+
+        if (ttl == null) {
             dao.insertOrUpdate(session);
         } else {
-            int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(parent.getExpiration() - Time.currentTimeMillis()));
             dao.insertOrUpdate(session, ttl);
         }
     }

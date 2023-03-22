@@ -19,6 +19,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
+import org.keycloak.common.util.Time;
+import org.keycloak.models.map.common.TimeAdapter;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +41,8 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
 
     @Override
     public List<User> findAllUsers() {
-        return dao.findAll().all();
+        return dao.findAll()
+            .all();
     }
 
     @Override
@@ -53,7 +56,11 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return null;
         }
 
-        UserSearchIndex user = dao.findUsers(realmId, EMAIL, email).all().stream().findFirst().orElse(null);
+        UserSearchIndex user = dao.findUsers(realmId, EMAIL, email)
+            .all()
+            .stream()
+            .findFirst()
+            .orElse(null);
         if (user == null) {
             return null;
         }
@@ -67,7 +74,11 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return null;
         }
 
-        UserSearchIndex user = dao.findUsers(realmId, USERNAME, username).all().stream().findFirst().orElse(null);
+        UserSearchIndex user = dao.findUsers(realmId, USERNAME, username)
+            .all()
+            .stream()
+            .findFirst()
+            .orElse(null);
         if (user == null) {
             return null;
         }
@@ -81,7 +92,11 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return null;
         }
 
-        UserSearchIndex user = dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream().findFirst().orElse(null);
+        UserSearchIndex user = dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username)
+            .all()
+            .stream()
+            .findFirst()
+            .orElse(null);
 
         if (user == null) {
             return null;
@@ -96,7 +111,11 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return null;
         }
 
-        UserSearchIndex user = dao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink).all().stream().findFirst().orElse(null);
+        UserSearchIndex user = dao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink)
+            .all()
+            .stream()
+            .findFirst()
+            .orElse(null);
 
         if (user == null) {
             return null;
@@ -111,11 +130,14 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return null;
         }
 
-        List<String> userIds = dao.findUsers(realmId, FEDERATION_LINK, federationLink).all().stream()
+        List<String> userIds = dao.findUsers(realmId, FEDERATION_LINK, federationLink)
+            .all()
+            .stream()
             .map(UserSearchIndex::getUserId)
             .collect(Collectors.toList());
 
-        return dao.findByIds(realmId, userIds).all();
+        return dao.findByIds(realmId, userIds)
+            .all();
     }
 
     @Override
@@ -124,11 +146,14 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return Collections.emptyList();
         }
 
-        List<String> userIds = dao.findUsers(realmId, attributeName, attributeValue).all().stream()
+        List<String> userIds = dao.findUsers(realmId, attributeName, attributeValue)
+            .all()
+            .stream()
             .map(UserSearchIndex::getUserId)
             .collect(Collectors.toList());
 
-        return dao.findByIds(realmId, userIds).all();
+        return dao.findByIds(realmId, userIds)
+            .all();
     }
 
     @Override
@@ -166,38 +191,42 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
     @Override
     public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
         if (attrName != null && attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
-            user.getAttribute(attrName).forEach(value -> dao.deleteIndex(realmId, attrName, value, user.getId()));
+            user.getAttribute(attrName)
+                .forEach(value -> dao.deleteIndex(realmId, attrName, value, user.getId()));
         }
     }
 
     @Override
     public void insertOrUpdate(User user) {
-        super.insertOrUpdate(user);
+        Integer ttl = getUserTtl(user);
+        super.insertOrUpdate(user, ttl);
 
-        dao.insert(new RealmToUserMapping(user.getRealmId(), user.isServiceAccount(), user.getId()));
+        insertRealmToUserMapping(user.getRealmId(), user);
 
         if (user.getUsername() != null) {
-            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), USERNAME, user.getUsername(), user.getId()));
+            insertOrUpdateSearchIndex(user.getRealmId(), USERNAME, user.getUsername(), user);
         }
 
         if (user.getUsernameCaseInsensitive() != null) {
-            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId()));
+            insertOrUpdateSearchIndex(user.getRealmId(), USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user);
         }
 
         if (user.getEmail() != null) {
-            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), EMAIL, user.getEmail(), user.getId()));
+            insertOrUpdateSearchIndex(user.getRealmId(), EMAIL, user.getEmail(), user);
         }
 
         if (user.getServiceAccountClientLink() != null) {
-            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
+            insertOrUpdateSearchIndex(user.getRealmId(), SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user);
         }
 
         if (user.getFederationLink() != null) {
-            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), FEDERATION_LINK, user.getFederationLink(), user.getId()));
+            insertOrUpdateSearchIndex(user.getRealmId(), FEDERATION_LINK, user.getFederationLink(), user);
         }
 
-        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
-            entry.getValue().forEach(value -> dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), entry.getKey(), value, user.getId())));
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes()
+            .entrySet()) {
+            entry.getValue()
+                .forEach(value -> insertOrUpdateSearchIndex(user.getRealmId(), entry.getKey(), value, user));
         }
     }
 
@@ -217,8 +246,10 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
         deleteServiceAccountLinkSearchIndex(realmId, user);
         deleteFederationLinkSearchIndex(realmId, user);
 
-        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
-            entry.getValue().forEach(value -> dao.deleteIndex(realmId, entry.getKey(), value, userId));
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes()
+            .entrySet()) {
+            entry.getValue()
+                .forEach(value -> dao.deleteIndex(realmId, entry.getKey(), value, userId));
         }
 
         return true;
@@ -227,12 +258,12 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
     @Override
     public void makeUserServiceAccount(User user, String realmId) {
         user.setServiceAccount(true);
-        super.insertOrUpdate(user);
+        super.insertOrUpdate(user, getUserTtl(user));
 
         dao.deleteRealmToUserMapping(realmId, false, user.getId());
-        dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+        insertRealmToUserMapping(realmId, user);
 
-        dao.insertOrUpdate(new UserSearchIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
+        insertOrUpdateSearchIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user);
     }
 
     @Override
@@ -241,10 +272,8 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
     }
 
     @Override
-    public FederatedIdentity findFederatedIdentityByBrokerUserId(
-        String brokerUserId, String identityProvider) {
-        FederatedIdentityToUserMapping identityToUserMapping =
-            dao.findFederatedIdentityByBrokerUserId(brokerUserId, identityProvider);
+    public FederatedIdentity findFederatedIdentityByBrokerUserId(String brokerUserId, String identityProvider) {
+        FederatedIdentityToUserMapping identityToUserMapping = dao.findFederatedIdentityByBrokerUserId(brokerUserId, identityProvider);
 
         if (identityToUserMapping == null) {
             return null;
@@ -255,18 +284,23 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
 
     @Override
     public List<FederatedIdentity> findFederatedIdentities(String userId) {
-        return dao.findFederatedIdentities(userId).all();
+        return dao.findFederatedIdentities(userId)
+            .all();
     }
 
     @Override
     public void createOrUpdateFederatedIdentity(FederatedIdentity federatedIdentity) {
-        dao.update(federatedIdentity);
-        FederatedIdentityToUserMapping identityToUserMapping =
-            new FederatedIdentityToUserMapping(
-                federatedIdentity.getBrokerUserId(),
-                federatedIdentity.getIdentityProvider(),
-                federatedIdentity.getUserId());
-        dao.update(identityToUserMapping);
+        User user = findUserById(federatedIdentity.getRealmId(), federatedIdentity.getUserId());
+        Integer ttl = getUserTtl(user);
+
+        FederatedIdentityToUserMapping identityToUserMapping = new FederatedIdentityToUserMapping(federatedIdentity.getBrokerUserId(), federatedIdentity.getIdentityProvider(), federatedIdentity.getUserId());
+        if (ttl == null) {
+            dao.update(federatedIdentity);
+            dao.update(identityToUserMapping);
+        } else {
+            dao.update(federatedIdentity, ttl);
+            dao.update(identityToUserMapping, ttl);
+        }
     }
 
     @Override
@@ -277,9 +311,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             return false;
         }
 
-        FederatedIdentityToUserMapping identityToUserMapping =
-            dao.findFederatedIdentityByBrokerUserId(
-                federatedIdentity.getBrokerUserId(), identityProvider);
+        FederatedIdentityToUserMapping identityToUserMapping = dao.findFederatedIdentityByBrokerUserId(federatedIdentity.getBrokerUserId(), identityProvider);
 
         dao.delete(federatedIdentity);
         dao.delete(identityToUserMapping);
@@ -304,7 +336,14 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
 
     @Override
     public void createOrUpdateUserConsent(UserConsent consent) {
-        dao.insertOrUpdate(consent);
+        User user = findUserById(consent.getRealmId(), consent.getUserId());
+        Integer ttl = getUserTtl(user);
+
+        if(ttl == null) {
+            dao.insertOrUpdate(consent);
+        } else {
+            dao.insertOrUpdate(consent, ttl);
+        }
     }
 
     @Override
@@ -324,11 +363,47 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
 
     @Override
     public List<UserConsent> findUserConsentsByUserId(String realmId, String userId) {
-        return dao.findUserConsentsByUserId(realmId, userId).all();
+        return dao.findUserConsentsByUserId(realmId, userId)
+            .all();
     }
 
     @Override
     public List<UserConsent> findUserConsentsByRealmId(String realmId) {
-        return dao.findUserConsentsByRealmId(realmId).all();
+        return dao.findUserConsentsByRealmId(realmId)
+            .all();
+    }
+
+
+    private Integer getUserTtl(User user) {
+        return user.getExpiration() == null ? null : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(TimeAdapter.fromMilliSecondsToSeconds(user.getExpiration() - Time.currentTimeMillis()));
+    }
+
+    private void insertOrUpdateSearchIndex(String realmId, String name, String value, User user) {
+        Integer ttl = getUserTtl(user);
+
+        if (ttl != null && ttl <= 0) {
+            return;
+        }
+
+        if (ttl == null) {
+            dao.insertOrUpdate(new UserSearchIndex(realmId, name, value, user.getId()));
+        } else {
+            dao.insertOrUpdate(new UserSearchIndex(realmId, name, value, user.getId()), ttl);
+        }
+    }
+
+    private void insertRealmToUserMapping(String realmId, User user) {
+        Integer ttl = getUserTtl(user);
+
+        if (ttl != null && ttl <= 0) {
+            return;
+        }
+
+
+        if (ttl == null) {
+            dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+        } else {
+            dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()), ttl);
+        }
     }
 }

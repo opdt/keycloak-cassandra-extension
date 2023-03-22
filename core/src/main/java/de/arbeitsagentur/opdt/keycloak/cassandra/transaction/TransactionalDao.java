@@ -26,8 +26,14 @@ public interface TransactionalDao<T extends TransactionalEntity> extends BaseDao
     @Insert(ifNotExists = true)
     void insert(T entity);
 
+    @Insert(ttl = ":ttl", ifNotExists = true)
+    void insert(T entity, int ttl);
+
     @Update(customIfClause = "version = :expectedVersion")
     ResultSet update(T entity, long expectedVersion);
+
+    @Update(ttl = ":ttl", customIfClause = "version = :expectedVersion")
+    ResultSet update(T entity, int ttl, long expectedVersion);
 
     @Delete(ifExists = true)
     void delete(T entity);

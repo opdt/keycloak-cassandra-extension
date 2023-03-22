@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.ObjectUtil;
+import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 @JBossLog
 public abstract class CassandraUserAdapter extends TransactionalModelAdapter<User> implements UserModel {
     public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
+    public static final String TIME_TO_LIVE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "ttl";
 
     @EqualsAndHashCode.Exclude
     private final KeycloakSession session;
@@ -440,6 +442,8 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
         } else if (UserModel.USERNAME.equals(name)) {
             setUsername(value);
             return true;
+        } else if (TIME_TO_LIVE_ATTRIBUTE.equals(name)) {
+            entity.setExpiration(Time.currentTimeMillis() + Long.parseLong(value));
         }
 
         return false;
