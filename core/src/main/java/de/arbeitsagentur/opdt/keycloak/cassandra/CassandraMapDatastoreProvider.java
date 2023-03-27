@@ -22,6 +22,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
+import org.keycloak.Config;
 import org.keycloak.models.*;
 import org.keycloak.models.map.datastore.MapDatastoreProvider;
 import org.keycloak.provider.Provider;
@@ -34,13 +35,15 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
-    private KeycloakSession session;
-    private CompositeRepository cassandraRepository;
+    private final Config.Scope config;
+    private final KeycloakSession session;
+    private final CompositeRepository cassandraRepository;
 
-    private Set<Provider> providersToClose = new HashSet<>();
+    private final Set<Provider> providersToClose = new HashSet<>();
 
-    public CassandraMapDatastoreProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
+    public CassandraMapDatastoreProvider(Config.Scope config, KeycloakSession session, CompositeRepository cassandraRepository) {
         super(session);
+        this.config = config;
         this.session = session;
         this.cassandraRepository = cassandraRepository;
     }
@@ -81,6 +84,13 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
     }
 
     private <T extends Provider> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
+        Boolean datastoreProviderEnabled = config.getBoolean(providerClass.getSimpleName()
+            .toLowerCase() + "-enabled", true);
+
+        if(!datastoreProviderEnabled) {
+            return session.getProvider(providerClass);
+        }
+
         T provider = session.getAttribute(providerClass.getName(), providerClass);
         if (provider != null) {
             return provider;

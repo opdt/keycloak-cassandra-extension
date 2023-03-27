@@ -33,6 +33,8 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
 public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, EnvironmentDependentProviderFactory, InvalidationHandler {
+    private Config.Scope config;
+
     private static final String PROVIDER_ID = "cassandra-map";
 
     @Override
@@ -42,12 +44,12 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
 
     @Override
     public DatastoreProvider create(KeycloakSession session) {
-        return new CassandraMapDatastoreProvider(session, createRepository(session));
+        return new CassandraMapDatastoreProvider(config, session, createRepository(session));
     }
 
     @Override
     public void init(Config.Scope scope) {
-
+        this.config = scope;
     }
 
     @Override
