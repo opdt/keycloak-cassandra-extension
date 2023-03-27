@@ -100,7 +100,7 @@ public class CassandraClientScopeProvider implements ClientScopeProvider {
         log.tracef("addClientScope(%s, %s, %s)%s", realm, id, name, getShortStackTrace());
 
         ClientScopeValue clientScopeValue = ClientScopeValue.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
+            .id(id == null ? name : id)
             .realmId(realm.getId())
             .name(name)
             .build();

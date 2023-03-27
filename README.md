@@ -53,6 +53,9 @@ the [Keycloak configuration guide](https://www.keycloak.org/server/configuration
 
 ## Deviations from standard storage providers
 
+### Stable IDs for Realms, Clients, ClientScopes
+Realms (including AuthenticationFlows and RequiredActions), Clients and ClientScopes get stable ids to allow easier usage in configuration-as-code scenarios where these areas are commonly read from static sources like files.
+
 ### User Lookup
 Due to Cassandras query first nature, users can only be looked up by specific fields.
 `UserProvider::searchForUserStream` supports the following subset of Keycloaks standard search attributes:

@@ -630,7 +630,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client> im
     @Override
     public ProtocolMapperModel addProtocolMapper(ProtocolMapperModel model) {
         if (model.getId() == null) {
-            String id = KeycloakModelUtils.generateId();
+            String id = model.getName();
             model.setId(id);
         }
         if (model.getConfig() == null) {
