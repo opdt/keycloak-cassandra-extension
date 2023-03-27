@@ -91,7 +91,7 @@ public class CassandraRoleProvider implements RoleProvider {
         }
 
         RoleValue role = RoleValue.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
+            .id(id == null ? name : id)
             .name(name)
             .realmId(realm.getId())
             .build();
@@ -194,7 +194,7 @@ public class CassandraRoleProvider implements RoleProvider {
         }
 
         RoleValue role = RoleValue.builder()
-            .id(id == null ? KeycloakModelUtils.generateId() : id)
+            .id(id == null ? name : id)
             .name(name)
             .clientId(client.getId())
             .build();
