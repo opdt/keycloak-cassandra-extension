@@ -194,7 +194,7 @@ public class CassandraRoleProvider implements RoleProvider {
         }
 
         RoleValue role = RoleValue.builder()
-            .id(id == null ? name : id)
+            .id(id == null ? client.getClientId() + "-" + name : id)
             .name(name)
             .clientId(client.getId())
             .build();
