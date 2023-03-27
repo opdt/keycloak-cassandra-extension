@@ -72,7 +72,7 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
             throw new ModelDuplicateException("Client with same clientId in realm " + realm.getName() + " exists: " + clientId);
         }
 
-        String newId = id == null ? KeycloakModelUtils.generateId() : id;
+        String newId = id == null ? clientId : id;
         Client client = new Client(realm.getId(), newId, null, new HashMap<>());
         clientRepository.insertOrUpdate(client);
 
