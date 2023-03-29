@@ -52,7 +52,7 @@ public class CassandraRealmsProvider extends TransactionalProvider<Realm, Cassan
 
     @Override
     public RealmModel createRealm(String name) {
-        return createRealm(name, name);
+        return createRealm(KeycloakModelUtils.generateId(), name);
     }
 
     @Override

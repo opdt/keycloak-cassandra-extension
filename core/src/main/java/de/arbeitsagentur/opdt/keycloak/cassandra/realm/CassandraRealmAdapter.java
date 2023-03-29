@@ -834,7 +834,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         existingFlows.add(model);
 
         if (model.getId() == null) {
-            model.setId(model.getAlias());
+            model.setId(KeycloakModelUtils.generateId());
         }
 
         setSerializedAttributeValues(AUTHENTICATION_FLOWS, existingFlows);
@@ -893,7 +893,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     public AuthenticationExecutionModel addAuthenticatorExecution(AuthenticationExecutionModel model) {
         AuthenticationExecutionModel existingExecution = getAuthenticationExecutionById(model.getId());
         if (existingExecution != null) {
-            throw new ModelDuplicateException("An AuthenticatorExecution with given id already exists");
+            throw new ModelDuplicateException("An RequiredActionProvider with given id already exists");
         }
 
         if (model.getId() == null) {
@@ -939,7 +939,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         }
 
         if (model.getId() == null) {
-            model.setId(model.getAlias());
+            model.setId(KeycloakModelUtils.generateId());
         }
 
         List<AuthenticatorConfigModel> values = getDeserializedAttributes(AUTHENTICATOR_CONFIG_MODELS, AuthenticatorConfigModel.class);
@@ -1000,7 +1000,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         }
 
         if (model.getId() == null) {
-            model.setId(model.getAlias());
+            model.setId(KeycloakModelUtils.generateId());
         }
 
         List<RequiredActionProviderModel> values = getDeserializedAttributes(REQUIRED_ACTION_PROVIDER_MODELS, RequiredActionProviderModel.class);
@@ -1065,7 +1065,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         }
 
         if (model.getInternalId() == null) {
-            model.setInternalId(model.getAlias());
+            model.setInternalId(KeycloakModelUtils.generateId());
         }
 
         List<IdentityProviderModel> values = getDeserializedAttributes(IDENTITY_PROVIDERS, IdentityProviderModel.class);
@@ -1165,7 +1165,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         }
 
         if (model.getId() == null) {
-            model.setId(model.getName());
+            model.setId(KeycloakModelUtils.generateId());
         }
 
         List<IdentityProviderMapperModel> values = getDeserializedAttributes(IDENTITY_PROVIDER_MAPPERS, IdentityProviderMapperModel.class);
@@ -1237,7 +1237,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         }
 
         if (model.getId() == null) {
-            model.setId(model.getName());
+            model.setId(KeycloakModelUtils.generateId());
         }
 
         List<ComponentModel> values = getDeserializedAttributes(COMPONENTS, ComponentModel.class);
