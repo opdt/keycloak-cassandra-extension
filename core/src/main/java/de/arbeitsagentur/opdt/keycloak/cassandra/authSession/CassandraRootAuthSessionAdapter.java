@@ -67,7 +67,8 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
             }
 
             CassandraAuthSessionAdapter adapter = new CassandraAuthSessionAdapter(session, realm, this, origEntity, authSessionRepository);
-            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
+            session.getTransactionManager()
+                .enlistAfterCompletion((CassandraModelTransaction) adapter::flush);
             sessionModels.put(adapter.getTabId(), adapter);
 
             return adapter;
@@ -103,7 +104,8 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
 
     @Override
     public Map<String, AuthenticationSessionModel> getAuthenticationSessions() {
-        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
+        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId())
+            .stream()
             .map(entityToAdapterFunc(realm))
             .collect(Collectors.toMap(CassandraAuthSessionAdapter::getTabId, Function.identity()));
     }
@@ -115,7 +117,8 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         }
 
 
-        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId()).stream()
+        return authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId())
+            .stream()
             .filter(s -> Objects.equals(s.getClientId(), client.getId()))
             .filter(s -> Objects.equals(s.getTabId(), tabId))
             .map(entityToAdapterFunc(realm))
@@ -129,8 +132,10 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
 
         List<AuthenticationSession> authenticationSessions = authSessionRepository.findAuthSessionsByParentSessionId(rootAuthenticationSession.getId());
         if (authenticationSessions != null && authenticationSessions.size() >= authSessionsLimit) {
-            Optional<AuthenticationSession> oldest = authenticationSessions.stream().min(TIMESTAMP_COMPARATOR);
-            String tabId = oldest.map(AuthenticationSession::getTabId).orElse(null);
+            Optional<AuthenticationSession> oldest = authenticationSessions.stream()
+                .min(TIMESTAMP_COMPARATOR);
+            String tabId = oldest.map(AuthenticationSession::getTabId)
+                .orElse(null);
 
             if (tabId != null && !oldest.isEmpty()) {
                 log.debugf("Reached limit (%s) of active authentication sessions per a root authentication session. Removing oldest authentication session with TabId %s.", authSessionsLimit, tabId);
@@ -157,7 +162,8 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         updated = true;
 
         CassandraAuthSessionAdapter cassandraAuthSessionAdapter = entityToAdapterFunc(realm).apply(authSession);
-        session.getContext().setAuthenticationSession(cassandraAuthSessionAdapter);
+        session.getContext()
+            .setAuthenticationSession(cassandraAuthSessionAdapter);
 
         return cassandraAuthSessionAdapter;
     }
@@ -170,17 +176,20 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
             .findFirst()
             .orElse(null);
 
-        authSessionRepository.deleteAuthSession(toDelete);
+        if (toDelete != null) {
+            authSessionRepository.deleteAuthSession(toDelete);
+        }
 
         CassandraAuthSessionAdapter model = sessionModels.get(tabId);
-        if(model != null) {
+        if (model != null) {
             model.markDeleted();
         }
         sessionModels.remove(tabId);
 
         if (toDelete != null) {
             if (allAuthSessions.size() == 1) {
-                session.authenticationSessions().removeRootAuthenticationSession(realm, this);
+                session.authenticationSessions()
+                    .removeRootAuthenticationSession(realm, this);
                 deleted = true;
             } else {
                 long timestamp = Time.currentTimeMillis();
@@ -204,7 +213,8 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
     }
 
     private String generateTabId() {
-        return Base64Url.encode(SecretGenerator.getInstance().randomBytes(8));
+        return Base64Url.encode(SecretGenerator.getInstance()
+            .randomBytes(8));
     }
 
     public void flush() {

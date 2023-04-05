@@ -101,7 +101,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
             }
 
             // No need to check if user has group as it's new user
-            realm.getDefaultGroupsStream().forEach(userModel::joinGroup);
+            realm.getDefaultGroupsStream()
+                .forEach(userModel::joinGroup);
         }
 
         if (addDefaultRequiredActions) {
@@ -134,15 +135,31 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     public UserModel getServiceAccount(ClientModel client) {
-        User user = userRepository.findUserByServiceAccountLink(client.getRealm().getId(), client.getId());
-        return entityToAdapterFunc(client.getRealm()).apply(user);
+        UserModel userModel = models.values()
+            .stream()
+            .filter(model -> model.getRealm()
+                .equals(client.getRealm()))
+            .filter(model -> model.getServiceAccountClientLink() != null)
+            .filter(model -> model.getServiceAccountClientLink()
+                .equals(client.getId()))
+            .findFirst()
+            .orElse(null);
+
+        if (userModel != null) {
+            return userModel;
+        } else {
+            User user = userRepository.findUserByServiceAccountLink(client.getRealm()
+                .getId(), client.getId());
+            return entityToAdapterFunc(client.getRealm()).apply(user);
+        }
     }
 
 
     @Override
     public void removeImportedUsers(RealmModel realm, String storageProviderId) {
         log.tracef("removeImportedUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
-        List<UserModel> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId).stream()
+        List<UserModel> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId)
+            .stream()
             .map(entityToAdapterFunc(realm))
             .collect(Collectors.toList());
         users.forEach(u -> removeUser(realm, u));
@@ -183,10 +200,12 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     public void updateConsent(RealmModel realm, String userId, UserConsentModel consent) {
         log.debugv("updateConsent({0}, {1}, {2})", realm, userId, consent);
 
-        UserConsent userConsent = userRepository.findUserConsent(realm.getId(), userId, consent.getClient().getId());
+        UserConsent userConsent = userRepository.findUserConsent(realm.getId(), userId, consent.getClient()
+            .getId());
 
         userConsent.setGrantedClientScopesId(
-            consent.getGrantedClientScopes().stream()
+            consent.getGrantedClientScopes()
+                .stream()
                 .map(ClientScopeModel::getId)
                 .collect(Collectors.toSet())
         );
@@ -238,8 +257,10 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         }
 
         UserConsentModel model = new UserConsentModel(client);
-        model.setCreatedDate(userConsent.getCreatedTimestamp().toEpochMilli());
-        model.setLastUpdatedDate(userConsent.getLastUpdatedTimestamp().toEpochMilli());
+        model.setCreatedDate(userConsent.getCreatedTimestamp()
+            .toEpochMilli());
+        model.setLastUpdatedDate(userConsent.getLastUpdatedTimestamp()
+            .toEpochMilli());
 
         Set<String> grantedClientScopesIds = userConsent.getGrantedClientScopesId();
 
@@ -257,7 +278,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
         UserConsent userConsent = new UserConsent();
         userConsent.setRealmId(realm.getId());
-        userConsent.setClientId(consentModel.getClient().getId());
+        userConsent.setClientId(consentModel.getClient()
+            .getId());
         userConsent.setUserId(userId);
 
         consentModel.getGrantedClientScopes()
@@ -284,7 +306,9 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
     @Override
     public Stream<FederatedIdentityModel> getFederatedIdentitiesStream(RealmModel realm, UserModel user) {
-        return userRepository.findFederatedIdentities(user.getId()).stream().map(this::toModel);
+        return userRepository.findFederatedIdentities(user.getId())
+            .stream()
+            .map(this::toModel);
     }
 
     @Override
@@ -325,8 +349,10 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         log.debugv("getUserByUsername realm={0} username={1}", realm, username);
-        return models.values().stream()
-            .filter(model -> model.getRealm().equals(realm))
+        return models.values()
+            .stream()
+            .filter(model -> model.getRealm()
+                .equals(realm))
             .filter(model -> model.hasUsername(username))
             .map(model -> (UserModel) model)
             .findFirst()
@@ -339,9 +365,12 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     @Override
     public UserModel getUserByEmail(RealmModel realm, String email) {
         log.debugv("getUserByEmail realm={0} email={1}", realm, email);
-        return models.values().stream()
-            .filter(model -> model.getRealm().equals(realm))
-            .filter(model -> model.getEmail() != null && model.getEmail().equals(email))
+        return models.values()
+            .stream()
+            .filter(model -> model.getRealm()
+                .equals(realm))
+            .filter(model -> model.getEmail() != null && model.getEmail()
+                .equals(email))
             .map(model -> (UserModel) model)
             .findFirst()
             .orElseGet(() -> entityToAdapterFunc(realm).apply(userRepository.findUserByEmail(realm.getId(), email)));
@@ -370,27 +399,34 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         } else if (params.containsKey(UserModel.EMAIL) && isExactSearch) {
             userModelStream = Stream.ofNullable(getUserByEmail(realm, params.get(UserModel.EMAIL)));
         } else {
-            userModelStream = userRepository.findUserIdsByRealmId(realm.getId(), 0, -1).stream()
-                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id)).stream());
+            userModelStream = userRepository.findUserIdsByRealmId(realm.getId(), 0, -1)
+                .stream()
+                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id))
+                    .stream());
         }
 
-        List<Predicate<UserModel>> filtersList = params.entrySet().stream()
+        List<Predicate<UserModel>> filtersList = params.entrySet()
+            .stream()
             .filter(entry -> !Objects.equals(entry.getKey(), UserModel.EXACT))
             .map(entry -> {
-                if(entry.getValue() == null) {
+                if (entry.getValue() == null) {
                     return (Predicate<UserModel>) (UserModel u) -> true;
                 }
 
                 BiFunction<String, String, Predicate<UserModel>> makeAttributeComparator =
                     (attributeName, attributeValue) -> isExactSearch ?
                         (Predicate<UserModel>) user -> Objects.equals(user.getFirstAttribute(attributeName), attributeValue) :
-                        (Predicate<UserModel>) user -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).contains(attributeValue);
+                        (Predicate<UserModel>) user -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
+                            .contains(attributeValue);
                 BiFunction<String, String, Predicate<UserModel>> makeAttributeComparatorIgnoreCase = (attributeName, attributeValue) -> isExactSearch ?
-                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).equalsIgnoreCase(attributeValue) :
-                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName).toLowerCase().contains(attributeValue.toLowerCase());
+                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
+                        .equalsIgnoreCase(attributeValue) :
+                    (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
+                        .toLowerCase()
+                        .contains(attributeValue.toLowerCase());
                 BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator = KeycloakModelUtils.isUsernameCaseSensitive(realm) ? makeAttributeComparator : makeAttributeComparatorIgnoreCase;
 
-                switch(entry.getKey()) {
+                switch (entry.getKey()) {
                     case UserModel.SEARCH: {
                         return makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue())
                             .or(makeAttributeComparator.apply(UserModel.EMAIL, entry.getValue()))
@@ -401,7 +437,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                         return makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue());
                     }
                     case UserModel.IDP_ALIAS: {
-                        if(!params.containsKey(UserModel.IDP_USER_ID)) {
+                        if (!params.containsKey(UserModel.IDP_USER_ID)) {
                             return makeAttributeComparator.apply(UserModel.SearchableFields.IDP_AND_USER.getName(), entry.getValue());
                         }
                         return (Predicate<UserModel>) (UserModel u) -> true;
@@ -420,7 +456,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
             .collect(Collectors.toList());
 
         return userModelStream
-            .filter(user -> filtersList.stream().allMatch(predicate -> predicate.test(user)))
+            .filter(user -> filtersList.stream()
+                .allMatch(predicate -> predicate.test(user)))
             .sorted(Comparator.comparing(UserModel::getUsername))
             .skip(first)
             .limit(resultCount);
@@ -430,9 +467,12 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {
         log.debugf("getGroupMembersStream realmId=%s groupName=%s firstResult=%d maxResults=%d", realm.getId(), group.getName(), firstResult, maxResults);
 
-        return userRepository.findAllUsers().stream()
-            .filter(user -> user.getRealmId().equals(realm.getId()))
-            .filter(user -> user.getGroupsMembership().contains(group.getId()))
+        return userRepository.findAllUsers()
+            .stream()
+            .filter(user -> user.getRealmId()
+                .equals(realm.getId()))
+            .filter(user -> user.getGroupsMembership()
+                .contains(group.getId()))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
             .map(entityToAdapterFunc(realm));
@@ -449,28 +489,42 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         if (attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
             return
                 Stream.concat(
-                        models.values().stream()
-                            .filter(model -> model.getRealm().equals(realm))
-                            .filter(model -> model.getAttributes().getOrDefault(attrName, Collections.emptyList()).contains(attrValue))
+                        models.values()
+                            .stream()
+                            .filter(model -> model.getRealm()
+                                .equals(realm))
+                            .filter(model -> model.getAttributes()
+                                .getOrDefault(attrName, Collections.emptyList())
+                                .contains(attrValue))
                             .filter(u -> u.getServiceAccountClientLink() == null),
-                        userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue).stream()
+                        userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue)
+                            .stream()
                             .map(entityToAdapterFunc(realm))
                             .filter(u -> u.getServiceAccountClientLink() == null)
                             .sorted(Comparator.comparing(UserModel::getUsername)))
-                    .map(UserModel.class::cast).distinct();
+                    .map(UserModel.class::cast)
+                    .distinct();
         } else {
             return Stream.concat(
-                    models.values().stream()
-                        .filter(model -> model.getRealm().equals(realm))
-                        .filter(model -> model.getAttributes().getOrDefault(attrName, Collections.emptyList()).contains(attrValue))
+                    models.values()
+                        .stream()
+                        .filter(model -> model.getRealm()
+                            .equals(realm))
+                        .filter(model -> model.getAttributes()
+                            .getOrDefault(attrName, Collections.emptyList())
+                            .contains(attrValue))
                         .filter(u -> u.getServiceAccountClientLink() == null),
-                    userRepository.findAllUsers().stream()
-                        .filter(u -> u.getRealmId().equals(realm.getId()))
-                        .filter(u -> u.getAttribute(attrName).contains(attrValue))
+                    userRepository.findAllUsers()
+                        .stream()
+                        .filter(u -> u.getRealmId()
+                            .equals(realm.getId()))
+                        .filter(u -> u.getAttribute(attrName)
+                            .contains(attrValue))
                         .filter(u -> u.getServiceAccountClientLink() == null)
                         .map(entityToAdapterFunc(realm))
                         .sorted(Comparator.comparing(UserModel::getUsername)))
-                .map(UserModel.class::cast).distinct();
+                .map(UserModel.class::cast)
+                .distinct();
         }
     }
 
@@ -525,7 +579,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         List<UserConsent> userConsents = userRepository.findUserConsentsByRealmId(realmId);
         if (userConsents != null && !userConsents.isEmpty()) {
             userConsents.forEach(userConsent -> {
-                if (userConsent.getClientId().equals(clientId))
+                if (userConsent.getClientId()
+                    .equals(clientId))
                     userRepository.deleteUserConsent(realmId, userConsent.getUserId(), clientId);
             });
         }
@@ -539,7 +594,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     @Override
     public void preRemove(ClientScopeModel clientScope) {
         String clientScopeId = clientScope.getId();
-        String realmId = clientScope.getRealm().getId();
+        String realmId = clientScope.getRealm()
+            .getId();
         log.debugv("preRemove[ClientScopeModel]({0})", clientScopeId);
 
         List<UserConsent> userConsents = userRepository.findUserConsentsByRealmId(realmId);
