@@ -690,6 +690,9 @@ public class UserModelTest extends KeycloakModelTest {
 
             // Link service account
             user1.setServiceAccountClientLink(client.getId());
+
+            UserModel searched = currentSession.users().getServiceAccount(client);
+            Assert.assertThat(searched, equalTo(user1));
             return null;
         });
 

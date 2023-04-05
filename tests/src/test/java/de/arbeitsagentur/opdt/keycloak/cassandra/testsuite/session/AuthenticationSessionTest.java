@@ -141,6 +141,9 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
             rootAuthSession.removeAuthenticationSessionByTabId(tabIds.get(0));
             rootAuthSession.removeAuthenticationSessionByTabId(tabIds.get(1));
 
+            // remove non existing session (should not throw)
+            rootAuthSession.removeAuthenticationSessionByTabId("not-existing");
+
             return null;
         });
 
