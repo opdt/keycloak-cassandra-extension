@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension-parent</artifactId>
-    <version>0.10.9-21.1.1</version>
+    <version>0.10.10-21.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
