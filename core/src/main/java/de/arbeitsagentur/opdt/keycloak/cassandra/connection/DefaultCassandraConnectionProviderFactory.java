@@ -42,8 +42,10 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.CommonClientSessionModel;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @JBossLog
@@ -81,6 +83,12 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         String username = scope.get("username");
         String password = scope.get("password");
         int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
+        String dcNamesString = scope.get("dcNames");
+
+        List<String> dcNames = new ArrayList<>();
+        if(dcNamesString != null && !dcNamesString.isEmpty()) {
+            dcNames = Arrays.asList(dcNamesString.split(","));
+        }
 
         log.info("Create keyspace...");
         List<InetSocketAddress> contactPointsList =
@@ -94,7 +102,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
                     .withAuthCredentials(username, password)
                     .withLocalDatacenter(localDatacenter)
                     .build()) {
-            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
+            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, dcNames, replicationFactor);
         }
 
         log.info("Create schema...");
@@ -144,8 +152,11 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         cqlSession.close();
     }
 
-    private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, int replicationFactor) {
-        CreateKeyspace createKeyspace =
+    private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, List<String> dcNames, int replicationFactor) {
+        CreateKeyspace createKeyspace = dcNames.size() > 1 ?
+            SchemaBuilder.createKeyspace(keyspaceName)
+                .ifNotExists()
+                .withNetworkTopologyStrategy(dcNames.stream().collect(Collectors.toMap(Function.identity(), x -> replicationFactor))) :
             SchemaBuilder.createKeyspace(keyspaceName)
                 .ifNotExists()
                 .withSimpleStrategy(replicationFactor);
@@ -155,9 +166,9 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     }
 
     private void createTables(CqlSession cqlSession, String keyspace) {
-        MigrationConfiguration mgConig = new MigrationConfiguration()
+        MigrationConfiguration mgConfig = new MigrationConfiguration()
             .withKeyspaceName(keyspace);
-        Database database = new Database(cqlSession, mgConig)
+        Database database = new Database(cqlSession, mgConfig)
             .setConsistencyLevel(ConsistencyLevel.ALL);
         MigrationTask migration = new MigrationTask(database, new MigrationRepository());
         migration.migrate();
