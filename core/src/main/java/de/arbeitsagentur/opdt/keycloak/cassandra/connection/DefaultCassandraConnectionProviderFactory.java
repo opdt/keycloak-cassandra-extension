@@ -45,6 +45,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -83,12 +84,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         String username = scope.get("username");
         String password = scope.get("password");
         int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
-        String dcNamesString = scope.get("dcNames");
-
-        List<String> dcNames = new ArrayList<>();
-        if(dcNamesString != null && !dcNamesString.isEmpty()) {
-            dcNames = Arrays.asList(dcNamesString.split(","));
-        }
 
         log.info("Create keyspace...");
         List<InetSocketAddress> contactPointsList =
@@ -102,7 +97,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
                     .withAuthCredentials(username, password)
                     .withLocalDatacenter(localDatacenter)
                     .build()) {
-            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, dcNames, replicationFactor);
+            createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
         }
 
         log.info("Create schema...");
@@ -152,14 +147,10 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         cqlSession.close();
     }
 
-    private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, List<String> dcNames, int replicationFactor) {
-        CreateKeyspace createKeyspace = dcNames.size() > 1 ?
-            SchemaBuilder.createKeyspace(keyspaceName)
-                .ifNotExists()
-                .withNetworkTopologyStrategy(dcNames.stream().collect(Collectors.toMap(Function.identity(), x -> replicationFactor))) :
-            SchemaBuilder.createKeyspace(keyspaceName)
-                .ifNotExists()
-                .withSimpleStrategy(replicationFactor);
+    private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, int replicationFactor) {
+        CreateKeyspace createKeyspace = SchemaBuilder.createKeyspace(keyspaceName)
+            .ifNotExists()
+            .withNetworkTopologyStrategy(Map.of("replication_factor", replicationFactor)); // special dc-name to activate autodiscovery
 
         cqlSession.execute(createKeyspace.build());
         cqlSession.close();
