@@ -79,6 +79,10 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         deleted = true;
     }
 
+    public RootAuthenticationSession getEntity() {
+        return rootAuthenticationSession;
+    }
+
     @Override
     public String getId() {
         return rootAuthenticationSession.getId();
@@ -158,12 +162,11 @@ public class CassandraRootAuthSessionAdapter implements RootAuthenticationSessio
         rootAuthenticationSession.setTimestamp(timestamp);
         rootAuthenticationSession.setExpiration(timestamp + TimeAdapter.fromSecondsToMilliseconds(authSessionLifespanSeconds));
 
-        authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession); // Set TTL from parent, TODO: this means an additional update-op...
+        authSessionRepository.insertOrUpdate(authSession, rootAuthenticationSession);
         updated = true;
 
         CassandraAuthSessionAdapter cassandraAuthSessionAdapter = entityToAdapterFunc(realm).apply(authSession);
-        session.getContext()
-            .setAuthenticationSession(cassandraAuthSessionAdapter);
+        session.getContext().setAuthenticationSession(cassandraAuthSessionAdapter);
 
         return cassandraAuthSessionAdapter;
     }

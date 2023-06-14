@@ -25,8 +25,6 @@ public interface AuthSessionRepository {
 
     void insertOrUpdate(AuthenticationSession session, RootAuthenticationSession parent);
 
-    void insertOrUpdate(AuthenticationSession session);
-
     void deleteRootAuthSession(String sessionId);
 
     void deleteRootAuthSession(RootAuthenticationSession session);
