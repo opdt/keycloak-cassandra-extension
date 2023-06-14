@@ -436,12 +436,6 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     @L1Cached(cacheName = AUTH_SESSION_CACHE)
     @InvalidateCache
-    public void insertOrUpdate(AuthenticationSession session) {
-        this.authSessionRepository.insertOrUpdate(session);
-    }
-
-    @L1Cached(cacheName = AUTH_SESSION_CACHE)
-    @InvalidateCache
     public void deleteRootAuthSession(String sessionId) {
         this.authSessionRepository.deleteRootAuthSession(sessionId);
     }

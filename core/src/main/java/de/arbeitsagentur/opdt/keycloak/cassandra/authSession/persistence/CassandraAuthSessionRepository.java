@@ -51,11 +51,6 @@ public class CassandraAuthSessionRepository implements AuthSessionRepository {
     }
 
     @Override
-    public void insertOrUpdate(AuthenticationSession session) {
-        dao.insertOrUpdate(session);
-    }
-
-    @Override
     public void deleteRootAuthSession(String sessionId) {
         dao.deleteRootAuthSession(sessionId);
         deleteAuthSessions(sessionId);

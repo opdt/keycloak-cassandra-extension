@@ -34,7 +34,7 @@ import java.util.Set;
 public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
     private final KeycloakSession session;
     private final RealmModel realm;
-    private final RootAuthenticationSessionModel parentSession;
+    private final CassandraRootAuthSessionAdapter parentSession;
     private final AuthenticationSession authenticationSession;
     private final AuthSessionRepository authSessionRepository;
 
@@ -257,7 +257,7 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
 
     public void flush() {
         if(updated && !deleted) {
-            authSessionRepository.insertOrUpdate(authenticationSession);
+            authSessionRepository.insertOrUpdate(authenticationSession, parentSession.getEntity());
             updated = false;
         }
     }
