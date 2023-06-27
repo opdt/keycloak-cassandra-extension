@@ -22,7 +22,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 @Dao
 public interface ClientScopeDao extends TransactionalDao<ClientScopes> {
     @Select(customWhereClause = "realm_id = :realmId")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     ClientScopes getClientScopesByRealmId(String realmId);
 
     @Delete(entityClass = ClientScopes.class, ifExists = true)

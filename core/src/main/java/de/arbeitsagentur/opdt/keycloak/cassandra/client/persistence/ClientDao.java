@@ -24,14 +24,11 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 @Dao
 public interface ClientDao extends TransactionalDao<Client> {
     @Select(customWhereClause = "realm_id = :realmId AND id = :id")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     Client getClientById(String realmId, String id);
 
     @Query("SELECT COUNT(id) FROM clients")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     long count();
 
     @Select(customWhereClause = "realm_id = :realmId")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<Client> findAllClientsWithRealmId(String realmId);
 }

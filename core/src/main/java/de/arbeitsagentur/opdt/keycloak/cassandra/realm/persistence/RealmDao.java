@@ -26,11 +26,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 @Dao
 public interface RealmDao extends TransactionalDao<Realm> {
     @Select(customWhereClause = "id = :id")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     Realm getRealmById(String id);
 
     @Select
-    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<Realm> findAll();
 
     @Select(customWhereClause = "name = :name")

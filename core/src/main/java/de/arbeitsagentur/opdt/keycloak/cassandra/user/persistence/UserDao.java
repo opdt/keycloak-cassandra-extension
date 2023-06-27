@@ -35,19 +35,15 @@ public interface UserDao extends TransactionalDao<User> {
     void insert(RealmToUserMapping realmToUserMapping);
 
     @Query("SELECT COUNT(id) FROM users")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     long count();
 
     @Select
-    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<User> findAll();
 
     @Select(customWhereClause = "realm_id = :realmId AND id = :id")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     User findById(String realmId, String id);
 
     @Select(customWhereClause = "realm_id = :realmId AND id IN :ids")
-    @StatementAttributes(consistencyLevel = "SERIAL")
     PagingIterable<User> findByIds(String realmId, List<String> ids);
 
     @Select(customWhereClause = "user_id = :userId AND identity_provider = :identityProvider")
