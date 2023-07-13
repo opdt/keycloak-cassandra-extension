@@ -1822,12 +1822,6 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     }
 
     @Override
-    @Deprecated
-    public Stream<GroupModel> searchForGroupByNameStream(String search, Integer first, Integer max) {
-        return session.groups().searchForGroupByNameStream(this, search, false, first, max);
-    }
-
-    @Override
     public boolean removeGroup(GroupModel group) {
         return session.groups().removeGroup(this, group);
     }
@@ -1889,20 +1883,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         return session.roles().searchForRolesStream(this, search, first, max);
     }
 
-    @Override
-    @Deprecated
-    public Stream<String> getDefaultRolesStream() {
-        return getDefaultRole().getCompositesStream().filter(this::isRealmRole).map(RoleModel::getName);
-    }
-
     private boolean isRealmRole(RoleModel role) {
         return !role.isClientRole();
-    }
-
-    @Override
-    @Deprecated
-    public void addDefaultRole(String name) {
-        getDefaultRole().addCompositeRole(getOrAddRoleId(name));
     }
 
     private RoleModel getOrAddRoleId(String name) {
@@ -1911,14 +1893,6 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
             role = addRole(name);
         }
         return role;
-    }
-
-    @Override
-    @Deprecated
-    public void removeDefaultRoles(String... defaultRoles) {
-        for (String defaultRole : defaultRoles) {
-            getDefaultRole().removeCompositeRole(getRole(defaultRole));
-        }
     }
 
     @Override

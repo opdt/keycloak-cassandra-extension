@@ -5,10 +5,14 @@
 
 # Cassandra storage extension for Keycloak
 
-:warning: Work in progress! Do not use in production right now.
-
 Uses Apache Cassandra to store and retrieve entities of all storage areas shown below.
-Requires Keycloak 21.0.x with enabled Map-Storage feature.
+Requires Keycloak 22.0.x with enabled Map-Storage feature.
+
+This extensions enables users to get rid of Infinispan for caching and use Cassandra instead!
+The benefits are much easier operations and a proven way for multi-site setups, where Cassandra handles all the Cross-DC Synchronizations.
+
+Set `KC_SPI_DATASTORE_CASSANDRA_MAP_CACHE_MODE=true` (or equivalent keycloak configuration mechanisms) and configure
+the default map-storage (for example via `KC_STORAGE=file`) to use this extension for cache areas (authSession, userSession, singleUseObject) only.
 
 ## Currently covered storage areas
 
@@ -27,10 +31,11 @@ Requires Keycloak 21.0.x with enabled Map-Storage feature.
 
 ## Integration guide
 
-In order to override some of the storage areas not currently present in `DatastoreProvider` (
-see https://github.com/keycloak/keycloak/issues/15490) we use maven shade to build a custom version
-of `org.keycloak:keycloak-model-map`. Keycloak needs to be patched with this version of the library, for example by
-building a custom distribution.
+Configure the datastore-provider `cassandra-map` via the standard Keycloak configuration mechanism.
+For example via environment variable: `KC_SPI_DATASTORE_PROVIDER=cassandra-map`.
+
+You can still use other providers in certain areas, for example `KC_STORAGE_AREA_CLIENT=file` but then you have to
+disable the area in this provider via `KC_SPI_DATASTORE_CASSANDRA_MAP_CLIENT_ENABLED=false`.
 
 ## Configuration
 
@@ -67,7 +72,7 @@ For efficient searches, attributes can be defined as **indexed attributes** by p
 All write-queries are done conditionally via Cassandra Lightweight Transactions. Therefore we store a version column in each of the tables. To be able to use this to get notified if a conflicting change occured after data was read, the entityVersion is exposed via a **readonly attribute readonly.entityVersion**.
 In order to pass a version in update operations, one can use the corresponding attribute **internal.entityVersion**.
 
-## Local development
+## Development
 
 ### Private image registries
 

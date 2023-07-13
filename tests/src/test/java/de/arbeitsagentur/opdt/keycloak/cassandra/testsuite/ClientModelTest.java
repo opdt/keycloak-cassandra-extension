@@ -636,39 +636,6 @@ public class ClientModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void testDefaultRole() {
-        String clientId = withRealm(realmId, (s, realm) -> {
-            realm.setDefaultRole(s.roles().addRealmRole(realm, "defaultRole"));
-            ClientModel client = setUpClient(realm);
-            client.addDefaultRole("testRole1");
-            client.addDefaultRole("testRole2");
-
-            return client.getId();
-        });
-
-        withRealm(realmId, (s, realm) -> {
-            ClientModel client = s.clients().getClientById(realm, clientId);
-            assertThat(client.getDefaultRoles(), hasSize(2));
-            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole1", "testRole2"));
-            assertThat(client.getDefaultRoles(), hasSize(2));
-            assertThat(client.getDefaultRolesStream().collect(Collectors.toList()), hasSize(2));
-            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole1", "testRole2"));
-
-            client.removeDefaultRoles("testRole1");
-            return null;
-        });
-
-        withRealm(realmId, (s, realm) -> {
-            ClientModel client = s.clients().getClientById(realm, clientId);
-            assertThat(client.getDefaultRoles(), hasSize(1));
-            assertThat(client.getDefaultRoles(), containsInAnyOrder("testRole2"));
-
-            return null;
-        });
-
-    }
-
-    @Test
     public void testProperties() {
         String clientId = withRealm(realmId, (s, realm) -> {
             ClientModel client = setUpClient(realm);

@@ -18,15 +18,11 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters;
 
 import com.google.common.collect.ImmutableSet;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraMapDatastoreProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraMapAuthSessionProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionSpi;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.DefaultCassandraConnectionProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraMapLoginFailureProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.CassandraMapSingleUseObjectProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraMapUserSessionProviderFactory;
 import org.keycloak.models.SingleUseObjectSpi;
 import org.keycloak.models.UserLoginFailureSpi;
 import org.keycloak.models.UserSessionSpi;
@@ -48,20 +44,12 @@ public class CassandraMapStorage extends KeycloakModelParameters {
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
         .add(CassandraConnectionSpi.class)
-        .add(AuthenticationSessionSpi.class)
-        .add(UserLoginFailureSpi.class)
-        .add(SingleUseObjectSpi.class)
-        .add(UserSessionSpi.class)
         .add(DatastoreSpi.class)
         .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
         .add(CassandraConnectionProviderFactory.class)
         .add(ConcurrentHashMapStorageProviderFactory.class)
-        .add(CassandraMapAuthSessionProviderFactory.class)
-        .add(CassandraMapLoginFailureProviderFactory.class)
-        .add(CassandraMapSingleUseObjectProviderFactory.class)
-        .add(CassandraMapUserSessionProviderFactory.class)
         .add(CassandraMapDatastoreProviderFactory.class)
         .build();
 

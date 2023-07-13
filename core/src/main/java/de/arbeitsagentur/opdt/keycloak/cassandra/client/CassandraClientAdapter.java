@@ -137,24 +137,8 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client> im
         return session.roles().searchForClientRolesStream(this, search, first, max);
     }
 
-    @Override
-    public List<String> getDefaultRoles() {
-        return ClientModel.super.getDefaultRoles();
-    }
-
-    @Override
-    public Stream<String> getDefaultRolesStream() {
-        return getRealm().getDefaultRole().getCompositesStream().filter(this::isClientRole).map(RoleModel::getName);
-    }
-
     private boolean isClientRole(RoleModel role) {
         return role.isClientRole() && Objects.equals(role.getContainerId(), this.getId());
-    }
-
-    @Override
-    @Deprecated
-    public void addDefaultRole(String name) {
-        getRealm().getDefaultRole().addCompositeRole(getOrAddRoleId(name));
     }
 
     private RoleModel getOrAddRoleId(String name) {
@@ -164,15 +148,6 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client> im
         }
         return role;
     }
-
-    @Override
-    public void removeDefaultRoles(String... defaultRoles) {
-        for (String defaultRole : defaultRoles) {
-            getRealm().getDefaultRole().removeCompositeRole(getRole(defaultRole));
-        }
-
-    }
-
 
     @Override
     public String getClientId() {

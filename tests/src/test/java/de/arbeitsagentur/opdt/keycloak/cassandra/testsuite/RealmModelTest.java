@@ -877,35 +877,6 @@ public class RealmModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void testDefaultRole() {
-        withRealm(realmId, (s, realm) -> {
-            realm.setDefaultRole(s.roles().addRealmRole(realm, "defaultRole"));
-            s.roles().addRealmRole(realm, "testRole1");
-            realm.addDefaultRole("testRole1");
-            realm.addDefaultRole("testRole2");
-
-            return null;
-        });
-
-        withRealm(realmId, (s, realm) -> {
-            assertThat(realm.getDefaultRoles(), hasSize(2));
-            assertThat(realm.getDefaultRoles(), containsInAnyOrder("testRole1", "testRole2"));
-            assertThat(realm.getDefaultRole().getName(), is("defaultRole"));
-
-            realm.removeDefaultRoles("testRole1");
-            return null;
-        });
-
-        withRealm(realmId, (s, realm) -> {
-            assertThat(realm.getDefaultRoles(), hasSize(1));
-            assertThat(realm.getDefaultRoles(), containsInAnyOrder("testRole2"));
-
-            return null;
-        });
-
-    }
-
-    @Test
     public void testProperties() {
         withRealm(realmId, (s, realm) -> {
             realm.setPasswordPolicy(PasswordPolicy.parse(s, PasswordPolicy.PASSWORD_HISTORY_ID));
