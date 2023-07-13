@@ -25,7 +25,6 @@ import org.keycloak.credential.OTPCredentialProviderFactory;
 import org.keycloak.credential.PasswordCredentialProviderFactory;
 import org.keycloak.credential.hash.PasswordHashSpi;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
-import org.keycloak.device.DeviceRepresentationProviderFactory;
 import org.keycloak.device.DeviceRepresentationProviderFactoryImpl;
 import org.keycloak.device.DeviceRepresentationSpi;
 import org.keycloak.events.EventStoreSpi;

@@ -17,8 +17,9 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import org.junit.Test;
+import org.keycloak.authentication.authenticators.browser.OTPFormAuthenticator;
+import org.keycloak.authentication.authenticators.browser.OTPFormAuthenticatorFactory;
 import org.keycloak.authentication.authenticators.browser.UsernamePasswordFormFactory;
-import org.keycloak.authentication.authenticators.challenge.BasicAuthOTPAuthenticatorFactory;
 import org.keycloak.common.crypto.CryptoIntegration;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.exportimport.ExportAdapter;
@@ -200,7 +201,7 @@ public class ExportImportManagerTest extends KeycloakModelTest {
         execution = new AuthenticationExecutionModel();
         execution.setParentFlow(challengeOTP.getId());
         execution.setRequirement(AuthenticationExecutionModel.Requirement.REQUIRED);
-        execution.setAuthenticator(BasicAuthOTPAuthenticatorFactory.PROVIDER_ID);
+        execution.setAuthenticator(OTPFormAuthenticatorFactory.PROVIDER_ID);
         execution.setPriority(10);
         realm.addAuthenticatorExecution(execution);
 
