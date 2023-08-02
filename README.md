@@ -8,43 +8,24 @@
 Uses Apache Cassandra to store and retrieve entities of all storage areas shown below.
 Requires Keycloak 22.0.x with enabled Map-Storage feature.
 
+## How to use
+
+- Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/1.1.0-22.0.1/keycloak-cassandra-extension-1.1.0-22.0.1.jar
+- Put the JAR in Keycloak's providers folder
+- Set "cassandra-map" as implementation for the "datastore"-SPI, for example via ENV-variable: `KC_SPI_DATASTORE_PROVIDER=cassandra-map` (for alternatives see
+the [Keycloak configuration guide](https://www.keycloak.org/server/configuration))
+- Set the necessary configuration options like cassandra endpoints (see the overview below)
+- (optional) Override some areas with different storage providers, for example `KC_STORAGE_AREA_CLIENT=file` and disable this area in the cassandra-datastore `KC_SPI_DATASTORE_CASSANDRA_MAP_CLIENT_ENABLED=false`
+
+## Use for caching only (Replace Infinispan)
+
 This extensions enables users to get rid of Infinispan for caching and use Cassandra instead!
 The benefits are much easier operations and a proven way for multi-site setups, where Cassandra handles all the Cross-DC Synchronizations.
 
 Set `KC_SPI_DATASTORE_CASSANDRA_MAP_CACHE_MODE=true` (or equivalent keycloak configuration mechanisms) and configure
 the default map-storage (for example via `KC_STORAGE=file`) to use this extension for cache areas (authSession, userSession, singleUseObject) only.
 
-## Currently covered storage areas
-
-- [ ] authorization
-- [x] authSession
-- [x] client
-- [x] clientScope
-- [ ] events
-- [x] groups
-- [x] loginFailure
-- [x] realm
-- [x] role
-- [x] singleUseObject
-- [x] user
-- [x] userSession
-
-## Integration guide
-
-Configure the datastore-provider `cassandra-map` via the standard Keycloak configuration mechanism.
-For example via environment variable: `KC_SPI_DATASTORE_PROVIDER=cassandra-map`.
-
-You can still use other providers in certain areas, for example `KC_STORAGE_AREA_CLIENT=file` but then you have to
-disable the area in this provider via `KC_SPI_DATASTORE_CASSANDRA_MAP_CLIENT_ENABLED=false`.
-
-## Configuration
-
-In order to use all of the included providers, the `map_storage`-feature of Keycloak has to be enabled. Furthermore the
-included DatastoreProvider `cassandra-map` has to be activated (for example commandline
-argument `--spi-datastore-provider=cassandra-map`, for alternatives like env-variables see
-the [Keycloak configuration guide](https://www.keycloak.org/server/configuration)).
-
-### Cassandra client configuration
+## Configuration options
 
 | CLI-Parameter                                         | Description                                                                             |
 |-------------------------------------------------------|-----------------------------------------------------------------------------------------|
