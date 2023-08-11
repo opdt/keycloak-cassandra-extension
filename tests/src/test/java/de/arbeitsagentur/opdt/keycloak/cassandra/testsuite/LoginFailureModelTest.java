@@ -44,12 +44,12 @@ public class LoginFailureModelTest extends KeycloakModelTest {
     public void testLoginFailures() {
         String userId = withRealm(realmId, (s, realm) -> s.users().addUser(realm, "user")).getId();
         UserLoginFailureModel loginFailureModel = withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
             return loginFailureProvider.addUserLoginFailure(realm, userId);
         });
 
         withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
             UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
             assertThat(currentModel, is(loginFailureModel));
 
@@ -67,7 +67,7 @@ public class LoginFailureModelTest extends KeycloakModelTest {
         });
 
         withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
             UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
 
             assertThat(currentModel.getLastFailure(), is(42L));
@@ -81,7 +81,7 @@ public class LoginFailureModelTest extends KeycloakModelTest {
         });
 
         withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
             UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
 
             assertThat(currentModel.getLastFailure(), is(0L));
@@ -95,7 +95,7 @@ public class LoginFailureModelTest extends KeycloakModelTest {
         });
 
         String userId2 = withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
 
             assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
 
@@ -108,7 +108,7 @@ public class LoginFailureModelTest extends KeycloakModelTest {
         });
 
         withRealm(realmId, (s, realm) -> {
-            UserLoginFailureProvider loginFailureProvider = s.getProvider(UserLoginFailureProvider.class);
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
 
             assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
             assertNull(loginFailureProvider.getUserLoginFailure(realm, userId2));
