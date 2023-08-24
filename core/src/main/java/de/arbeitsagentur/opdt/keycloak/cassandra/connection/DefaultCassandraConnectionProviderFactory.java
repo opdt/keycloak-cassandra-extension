@@ -85,12 +85,35 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         String password = scope.get("password");
         int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
 
-        log.info("Create keyspace...");
         List<InetSocketAddress> contactPointsList =
             Arrays.stream(contactPoints.split(","))
                 .map(cp -> new InetSocketAddress(cp, port))
                 .collect(Collectors.toList());
 
+        if (scope.getBoolean("createKeyspace", true)) {
+            log.info("Create keyspace (if not exists)...");
+            createDbIfNotExists(contactPointsList, username, password, localDatacenter, keyspace, replicationFactor);
+        } else {
+            log.info("Skipping create keyspace, assuming keyspace and tables already exist...");
+        }
+
+        cqlSession = CqlSession.builder()
+            .addContactPoints(contactPointsList)
+            .withAuthCredentials(username, password)
+            .withLocalDatacenter(localDatacenter)
+            .withKeyspace(keyspace)
+            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
+            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
+            .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
+            .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
+            .addTypeCodecs(new JsonCodec<>(GroupValue.class, CassandraJsonSerialization.getMapper()))
+            .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
+            .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
+            .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
+        .build();
+    }
+
+    private void createDbIfNotExists(List<InetSocketAddress> contactPointsList, String username, String password, String localDatacenter, String keyspace, int replicationFactor) {
         try (CqlSession createKeyspaceSession =
                 CqlSession.builder()
                     .addContactPoints(contactPointsList)
@@ -110,21 +133,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
                     .build()) {
             createTables(createKeyspaceSession, keyspace);
         }
-
-        cqlSession = CqlSession.builder()
-            .addContactPoints(contactPointsList)
-            .withAuthCredentials(username, password)
-            .withLocalDatacenter(localDatacenter)
-            .withKeyspace(keyspace)
-            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
-            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
-            .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
-            .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(new JsonCodec<>(GroupValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
-        .build();
     }
 
     @Override
