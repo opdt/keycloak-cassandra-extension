@@ -48,6 +48,7 @@ import org.keycloak.common.util.MultivaluedHashMap;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.cache.KeycloakSessionCache.*;
 
@@ -73,8 +74,7 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
     private ClientScopeRepository clientScopeRepository;
 
-    @L1Cached(cacheName = USER_CACHE)
-    public List<User> findAllUsers() {
+    public Stream<User> findAllUsers() {
         return this.userRepository.findAllUsers();
     }
 
@@ -103,13 +103,11 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
         return this.userRepository.findUserByServiceAccountLink(realmId, serviceAccountLink);
     }
 
-    @L1Cached(cacheName = USER_CACHE)
-    public List<User> findUsersByFederationLink(String realmId, String federationLink) {
+    public Stream<User> findUsersByFederationLink(String realmId, String federationLink) {
         return this.userRepository.findUsersByFederationLink(realmId, federationLink);
     }
 
-    @L1Cached(cacheName = USER_CACHE)
-    public List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
+    public Stream<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
         return this.userRepository.findUsersByIndexedAttribute(realmId, attributeName, attributeValue);
     }
 

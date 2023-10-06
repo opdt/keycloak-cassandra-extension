@@ -46,8 +46,14 @@ public class L1CacheInterceptor implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        Method classMethod = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+        Method classMethod = target.getClass()
+            .getMethod(method.getName(), method.getParameterTypes());
         L1Cached cacheAnnotation = classMethod.getAnnotation(L1Cached.class);
+
+        if (cacheAnnotation == null) {
+            return method.invoke(target, args);
+        }
+        
         String cacheName = cacheAnnotation.cacheName();
         boolean invalidateCache = classMethod.getAnnotation(InvalidateCache.class) != null;
 
@@ -63,7 +69,10 @@ public class L1CacheInterceptor implements InvocationHandler {
             KeycloakSessionCache.reset(session, cacheName);
 
             return method.invoke(target, args);
-        } else if (CACHE_INVALIDATION_NAMES.stream().anyMatch(name -> method.getName().toLowerCase().contains(name))) {
+        } else if (CACHE_INVALIDATION_NAMES.stream()
+            .anyMatch(name -> method.getName()
+                .toLowerCase()
+                .contains(name))) {
             log.warnf("Method %s(%s) might need to invalidate cache but isnt annotated with @InvalidateCache",
                 method.getName(), Arrays.stream(args)
                     .map(Object::getClass)
