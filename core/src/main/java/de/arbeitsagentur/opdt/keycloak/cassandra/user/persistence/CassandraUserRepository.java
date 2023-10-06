@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class CassandraUserRepository extends TransactionalRepository<User, UserDao> implements UserRepository {
     private static final String USERNAME = "username";
@@ -38,8 +40,8 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
     }
 
     @Override
-    public List<User> findAllUsers() {
-        return dao.findAll().all();
+    public Stream<User> findAllUsers() {
+        return StreamSupport.stream(dao.findAll().spliterator(), false);
     }
 
     @Override
@@ -106,7 +108,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
     }
 
     @Override
-    public List<User> findUsersByFederationLink(String realmId, String federationLink) {
+    public Stream<User> findUsersByFederationLink(String realmId, String federationLink) {
         if (federationLink == null) {
             return null;
         }
@@ -115,20 +117,20 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
             .map(UserSearchIndex::getUserId)
             .collect(Collectors.toList());
 
-        return dao.findByIds(realmId, userIds).all();
+        return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
     }
 
     @Override
-    public List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
+    public Stream<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
         if (attributeName == null || attributeValue == null || !attributeName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
-            return Collections.emptyList();
+            return Stream.empty();
         }
 
         List<String> userIds = dao.findUsers(realmId, attributeName, attributeValue).all().stream()
             .map(UserSearchIndex::getUserId)
             .collect(Collectors.toList());
 
-        return dao.findByIds(realmId, userIds).all();
+        return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
     }
 
     @Override
