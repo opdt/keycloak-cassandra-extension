@@ -158,18 +158,16 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     @Override
     public void removeImportedUsers(RealmModel realm, String storageProviderId) {
         log.tracef("removeImportedUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
-        List<UserModel> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId)
-            .stream()
+        userRepository.findUsersByFederationLink(realm.getId(), storageProviderId)
             .map(entityToAdapterFunc(realm))
-            .collect(Collectors.toList());
-        users.forEach(u -> removeUser(realm, u));
+            .forEach(u -> removeUser(realm, u));
     }
 
     @Override
     public void unlinkUsers(RealmModel realm, String storageProviderId) {
         log.tracef("unlinkUsers(%s, %s)%s", realm, storageProviderId, getShortStackTrace());
-        List<User> users = userRepository.findUsersByFederationLink(realm.getId(), storageProviderId);
-        users.forEach(u -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), u));
+        userRepository.findUsersByFederationLink(realm.getId(), storageProviderId)
+            .forEach(u -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), u));
     }
 
     @Override
@@ -399,10 +397,9 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         } else if (params.containsKey(UserModel.EMAIL) && isExactSearch) {
             userModelStream = Stream.ofNullable(getUserByEmail(realm, params.get(UserModel.EMAIL)));
         } else {
-            userModelStream = userRepository.findUserIdsByRealmId(realm.getId(), 0, -1)
-                .stream()
-                .flatMap(id -> Optional.ofNullable(this.getUserById(realm, id))
-                    .stream());
+            userModelStream = userRepository.findAllUsers()
+                .filter(u -> u.getRealmId().equals(realm.getId()))
+                .map(entityToAdapterFunc(realm));
         }
 
         List<Predicate<UserModel>> filtersList = params.entrySet()
@@ -468,7 +465,6 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         log.debugf("getGroupMembersStream realmId=%s groupName=%s firstResult=%d maxResults=%d", realm.getId(), group.getName(), firstResult, maxResults);
 
         return userRepository.findAllUsers()
-            .stream()
             .filter(user -> user.getRealmId()
                 .equals(realm.getId()))
             .filter(user -> user.getGroupsMembership()
@@ -498,7 +494,6 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                                 .contains(attrValue))
                             .filter(u -> u.getServiceAccountClientLink() == null),
                         userRepository.findUsersByIndexedAttribute(realm.getId(), attrName, attrValue)
-                            .stream()
                             .map(entityToAdapterFunc(realm))
                             .filter(u -> u.getServiceAccountClientLink() == null)
                             .sorted(Comparator.comparing(UserModel::getUsername)))
@@ -515,7 +510,6 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                             .contains(attrValue))
                         .filter(u -> u.getServiceAccountClientLink() == null),
                     userRepository.findAllUsers()
-                        .stream()
                         .filter(u -> u.getRealmId()
                             .equals(realm.getId()))
                         .filter(u -> u.getAttribute(attrName)
@@ -554,10 +548,10 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         String providerAlias = provider.getAlias();
         log.tracef("preRemove[RealmModel realm, IdentityProviderModel provider](%s, %s)%s", realm, providerAlias, getShortStackTrace());
 
-        List<User> users = userRepository.findUsersByFederationLink(realm.getId(), providerAlias);
-        users.forEach(u -> {
-            userRepository.deleteFederatedIdentity(realm.getId(), providerAlias);
-        });
+        userRepository.findUsersByFederationLink(realm.getId(), providerAlias)
+            .forEach(u -> {
+                userRepository.deleteFederatedIdentity(realm.getId(), providerAlias);
+            });
     }
 
     @Override

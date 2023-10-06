@@ -21,9 +21,10 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserC
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface UserRepository {
-    List<User> findAllUsers();
+    Stream<User> findAllUsers();
 
     User findUserById(String realmId, String id);
 
@@ -35,9 +36,9 @@ public interface UserRepository {
 
     User findUserByServiceAccountLink(String realmId, String serviceAccountLink);
 
-    List<User> findUsersByFederationLink(String realmId, String federationLink);
+    Stream<User> findUsersByFederationLink(String realmId, String federationLink);
 
-    List<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue);
+    Stream<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue);
 
     void deleteUsernameSearchIndex(String realmId, User user);
 
