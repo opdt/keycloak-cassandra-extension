@@ -91,7 +91,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
     }
 
     private static GenericContainer createCassandraContainer() {
-        return new GenericContainer("bitnami/cassandra:4.0.6-debian-11-r4")
+        return new GenericContainer("bitnami/cassandra:4.1.3-debian-11-r0")
             .withExposedPorts(9042)
             .withEnv("CASSANDRA_DATACENTER", "datacenter1")
             // TODO: withLogConsumer
