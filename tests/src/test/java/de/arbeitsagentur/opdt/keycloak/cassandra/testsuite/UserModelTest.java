@@ -152,6 +152,173 @@ public class UserModelTest extends KeycloakModelTest {
     }
 
     @Test
+    public void testUsernameEqualsMailNoConfilctNoThrow() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setUsername("newmail@bob");
+            assertEquals("newmail@bob", bob.getUsername());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testUsernameEqualsMailNoThrowIfUniquenessAcrossBothNotEnforced() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, false);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setUsername(alice.getEmail());
+            assertEquals(bob.getUsername(), alice.getEmail());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testUsernameEqualsMailNoThrowIfDuplicateMailsAllowed() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(true);
+            bob.setUsername(alice.getEmail());
+            assertEquals(bob.getUsername(), alice.getEmail());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testUsernameEqualsMailNoThrowForOwnMail() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setUsername(bob.getEmail());
+            assertEquals(bob.getUsername(), bob.getEmail());
+
+            return null;
+        });
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    public void testUsernameEqualsMailThrowIfChecksEnabledAndUsedMail() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            assertThrows(ModelDuplicateException.class, () -> bob.setUsername(alice.getEmail()));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testMailEqualsUsernameNoConfilctNoThrow() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "info@alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "info@bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setEmail("newmail@bob");
+            assertEquals("newmail@bob", bob.getEmail());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testMailEqualsUsernameNoThrowIfUniquenessAcrossBothNotEnforced() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "info@alice");
+            alice.setEmail("othermail@alice"); // else the duplicate-mail check would interfere
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, false);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setEmail(alice.getUsername());
+            assertEquals(bob.getEmail(), alice.getUsername());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testMailEqualsUsernameNoThrowIfDuplicateMailsAllowed() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "info@alice");
+            alice.setEmail("info@alice");
+            UserModel bob = session.users().addUser(realm, "info@bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(true);
+            bob.setEmail(alice.getUsername());
+            assertEquals(bob.getEmail(), alice.getUsername());
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testMailEqualsUsernameNoThrowForOwnUsername() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel bob = session.users().addUser(realm, "info@bob");
+            bob.setEmail("othermail@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            bob.setEmail(bob.getUsername());
+            assertEquals(bob.getUsername(), bob.getEmail());
+
+            return null;
+        });
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    public void testMailEqualsUsernameThrowIfChecksEnabledAndExistingUsername() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "info@alice");
+            alice.setEmail("othermail@alice"); // else the duplicate-mail check would interfere
+            UserModel bob = session.users().addUser(realm, "bob");
+            bob.setEmail("info@bob");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            assertThrows(ModelDuplicateException.class, () -> bob.setEmail(alice.getUsername()));
+
+            return null;
+        });
+    }
+
+
+    @Test
     public void testSetEntityVersion() {
         withRealm(originalRealmId, (session, realm) -> {
             UserModel user = session.users().addUser(realm, "user");
@@ -858,6 +1025,67 @@ public class UserModelTest extends KeycloakModelTest {
     @Test
     public void testAddRemoveUserConcurrent() {
         IntStream.range(0,100).parallel().forEach(i -> addRemoveUser(i));
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    public void testAddUserExistingMailAsUsernameWithoutConflict() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            session.users().addUser(realm, "info@bob");
+            assertNotNull(session.users().getUserByUsername(realm, "info@bob"));
+
+            return null;
+        });
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    public void testAddUserExistingMailAsUsernameThrows() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(false);
+            assertThrows(ModelDuplicateException.class, () -> session.users().addUser(realm, "info@alice"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testAddUserExistingMailAsUsernameNoThrowIfCheckDisabled() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, false);
+            realm.setDuplicateEmailsAllowed(false);
+            session.users().addUser(realm, "info@alice");
+            assertNotNull(session.users().getUserByUsername(realm, "info@alice"));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testAddUserExistingMailAsUsernameNoThrowIfDuplicatesAllowed() {
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel alice = session.users().addUser(realm, "alice");
+            alice.setEmail("info@alice");
+
+            realm.setAttribute(CassandraUserAdapter.REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, true);
+            realm.setDuplicateEmailsAllowed(true);
+            session.users().addUser(realm, "info@alice");
+            assertNotNull(session.users().getUserByUsername(realm, "info@alice"));
+
+            return null;
+        });
     }
 
     @Test

@@ -82,6 +82,10 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
             throw new ModelDuplicateException("User with username '" + username + "' in realm " + realm.getName() + " already exists");
         }
 
+        if (usernameEqualsExistingEmail(realm, username)) {
+            throw new ModelDuplicateException("User using username '" + username + "' as email-address already exists in realm " + realm.getName());
+        }
+
         if (id != null && userRepository.findUserById(realm.getId(), id) != null) {
             throw new ModelDuplicateException("User exists: " + id);
         }
@@ -115,6 +119,18 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
         userModel.commit(); // initial save
         return userModel;
+    }
+
+    private boolean usernameEqualsExistingEmail(RealmModel realm, String username) {
+        if (!CassandraUserAdapter.isCheckForDuplicatesAcrossUsernameAndEmailEnabled(realm)) {
+            return false;
+        }
+
+        if (realm.isDuplicateEmailsAllowed()) {
+            return false;
+        }
+
+        return getUserByEmail(realm, username) != null;
     }
 
     @Override

@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 @JBossLog
 public abstract class CassandraUserAdapter extends TransactionalModelAdapter<User> implements UserModel {
     public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
+    public static final String REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL = "enableCheckForDuplicatesAcrossUsernameAndEmail";
 
     @EqualsAndHashCode.Exclude
     private final KeycloakSession session;
@@ -97,10 +98,36 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
             throw new ModelDuplicateException("A user with username " + username + " already exists");
         }
 
+        if (usernameEqualsExistingEmail(realm, username)) {
+            throw new ModelDuplicateException("Username cannot be set to " + username + " as this already used as email by another user");
+        }
+
         User userCopy = entity.toBuilder().build();
         entity.setUsername(username);
         entity.setUsernameCaseInsensitive(KeycloakModelUtils.toLowerCaseSafe(username));
         markUpdated(() -> userRepository.deleteUsernameSearchIndex(realm.getId(), userCopy));
+    }
+
+
+    private boolean usernameEqualsExistingEmail(RealmModel realm, String newUsername) {
+        if (!isCheckForDuplicatesAcrossUsernameAndEmailEnabled(realm)) {
+            return false;
+        }
+
+        if (realm.isDuplicateEmailsAllowed()) {
+            return false;
+        }
+
+        // as mail is unique (see above) the current user set username == email which is okay
+        if (newUsername.equals(getEmail())) {
+            return false;
+        }
+
+        return checkEmailUniqueness(realm, newUsername);
+    }
+
+    public static boolean isCheckForDuplicatesAcrossUsernameAndEmailEnabled(RealmModel realm) {
+        return realm.getAttribute(REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL, false);
     }
 
     @Override
@@ -125,10 +152,31 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
             throw new ModelDuplicateException("A user with email " + email + " already exists");
         }
 
+        if (email != null && emailEqualsExistingMail(realm, email)) {
+            throw new ModelDuplicateException("Another user already uses the email " + email + " as username");
+        }
+
         User userCopy = entity.toBuilder().build();
         entity.setEmail(email);
 
         markUpdated(() -> userRepository.deleteEmailSearchIndex(realm.getId(), userCopy));
+    }
+
+    private boolean emailEqualsExistingMail(RealmModel realm, String newEmail) {
+        if (!isCheckForDuplicatesAcrossUsernameAndEmailEnabled(realm)) {
+            return false;
+        }
+
+        if (realm.isDuplicateEmailsAllowed()) {
+            return false;
+        }
+
+        // as mail is unique (line above) the current user set username == email which is okay
+        if (getUsername().equals(newEmail)) {
+            return false;
+        }
+
+        return checkUsernameUniqueness(realm, newEmail);
     }
 
     @Override
