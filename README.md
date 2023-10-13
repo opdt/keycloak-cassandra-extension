@@ -53,6 +53,12 @@ For efficient searches, attributes can be defined as **indexed attributes** by p
 All write-queries are done conditionally via Cassandra Lightweight Transactions. Therefore we store a version column in each of the tables. To be able to use this to get notified if a conflicting change occured after data was read, the entityVersion is exposed via a **readonly attribute readonly.entityVersion**.
 In order to pass a version in update operations, one can use the corresponding attribute **internal.entityVersion**.
 
+### Uniqueness across username and password
+
+This extension supports additional checks to prevent setting username to a value that is already as email of another user and setting email to a value used as username.
+
+To enable these checks for a realm, set its attribute `enableCheckForDuplicatesAcrossUsernameAndEmail` to `true` (default when not set: `false`)
+
 ## Development
 
 ### Private image registries
