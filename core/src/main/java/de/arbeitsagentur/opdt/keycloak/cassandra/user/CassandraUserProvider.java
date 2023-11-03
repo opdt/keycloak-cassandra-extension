@@ -407,16 +407,15 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
         boolean isExactSearch = Boolean.parseBoolean(params.getOrDefault(UserModel.EXACT, "false"));
 
-        Stream<UserModel> userModelStream;
         if (params.containsKey(UserModel.USERNAME) && isExactSearch) {
-            userModelStream = Stream.ofNullable(getUserByUsername(realm, params.get(UserModel.USERNAME)));
+            return Stream.ofNullable(getUserByUsername(realm, params.get(UserModel.USERNAME)));
         } else if (params.containsKey(UserModel.EMAIL) && isExactSearch) {
-            userModelStream = Stream.ofNullable(getUserByEmail(realm, params.get(UserModel.EMAIL)));
-        } else {
-            userModelStream = userRepository.findAllUsers()
-                .filter(u -> u.getRealmId().equals(realm.getId()))
-                .map(entityToAdapterFunc(realm));
+            return Stream.ofNullable(getUserByEmail(realm, params.get(UserModel.EMAIL)));
         }
+
+        Stream<UserModel> userModelStream = userRepository.findAllUsers()
+            .filter(u -> u.getRealmId().equals(realm.getId()))
+            .map(entityToAdapterFunc(realm));
 
         List<Predicate<UserModel>> filtersList = params.entrySet()
             .stream()
@@ -437,7 +436,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                     (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
                         .toLowerCase()
                         .contains(attributeValue.toLowerCase());
-                BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator = KeycloakModelUtils.isUsernameCaseSensitive(realm) ? makeAttributeComparator : makeAttributeComparatorIgnoreCase;
+                BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator = KeycloakModelUtils.isUsernameCaseSensitive(realm) ? makeAttributeComparatorIgnoreCase : makeAttributeComparator;
 
                 return switch (entry.getKey()) {
                     case UserModel.SEARCH -> makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue())
