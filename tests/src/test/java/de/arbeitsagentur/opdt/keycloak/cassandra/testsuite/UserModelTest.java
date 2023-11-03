@@ -679,7 +679,7 @@ public class UserModelTest extends KeycloakModelTest {
         });
 
         withRealm(originalRealmId, (currentSession, realm) -> {
-            realm.setAttribute("keycloak.username-search.case-sensitive", "true");
+            realm.setAttribute("keycloak.username-search.case-sensitive", "false");
 
             Map<String, String> params = new HashMap<>();
             params.put(UserModel.USERNAME, "UsEr2");
@@ -693,7 +693,7 @@ public class UserModelTest extends KeycloakModelTest {
         withRealm(originalRealmId, (currentSession, realm) -> {
             UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
 
-            realm.setAttribute("keycloak.username-search.case-sensitive", "false");
+            realm.setAttribute("keycloak.username-search.case-sensitive", "true");
 
             Map<String, String> params = new HashMap<>();
             params.put(UserModel.USERNAME, "UsEr2");
@@ -1025,6 +1025,39 @@ public class UserModelTest extends KeycloakModelTest {
     @Test
     public void testAddRemoveUserConcurrent() {
         IntStream.range(0,100).parallel().forEach(i -> addRemoveUser(i));
+    }
+
+    @Test
+    public void testAddRemoveUserCaseInsensitive() {
+        withRealm(originalRealmId, (session, realm) -> {
+            realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
+
+            UserModel user1 = session.users().addUser(realm, "user-1");
+            UserModel user2 = session.users().addUser(realm, "uSeR-1");
+            UserModel obtainedUser1 = session.users().getUserById(realm, user1.getId());
+            UserModel obtainedUser2 = session.users().getUserById(realm, user2.getId());
+
+            assertThat(obtainedUser1, Matchers.notNullValue());
+            assertThat(obtainedUser1.getUsername(), is("user-1"));
+
+            assertThat(obtainedUser2, Matchers.notNullValue());
+            assertThat(obtainedUser2.getUsername(), is("uSeR-1"));
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user1 = session.users().getUserByUsername(realm, "user-1");
+            session.users().removeUser(realm, user1);
+            List<UserModel> foundUsers = session.users()
+                .searchForUserStream(realm, Map.of(UserModel.USERNAME, "user-1"))
+                .collect(Collectors.toList());
+
+            assertThat(foundUsers, hasSize(1));
+            assertThat(foundUsers.get(0).getUsername(), is("uSeR-1"));
+
+            return null;
+        });
     }
 
     @SuppressWarnings("java:S5778")
