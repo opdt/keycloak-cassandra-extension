@@ -46,7 +46,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- keycloak -->
-        <keycloak.version>22.0.1</keycloak.version>
+        <keycloak.version>23.0.1</keycloak.version>
 
         <!-- testing -->
         <assertj-core.version>3.22.0</assertj-core.version>
