@@ -18,7 +18,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraAuthSessionProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.exportImportManager.CassandraExportImportManager;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraLoginFailureProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
@@ -26,20 +25,23 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.CassandraSingleUseObjectProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
+import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.*;
-import org.keycloak.models.map.datastore.MapDatastoreProvider;
 import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.storage.ExportImportManager;
+import org.keycloak.storage.MigrationManager;
+import org.keycloak.storage.datastore.LegacyDatastoreProvider;
+import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
-import java.io.Closeable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
+@JBossLog
+public class CassandraDatastoreProvider extends LegacyDatastoreProvider {
     private final Config.Scope config;
     private final KeycloakSession session;
     private final CompositeRepository cassandraRepository;
@@ -47,15 +49,13 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
     private final Set<Provider> providersToClose = new HashSet<>();
 
     public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
-    public static final String CACHE_MODE = "cacheMode";
 
     public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
 
     private final int authSessionsLimit;
-    private final boolean cacheMode;
 
-    public CassandraMapDatastoreProvider(Config.Scope config, KeycloakSession session, CompositeRepository cassandraRepository) {
-        super(session);
+    public CassandraDatastoreProvider(Config.Scope config, KeycloakSession session, CompositeRepository cassandraRepository) {
+        super(null, session);
         this.config = config;
         this.session = session;
         this.cassandraRepository = cassandraRepository;
@@ -64,79 +64,107 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
         int configInt = config.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
         // use default if provided value is not a positive number
         authSessionsLimit = (configInt <= 0) ? DEFAULT_AUTH_SESSIONS_LIMIT : configInt;
-
-        this.cacheMode = config.getBoolean(CACHE_MODE, false);
     }
 
     @Override
     public RealmProvider realms() {
-        return createProvider(RealmProvider.class, () -> new CassandraRealmsProvider(session, cassandraRepository), false);
+        return createProvider(RealmProvider.class, () -> new CassandraRealmsProvider(session, cassandraRepository));
     }
 
     @Override
     public UserProvider users() {
-        return createProvider(UserProvider.class, () -> new CassandraUserProvider(session, cassandraRepository), false);
+        return createProvider(UserProvider.class, () -> new CassandraUserProvider(session, cassandraRepository));
     }
 
     @Override
     public RoleProvider roles() {
-        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository, session), false);
+        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository, session));
     }
 
     @Override
     public GroupProvider groups() {
-        return createProvider(GroupProvider.class, () -> new CassandraGroupProvider(cassandraRepository, session), false);
+        return createProvider(GroupProvider.class, () -> new CassandraGroupProvider(cassandraRepository, session));
     }
 
     @Override
     public ClientProvider clients() {
-        return createProvider(ClientProvider.class, () -> new CassandraClientProvider(session, cassandraRepository), false);
+        return createProvider(ClientProvider.class, () -> new CassandraClientProvider(session, cassandraRepository));
     }
 
     @Override
     public ClientScopeProvider clientScopes() {
-        return createProvider(ClientScopeProvider.class, () -> new CassandraClientScopeProvider(session, cassandraRepository), false);
+        return createProvider(ClientScopeProvider.class, () -> new CassandraClientScopeProvider(session, cassandraRepository));
     }
 
     @Override
     public SingleUseObjectProvider singleUseObjects() {
-        return createProvider(SingleUseObjectProvider.class, () -> new CassandraSingleUseObjectProvider(cassandraRepository), true);
+        return createProvider(SingleUseObjectProvider.class, () -> new CassandraSingleUseObjectProvider(cassandraRepository));
     }
 
     @Override
     public UserLoginFailureProvider loginFailures() {
-        return createProvider(UserLoginFailureProvider.class, () -> new CassandraLoginFailureProvider(cassandraRepository), true);
+        return createProvider(UserLoginFailureProvider.class, () -> new CassandraLoginFailureProvider(cassandraRepository));
     }
 
     @Override
     public AuthenticationSessionProvider authSessions() {
-        return createProvider(AuthenticationSessionProvider.class, () -> new CassandraAuthSessionProvider(session, cassandraRepository, authSessionsLimit), true);
+        return createProvider(AuthenticationSessionProvider.class, () -> new CassandraAuthSessionProvider(session, cassandraRepository, authSessionsLimit));
     }
 
     @Override
     public UserSessionProvider userSessions() {
-        return createProvider(UserSessionProvider.class, () -> new CassandraUserSessionProvider(session, cassandraRepository), true);
+        return createProvider(UserSessionProvider.class, () -> new CassandraUserSessionProvider(session, cassandraRepository));
     }
 
     @Override
     public ExportImportManager getExportImportManager() {
-        return new CassandraExportImportManager(session);
+        return new CassandraLegacyExportImportManager(session);
     }
 
-    private <T extends Provider> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier, boolean isCacheProvider) {
+    @Override
+    public UserProvider userLocalStorage() {
+        return users();
+    }
+
+    @Override
+    public ClientProvider clientStorageManager() {
+        return clients();
+    }
+
+    @Override
+    public ClientScopeProvider clientScopeStorageManager() {
+        return clientScopes();
+    }
+
+    @Override
+    public GroupProvider groupStorageManager() {
+        return groups();
+    }
+
+    @Override
+    public UserProvider userStorageManager() {
+        return users();
+    }
+
+    @Override
+    public RoleProvider roleStorageManager() {
+        return roles();
+    }
+
+    @Override
+    public MigrationManager getMigrationManager() {
+        return new CassandraMigrationManager();
+    }
+
+    @Override
+    public UserFederatedStorageProvider userFederatedStorage() {
+        return null;
+    }
+
+    private <T extends Provider> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
         T provider = session.getAttribute(providerClass.getName(), providerClass);
         if (provider != null) {
             return provider;
-        }
-
-        String providerConfigName = providerClass.getSimpleName()
-            .toLowerCase()
-            .replace("provider", "");
-        Boolean providerEnabled = config.getBoolean(providerConfigName + "-enabled", true);
-        if (!providerEnabled || (cacheMode && !isCacheProvider)) {
-            T explicitlyConfiguredProvider = session.getProvider(providerClass);
-            session.setAttribute(providerClass.getName(), explicitlyConfiguredProvider);
-            return explicitlyConfiguredProvider;
         }
 
         provider = providerSupplier.get();
@@ -148,7 +176,6 @@ public class CassandraMapDatastoreProvider extends MapDatastoreProvider {
 
     @Override
     public void close() {
-        super.close();
         Consumer<Provider> safeClose = p -> {
             try {
                 p.close();

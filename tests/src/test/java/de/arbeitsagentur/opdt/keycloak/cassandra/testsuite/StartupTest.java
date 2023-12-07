@@ -26,12 +26,6 @@ import org.keycloak.storage.DatastoreProvider;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(ClientScopeProvider.class)
-@RequireProvider(UserProvider.class)
-@RequireProvider(RoleProvider.class)
-@RequireProvider(DatastoreProvider.class)
 public class StartupTest extends KeycloakModelTest {
     @Test
     public void testCreateMasterRealm() {

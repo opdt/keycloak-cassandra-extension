@@ -12,8 +12,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.GROUP_AFTER_REMOVE;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.GROUP_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.GROUP_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.GROUP_BEFORE_REMOVE;
 
 @JBossLog
 public class CassandraGroupProvider  implements GroupProvider {
@@ -152,6 +152,18 @@ public class CassandraGroupProvider  implements GroupProvider {
 
         return groups.getRealmGroups().stream()
             .filter(group -> group.getParentId() == null)
+            .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+            .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
+            .map(entityToAdapterFunc(realm));
+    }
+
+    @Override
+    public Stream<GroupModel> getTopLevelGroupsStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults) {
+        Groups groups = getGroups(realm.getId());
+
+        return groups.getRealmGroups().stream()
+            .filter(group -> group.getParentId() == null)
+            .filter(group -> group.getName().equals(search) || !exact && group.getName().toLowerCase().contains(search))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
             .map(entityToAdapterFunc(realm));

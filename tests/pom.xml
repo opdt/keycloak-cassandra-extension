@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.arbeitsagentur.opdt</groupId>
         <artifactId>keycloak-cassandra-extension-parent</artifactId>
-        <version>1.3.3-22.0.1-SNAPSHOT</version>
+        <version>2.0.0-23.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -67,9 +67,16 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-model-map</artifactId>
+            <artifactId>keycloak-model-legacy</artifactId>
             <version>${keycloak.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-model-legacy-private</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+
+
         <dependency>
             <groupId>de.arbeitsagentur.opdt</groupId>
             <artifactId>keycloak-cassandra-extension</artifactId>
@@ -131,19 +138,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M9</version>
+                <version>3.1.2</version>
                 <configuration>
                     <forkMode>once</forkMode>
                     <argLine>@{argLine}</argLine>
                     <runOrder>alphabetical</runOrder>
                     <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+                    <parallelTestsTimeoutInSeconds>360</parallelTestsTimeoutInSeconds>
                     <systemPropertyVariables>
                         <!-- keycloak.model.parameters lists parameter classes from
                              org.keycloak.model.parameters package and determine enabled providers -->
                         <keycloak.model.parameters>Map,CassandraMapStorage</keycloak.model.parameters>
                         <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties
                         </log4j.configuration> <!-- for the logging to properly work with tests in the 'other' module -->
-                        <keycloak.profile.feature.map_storage>enabled</keycloak.profile.feature.map_storage>
+                        <keycloak.profile.feature.authorization>disabled</keycloak.profile.feature.authorization>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <org.jboss.logging.provider>log4j</org.jboss.logging.provider>
                         <argLine>-Djava.awt.headless=true ${surefire.memory.settings} ${surefire.system.args}

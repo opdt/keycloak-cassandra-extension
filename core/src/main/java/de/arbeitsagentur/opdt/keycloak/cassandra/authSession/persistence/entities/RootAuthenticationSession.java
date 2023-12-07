@@ -19,7 +19,7 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import lombok.*;
-import org.keycloak.models.map.common.ExpirableEntity;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
 
 @EqualsAndHashCode(of = "id")
 @Builder(toBuilder = true)

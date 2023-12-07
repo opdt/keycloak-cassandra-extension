@@ -1,0 +1,64 @@
+version: '3.4'
+
+volumes:
+  cassandra_data:
+      driver: local
+
+networks:
+  keycloak:
+    driver: bridge 
+
+services:
+  cassandra:
+    image: docker.io/bitnami/cassandra:latest
+    ports:
+      - '9042:9042'
+    volumes:
+      - 'cassandra_data:/bitnami'
+    networks:
+      - keycloak
+    healthcheck:
+      test: /opt/bitnami/cassandra/bin/cqlsh -u cassandra -p cassandra -e "describe keyspaces"
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - CASSANDRA_PASSWORD=cassandra
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.3 
+    volumes:
+      - ${PWD}/core/target/keycloak-cassandra-extension-2.0.0-23.0.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
+    environment:
+      - KC_SPI_CONNECTIONS_INFINISPAN_QUARKUS_ENABLED=false
+      - KC_SPI_CONNECTIONS_INFINISPAN_DEFAULT_ENABLED=false
+      - KC_SPI_USER_SESSIONS_PROVIDER=cassandra
+      - KC_SPI_LOGIN_FAILURE_PROVIDER=cassandra
+      - KC_SPI_AUTHENTICATION_SESSIONS_PROVIDER=cassandra
+      - KC_SPI_SINGLE_USE_OBJECT_PROVIDER=cassandra
+      - KC_SPI_GLOBAL_LOCK_PROVIDER=none
+      - KC_SPI_STICKY_SESSION_ENCODER_PROVIDER=disabled
+      - KC_SPI_DEPLOYMENT_STATE_PROVIDER=map
+      - KC_SPI_PUBLIC_KEY_STORAGE_PROVIDER=map
+      - KC_SPI_CONNECTIONS_JPA_LEGACY_ENABLED=false
+      - KC_SPI_DATASTORE_PROVIDER=cassandra
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_PORT=9042
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_CONTACT_POINTS=cassandra
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_USERNAME=cassandra
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_PASSWORD=cassandra
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_LOCAL_DATACENTER=datacenter1
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_KEYSPACE=test
+      - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_REPLICATION_FACTOR=1
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - JAVA_OPTS_APPEND="-Ddatastax-java-driver.advanced.ssl-engine-factory=none"
+    entrypoint: /opt/keycloak/bin/kc.sh
+    command: -v start-dev
+    ports:
+      - 8080:8080
+    networks:
+      - keycloak
+    depends_on:
+      cassandra:
+        condition: service_healthy

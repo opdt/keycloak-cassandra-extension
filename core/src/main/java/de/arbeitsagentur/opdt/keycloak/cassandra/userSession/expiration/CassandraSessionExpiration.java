@@ -19,8 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.ClientModel;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 import org.keycloak.protocol.oidc.OIDCConfigAttributes;
 
 public class CassandraSessionExpiration {

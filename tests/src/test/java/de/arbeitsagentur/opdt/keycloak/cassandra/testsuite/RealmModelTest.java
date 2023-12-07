@@ -17,6 +17,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmAdapter;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.ResourceServer;
@@ -40,7 +41,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-@RequireProvider(RealmProvider.class)
 public class RealmModelTest extends KeycloakModelTest {
 
     private String realmId;
@@ -252,6 +252,7 @@ public class RealmModelTest extends KeycloakModelTest {
     }
 
     @Test
+    @Ignore("Authorization is not supported currently")
     public void testRealmPreRemoveDoesntRemoveEntitiesFromOtherRealms() {
         realm1Id = inComittedTransaction(session -> {
             RealmModel realm = session.realms().createRealm("realm1");

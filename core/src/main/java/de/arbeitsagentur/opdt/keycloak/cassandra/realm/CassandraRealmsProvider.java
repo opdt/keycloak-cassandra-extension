@@ -27,14 +27,13 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.REALM_AFTER_REMOVE;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.REALM_BEFORE_REMOVE;
-import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
 
 @JBossLog
 public class CassandraRealmsProvider extends TransactionalProvider<Realm, CassandraRealmAdapter> implements RealmProvider {

@@ -27,10 +27,6 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.empty;
-
-@RequireProvider(UserProvider.class)
-@RequireProvider(RealmProvider.class)
-@RequireProvider(GroupProvider.class)
 public class GroupModelTest extends KeycloakModelTest {
     private String realmId;
     private String firstGroupId;

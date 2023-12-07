@@ -37,10 +37,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  * @author hmlnarik
  */
-@RequireProvider(UserProvider.class)
-@RequireProvider(RealmProvider.class)
-@RequireProvider(UserSessionProvider.class)
-@RequireProvider(DeviceRepresentationProvider.class)
 public class OfflineSessionPersistenceTest extends KeycloakModelTest {
 
     private static final int USER_COUNT = 50;

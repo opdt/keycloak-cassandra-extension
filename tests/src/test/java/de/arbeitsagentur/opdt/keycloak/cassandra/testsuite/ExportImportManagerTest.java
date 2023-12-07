@@ -42,13 +42,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
-
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(ClientScopeProvider.class)
-@RequireProvider(UserProvider.class)
-@RequireProvider(RoleProvider.class)
-@RequireProvider(DatastoreProvider.class)
 public class ExportImportManagerTest extends KeycloakModelTest {
     private RealmModel originalRealm;
     private RoleModel defaultRole;

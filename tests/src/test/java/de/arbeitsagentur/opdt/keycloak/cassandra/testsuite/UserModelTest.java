@@ -40,8 +40,6 @@ import static org.junit.Assert.*;
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 
-@RequireProvider(UserProvider.class)
-@RequireProvider(RealmProvider.class)
 public class UserModelTest extends KeycloakModelTest {
 
     protected static final int NUM_GROUPS = 100;
@@ -654,11 +652,12 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(originalRealmId, (currentSession, realm) -> {
             UserModel user1 = currentSession.users().addUser(realm, "user1");
-            user1.setSingleAttribute(UserModel.SearchableFields.IDP_AND_USER.getName(), null);
+            user1.setSingleAttribute(UserModel.IDP_USER_ID, null);
 
             UserModel user2 = currentSession.users().addUser(realm, "user2");
             user2.setEmail("user2@example.com");
-            user2.setSingleAttribute(UserModel.SearchableFields.IDP_AND_USER.getName(), "fakeIDPValue");
+            user2.setSingleAttribute(UserModel.IDP_USER_ID, "fakeIDPValue");
+            user2.setSingleAttribute(UserModel.IDP_ALIAS, "fakeIDPAlias");
 
             return null;
         });
@@ -734,21 +733,6 @@ public class UserModelTest extends KeycloakModelTest {
             UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
 
             Map<String, String> params = new HashMap<>();
-            params.put(UserModel.SEARCH, "user2");
-            params.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "false");
-            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
-            List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
-                .collect(Collectors.toList());
-            Assert.assertThat(users, hasSize(1));
-            Assert.assertThat(users, contains(user2));
-            return null;
-        });
-
-        withRealm(originalRealmId, (currentSession, realm) -> {
-            UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
-
-            Map<String, String> params = new HashMap<>();
-            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
             params.put(UserModel.IDP_USER_ID, "fakeIDPValue");
             List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
                 .collect(Collectors.toList());
@@ -761,8 +745,7 @@ public class UserModelTest extends KeycloakModelTest {
             UserModel user2 = currentSession.users().getUserByUsername(realm, "user2");
 
             Map<String, String> params = new HashMap<>();
-            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
-            params.put(UserModel.IDP_USER_ID, "fakeIDPValue");
+            params.put(UserModel.IDP_ALIAS, "fakeIDPAlias");
             List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
                 .collect(Collectors.toList());
             Assert.assertThat(users, hasSize(1));
@@ -774,7 +757,7 @@ public class UserModelTest extends KeycloakModelTest {
             Map<String, String> params = new HashMap<>();
             params.put(UserModel.USERNAME, "user1");
             params.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "true");
-            params.put(UserModel.IDP_ALIAS, "fakeIDPValue");
+            params.put(UserModel.IDP_ALIAS, "fakeIDPAlias");
             List<UserModel> users = currentSession.users().searchForUserStream(realm, params, 0, 7)
                 .collect(Collectors.toList());
             Assert.assertThat(users, hasSize(0));

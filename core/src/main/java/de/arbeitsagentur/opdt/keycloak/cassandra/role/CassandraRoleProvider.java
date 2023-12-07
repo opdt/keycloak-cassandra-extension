@@ -28,8 +28,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.ROLE_AFTER_REMOVE;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.ROLE_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.ROLE_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.ROLE_BEFORE_REMOVE;
 
 @JBossLog
 public class CassandraRoleProvider implements RoleProvider {
@@ -232,6 +232,38 @@ public class CassandraRoleProvider implements RoleProvider {
                 || role.getName().toLowerCase().contains(search.toLowerCase())
                 || role.getDescription().toLowerCase().contains(search.toLowerCase()))
             .map(entityToAdapterFunc(client.getRealm()));
+    }
+
+    @Override
+    public Stream<RoleModel> searchForClientRolesStream(RealmModel realm, Stream<String> ids, String search, Integer first, Integer max) {
+        List<RoleModel> result = new ArrayList<>();
+        realm.getClientsStream().forEach(client -> {
+            client.getRolesStream()
+                .filter(role -> search == null
+                    || search.isEmpty()
+                    || role.getName().toLowerCase().contains(search.toLowerCase())
+                    || client.getClientId().toLowerCase().contains(search.toLowerCase()))
+                .filter(role -> ids == null || ids.anyMatch(i -> i.equals(role.getId())))
+                .forEach(result::add);
+            });
+
+        return result.stream();
+    }
+
+    @Override
+    public Stream<RoleModel> searchForClientRolesStream(RealmModel realm, String search, Stream<String> excludedIds, Integer first, Integer max) {
+        List<RoleModel> result = new ArrayList<>();
+        realm.getClientsStream().forEach(client -> {
+            client.getRolesStream()
+                .filter(role -> search == null
+                    || search.isEmpty()
+                    || role.getName().toLowerCase().contains(search.toLowerCase())
+                    || client.getClientId().toLowerCase().contains(search.toLowerCase()))
+                .filter(role -> excludedIds == null || excludedIds.noneMatch(i -> i.equals(role.getId())))
+                .forEach(result::add);
+        });
+
+        return result.stream();
     }
 
     @Override

@@ -17,20 +17,14 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters;
 
 import com.google.common.collect.ImmutableSet;
-import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraMapDatastoreProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraDatastoreProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionSpi;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.DefaultCassandraConnectionProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
-import org.keycloak.models.SingleUseObjectSpi;
-import org.keycloak.models.UserLoginFailureSpi;
-import org.keycloak.models.UserSessionSpi;
-import org.keycloak.models.map.storage.MapStorageSpi;
-import org.keycloak.models.map.storage.chm.ConcurrentHashMapStorageProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
-import org.keycloak.sessions.AuthenticationSessionSpi;
 import org.keycloak.storage.DatastoreSpi;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
@@ -40,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
-    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
+    public static final Boolean START_CONTAINER = Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "false"));
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
         .add(CassandraConnectionSpi.class)
@@ -49,8 +43,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
         .add(CassandraConnectionProviderFactory.class)
-        .add(ConcurrentHashMapStorageProviderFactory.class)
-        .add(CassandraMapDatastoreProviderFactory.class)
+        .add(CassandraDatastoreProviderFactory.class)
         .build();
 
     private final GenericContainer cassandraContainer = createCassandraContainer();
@@ -61,9 +54,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
 
     @Override
     public void updateConfig(Config cf) {
-        cf.spi(MapStorageSpi.NAME).defaultProvider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID)
-            .spi("datastore").defaultProvider("cassandra-map")
-            .provider(ConcurrentHashMapStorageProviderFactory.PROVIDER_ID)
+        cf.spi("datastore").defaultProvider("cassandra")
             .config("dir", "${project.build.directory:target}");
 
         cf.spi(CassandraConnectionSpi.NAME).provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)

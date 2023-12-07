@@ -41,10 +41,6 @@ import static org.junit.Assert.assertTrue;
  * @author <a href="mailto:mabartos@redhat.com">Martin Bartos</a>
  * @author <a href="mailto:mkanis@redhat.com">Martin Kanis</a>
  */
-@RequireProvider(UserSessionProvider.class)
-@RequireProvider(UserProvider.class)
-@RequireProvider(RealmProvider.class)
-@RequireProvider(DeviceRepresentationProvider.class)
 public class UserSessionInitializerTest extends KeycloakModelTest {
 
     private String realmId;

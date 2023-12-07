@@ -430,12 +430,14 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                         (Predicate<UserModel>) user -> Objects.equals(user.getFirstAttribute(attributeName), attributeValue) :
                         (Predicate<UserModel>) user -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
                             .contains(attributeValue);
+
                 BiFunction<String, String, Predicate<UserModel>> makeAttributeComparatorIgnoreCase = (attributeName, attributeValue) -> isExactSearch ?
                     (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
                         .equalsIgnoreCase(attributeValue) :
                     (Predicate<UserModel>) (user) -> user.getFirstAttribute(attributeName) != null && user.getFirstAttribute(attributeName)
                         .toLowerCase()
                         .contains(attributeValue.toLowerCase());
+
                 BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator = KeycloakModelUtils.isUsernameCaseSensitive(realm) ? makeAttributeComparatorIgnoreCase : makeAttributeComparator;
 
                 return switch (entry.getKey()) {
@@ -444,16 +446,9 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                             .or(makeAttributeComparator.apply(UserModel.FIRST_NAME, entry.getValue()))
                             .or(makeAttributeComparator.apply(UserModel.LAST_NAME, entry.getValue()));
                     case UserModel.USERNAME -> makeUsernameComparator.apply(UserModel.USERNAME, entry.getValue());
-                    case UserModel.IDP_ALIAS -> {
-                        if (!params.containsKey(UserModel.IDP_USER_ID)) {
-                            yield makeAttributeComparator.apply(UserModel.SearchableFields.IDP_AND_USER.getName(), entry.getValue());
-                        }
-                        yield (Predicate<UserModel>) (UserModel u) -> true;
-                    }
-                    case UserModel.IDP_USER_ID ->
-                            makeAttributeComparator.apply(UserModel.SearchableFields.IDP_AND_USER.getName(), params.get(UserModel.IDP_ALIAS));
-                    case UserModel.INCLUDE_SERVICE_ACCOUNT ->
-                            (Predicate<UserModel>) (UserModel u) -> Boolean.parseBoolean(entry.getValue()) || u.getServiceAccountClientLink() == null;
+                    case UserModel.IDP_ALIAS -> makeAttributeComparator.apply(UserModel.IDP_ALIAS, entry.getValue());
+                    case UserModel.IDP_USER_ID -> makeAttributeComparator.apply(UserModel.IDP_USER_ID, entry.getValue());
+                    case UserModel.INCLUDE_SERVICE_ACCOUNT -> (Predicate<UserModel>) (UserModel u) -> Boolean.parseBoolean(entry.getValue()) || u.getServiceAccountClientLink() == null;
                     default -> makeAttributeComparator.apply(entry.getKey(), entry.getValue());
                 };
             })
