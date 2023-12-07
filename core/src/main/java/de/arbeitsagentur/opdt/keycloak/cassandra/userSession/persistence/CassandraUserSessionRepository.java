@@ -23,7 +23,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.Time;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;

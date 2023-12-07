@@ -19,7 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 
 import java.util.List;
 

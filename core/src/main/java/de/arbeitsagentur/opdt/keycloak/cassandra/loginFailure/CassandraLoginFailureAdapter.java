@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserLoginFailureModel;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 
 @EqualsAndHashCode(of = "entity")
 @RequiredArgsConstructor

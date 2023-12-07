@@ -18,7 +18,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
-import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -30,8 +29,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_SCOPE_AFTER_REMOVE;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_SCOPE_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_SCOPE_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_SCOPE_BEFORE_REMOVE;
 
 @JBossLog
 @RequiredArgsConstructor

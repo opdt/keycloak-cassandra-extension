@@ -17,10 +17,6 @@ import static org.junit.Assert.*;
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
-@RequireProvider(RealmProvider.class)
-@RequireProvider(UserProvider.class)
-@RequireProvider(RoleProvider.class)
-@RequireProvider(DatastoreProvider.class)
 public class CredentialModelTest extends KeycloakModelTest {
 
     private String realmId;

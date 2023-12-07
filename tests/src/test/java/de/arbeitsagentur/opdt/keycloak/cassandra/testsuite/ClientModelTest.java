@@ -42,9 +42,6 @@ import static org.junit.Assert.*;
  *
  * @author rmartinc
  */
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(RoleProvider.class)
 public class ClientModelTest extends KeycloakModelTest {
 
     private String realmId;

@@ -41,7 +41,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNull;
 
-@RequireProvider(UserSessionProvider.class)
 public class AuthenticationSessionTest extends KeycloakModelTest {
 
     private String realmId;

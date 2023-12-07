@@ -27,14 +27,14 @@ import org.keycloak.provider.InvalidationHandler;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
 
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.*;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.*;
 
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
-public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, InvalidationHandler {
+public class CassandraDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, InvalidationHandler {
     private Config.Scope config;
 
-    private static final String PROVIDER_ID = "cassandra-map";
+    private static final String PROVIDER_ID = "cassandra";
 
     @Override
     public String getId() {
@@ -43,7 +43,7 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
 
     @Override
     public DatastoreProvider create(KeycloakSession session) {
-        return new CassandraMapDatastoreProvider(config, session, createRepository(session));
+        return new CassandraDatastoreProvider(config, session, createRepository(session));
     }
 
     @Override

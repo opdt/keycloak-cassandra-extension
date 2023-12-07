@@ -30,9 +30,6 @@ import java.util.stream.Collectors;
  * Ported from
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(RoleProvider.class)
 public class UserConsentModelTest extends KeycloakModelTest {
 
     private String realmId;

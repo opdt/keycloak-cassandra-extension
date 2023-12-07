@@ -42,9 +42,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(RoleProvider.class)
 public class RoleModelTest extends KeycloakModelTest {
 
     private String realmId;

@@ -16,7 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities;
 
 import lombok.*;
-import org.keycloak.models.map.common.ExpirableEntity;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
 
 import java.util.HashMap;
 import java.util.Map;

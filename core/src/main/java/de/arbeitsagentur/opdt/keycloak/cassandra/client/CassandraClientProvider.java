@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_AFTER_REMOVE;
-import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
 
 @JBossLog
 public class CassandraClientProvider extends TransactionalProvider<Client, CassandraClientAdapter> implements ClientProvider {

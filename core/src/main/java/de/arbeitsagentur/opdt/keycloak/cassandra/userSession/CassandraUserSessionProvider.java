@@ -25,7 +25,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.Time;
 import org.keycloak.device.DeviceActivityManager;
 import org.keycloak.models.*;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 import java.util.*;
@@ -39,7 +39,7 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.C
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.TRANSIENT;
-import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
 
 @JBossLog
 @RequiredArgsConstructor

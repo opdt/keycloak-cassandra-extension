@@ -23,13 +23,13 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import lombok.EqualsAndHashCode;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
-import org.keycloak.models.map.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setUserSessionExpiration;
-import static org.keycloak.models.map.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
 
 
 @EqualsAndHashCode(of = "userSessionEntity")

@@ -26,8 +26,6 @@ import org.junit.Test;
 import org.keycloak.common.util.Time;
 import org.keycloak.device.DeviceRepresentationProvider;
 import org.keycloak.models.*;
-import org.keycloak.models.map.storage.chm.ConcurrentHashMapStorageProviderFactory;
-import org.keycloak.models.map.userSession.MapUserSessionProviderFactory;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
@@ -44,9 +42,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeFalse;
 
-@RequireProvider(UserProvider.class)
-@RequireProvider(UserSessionProvider.class)
-@RequireProvider(DeviceRepresentationProvider.class)
 public class UserSessionProviderModelTest extends KeycloakModelTest {
     private String realmId;
 

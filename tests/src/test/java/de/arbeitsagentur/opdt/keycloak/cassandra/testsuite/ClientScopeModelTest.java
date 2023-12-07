@@ -30,10 +30,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertNull;
-
-@RequireProvider(RealmProvider.class)
-@RequireProvider(ClientProvider.class)
-@RequireProvider(ClientScopeProvider.class)
 public class ClientScopeModelTest extends KeycloakModelTest {
 
     private String realmId;
@@ -104,12 +100,12 @@ public class ClientScopeModelTest extends KeycloakModelTest {
         ProtocolMapperModel usernameMapper = UserPropertyMapper.createClaimMapper(OIDCLoginProtocolFactory.USERNAME,
             "username",
             "preferred_username", "String",
-            true, true);
+            true, true, false);
 
         ProtocolMapperModel kerberosMapper = UserSessionNoteMapper.createClaimMapper(KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME,
             KerberosConstants.GSS_DELEGATION_CREDENTIAL,
             KerberosConstants.GSS_DELEGATION_CREDENTIAL, "String",
-            true, false);
+            true, false, false);
 
         withRealm(realmId, (session, realm) -> {
 
@@ -140,7 +136,7 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             ProtocolMapperModel updatedUsernameMapper = UserPropertyMapper.createClaimMapper(OIDCLoginProtocolFactory.USERNAME,
                 "username",
                 "preferred_username_updated", "String",
-                true, true);
+                true, true, false);
 
             clientScope.updateProtocolMapper(updatedUsernameMapper);
             assertThat(clientScope.getProtocolMapperByName("openid-connect", OIDCLoginProtocolFactory.USERNAME), is(updatedUsernameMapper));
