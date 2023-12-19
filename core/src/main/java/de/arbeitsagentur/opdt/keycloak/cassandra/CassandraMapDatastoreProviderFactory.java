@@ -23,7 +23,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.*;
-import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.InvalidationHandler;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
@@ -32,7 +31,7 @@ import static org.keycloak.models.map.common.AbstractMapProviderFactory.MapProvi
 
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
-public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, EnvironmentDependentProviderFactory, InvalidationHandler {
+public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProviderFactory implements DatastoreProviderFactory, InvalidationHandler {
     private Config.Scope config;
 
     private static final String PROVIDER_ID = "cassandra-map";
@@ -59,11 +58,6 @@ public class CassandraMapDatastoreProviderFactory extends AbstractCassandraProvi
     @Override
     public void close() {
 
-    }
-
-    @Override
-    public boolean isSupported() {
-        return true;
     }
 
     @Override

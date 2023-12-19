@@ -12,6 +12,7 @@ Requires Keycloak 22.0.x with enabled Map-Storage feature.
 
 - Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/1.1.0-22.0.1/keycloak-cassandra-extension-1.1.0-22.0.1.jar
 - Put the JAR in Keycloak's providers folder
+- Activate map-storage in Keycloak (see https://www.keycloak.org/docs/latest/server_installation/#map-storage)
 - Set "cassandra-map" as implementation for the "datastore"-SPI, for example via ENV-variable: `KC_SPI_DATASTORE_PROVIDER=cassandra-map` (for alternatives see
 the [Keycloak configuration guide](https://www.keycloak.org/server/configuration))
 - Set the necessary configuration options like cassandra endpoints (see the overview below)

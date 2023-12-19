@@ -15,12 +15,12 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 
+import com.google.auto.service.AutoService;
 import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
-// TODO: Delete Spi-File in META-INF/services as soon as all MapStorageProvider-implementations are covered in this extension
-// @AutoService(Spi.class)
+@AutoService(Spi.class)
 public class CassandraConnectionSpi implements Spi {
 
     public static final String NAME = "cassandraConnection";
