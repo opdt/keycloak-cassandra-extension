@@ -23,13 +23,14 @@ import org.keycloak.provider.Provider;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @JBossLog
 public abstract class TransactionalProvider<TEntity extends TransactionalEntity, TModel extends TransactionalModelAdapter> implements Provider {
 
     protected final KeycloakSession session;
-    protected final Map<String, TModel> models = new HashMap<>();
+    protected final Map<String, TModel> models = new ConcurrentHashMap<>();
 
     public TransactionalProvider(KeycloakSession session) {
         this.session = session;

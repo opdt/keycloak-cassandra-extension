@@ -148,6 +148,7 @@
                     <systemPropertyVariables>
                         <!-- keycloak.model.parameters lists parameter classes from
                              org.keycloak.model.parameters package and determine enabled providers -->
+                        <kc.community.datastore.cassandra.enabled>true</kc.community.datastore.cassandra.enabled>
                         <keycloak.model.parameters>Map,CassandraMapStorage</keycloak.model.parameters>
                         <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties
                         </log4j.configuration> <!-- for the logging to properly work with tests in the 'other' module -->

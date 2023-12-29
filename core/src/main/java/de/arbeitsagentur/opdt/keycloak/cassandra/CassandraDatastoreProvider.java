@@ -42,78 +42,63 @@ import java.util.function.Supplier;
 
 @JBossLog
 public class CassandraDatastoreProvider extends LegacyDatastoreProvider {
-    private final Config.Scope config;
     private final KeycloakSession session;
-    private final CompositeRepository cassandraRepository;
 
     private final Set<Provider> providersToClose = new HashSet<>();
 
-    public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
-
-    public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
-
-    private final int authSessionsLimit;
-
-    public CassandraDatastoreProvider(Config.Scope config, KeycloakSession session, CompositeRepository cassandraRepository) {
+    public CassandraDatastoreProvider(KeycloakSession session) {
         super(null, session);
-        this.config = config;
         this.session = session;
-        this.cassandraRepository = cassandraRepository;
-
-        // get auth sessions limit from config or use default if not provided
-        int configInt = config.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
-        // use default if provided value is not a positive number
-        authSessionsLimit = (configInt <= 0) ? DEFAULT_AUTH_SESSIONS_LIMIT : configInt;
     }
 
     @Override
     public RealmProvider realms() {
-        return createProvider(RealmProvider.class, () -> new CassandraRealmsProvider(session, cassandraRepository));
+        return session.getProvider(RealmProvider.class);
     }
 
     @Override
     public UserProvider users() {
-        return createProvider(UserProvider.class, () -> new CassandraUserProvider(session, cassandraRepository));
+        return session.getProvider(UserProvider.class);
     }
 
     @Override
     public RoleProvider roles() {
-        return createProvider(RoleProvider.class, () -> new CassandraRoleProvider(cassandraRepository, session));
+        return session.getProvider(RoleProvider.class);
     }
 
     @Override
     public GroupProvider groups() {
-        return createProvider(GroupProvider.class, () -> new CassandraGroupProvider(cassandraRepository, session));
+        return session.getProvider(GroupProvider.class);
     }
 
     @Override
     public ClientProvider clients() {
-        return createProvider(ClientProvider.class, () -> new CassandraClientProvider(session, cassandraRepository));
+        return session.getProvider(ClientProvider.class);
     }
 
     @Override
     public ClientScopeProvider clientScopes() {
-        return createProvider(ClientScopeProvider.class, () -> new CassandraClientScopeProvider(session, cassandraRepository));
+        return session.getProvider(ClientScopeProvider.class);
     }
 
     @Override
     public SingleUseObjectProvider singleUseObjects() {
-        return createProvider(SingleUseObjectProvider.class, () -> new CassandraSingleUseObjectProvider(cassandraRepository));
+        return session.getProvider(SingleUseObjectProvider.class);
     }
 
     @Override
     public UserLoginFailureProvider loginFailures() {
-        return createProvider(UserLoginFailureProvider.class, () -> new CassandraLoginFailureProvider(cassandraRepository));
+        return session.getProvider(UserLoginFailureProvider.class);
     }
 
     @Override
     public AuthenticationSessionProvider authSessions() {
-        return createProvider(AuthenticationSessionProvider.class, () -> new CassandraAuthSessionProvider(session, cassandraRepository, authSessionsLimit));
+        return session.getProvider(AuthenticationSessionProvider.class);
     }
 
     @Override
     public UserSessionProvider userSessions() {
-        return createProvider(UserSessionProvider.class, () -> new CassandraUserSessionProvider(session, cassandraRepository));
+        return session.getProvider(UserSessionProvider.class);
     }
 
     @Override
@@ -161,28 +146,4 @@ public class CassandraDatastoreProvider extends LegacyDatastoreProvider {
         return null;
     }
 
-    private <T extends Provider> T createProvider(Class<T> providerClass, Supplier<T> providerSupplier) {
-        T provider = session.getAttribute(providerClass.getName(), providerClass);
-        if (provider != null) {
-            return provider;
-        }
-
-        provider = providerSupplier.get();
-        session.setAttribute(providerClass.getName(), provider);
-        providersToClose.add(provider);
-
-        return provider;
-    }
-
-    @Override
-    public void close() {
-        Consumer<Provider> safeClose = p -> {
-            try {
-                p.close();
-            } catch (Exception e) {
-                // Ignore exception
-            }
-        };
-        providersToClose.forEach(safeClose);
-    }
 }

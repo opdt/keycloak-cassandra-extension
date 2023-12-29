@@ -23,13 +23,18 @@ import org.keycloak.crypto.PublicKeysWrapper;
 import org.keycloak.keys.PublicKeyStorageProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.FutureTask;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 @AutoService(PublicKeyStorageProviderFactory.class)
-public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProviderFactory<MapPublicKeyStorageProvider> {
+public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProviderFactory<MapPublicKeyStorageProvider>, EnvironmentDependentProviderFactory {
 
     private final Map<String, FutureTask<PublicKeysWrapper>> tasksInProgress = new ConcurrentHashMap<>();
 
@@ -55,6 +60,16 @@ public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProvi
 
     @Override
     public String getId() {
-        return "map";
+        return "infinispan"; // use same name as infinispan provider to override it
+    }
+
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
+
+    @Override
+    public boolean isSupported() {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

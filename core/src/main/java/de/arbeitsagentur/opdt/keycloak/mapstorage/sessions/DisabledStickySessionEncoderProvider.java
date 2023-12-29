@@ -21,16 +21,19 @@ import com.google.auto.service.AutoService;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.StickySessionEncoderProvider;
 import org.keycloak.sessions.StickySessionEncoderProviderFactory;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 /**
  * Identical with "disabled"-provider from map storage days but without environment dependent activation
  */
 @AutoService(StickySessionEncoderProviderFactory.class)
-public class DisabledStickySessionEncoderProvider implements StickySessionEncoderProviderFactory, StickySessionEncoderProvider {
+public class DisabledStickySessionEncoderProvider implements StickySessionEncoderProviderFactory, StickySessionEncoderProvider, EnvironmentDependentProviderFactory {
 
     @Override
     public StickySessionEncoderProvider create(KeycloakSession session) {
@@ -69,11 +72,16 @@ public class DisabledStickySessionEncoderProvider implements StickySessionEncode
 
     @Override
     public String getId() {
-        return "disabled";
+        return "infinispan"; // use same name as infinispan provider to override it
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
+    }
+
+    @Override
+    public boolean isSupported() {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

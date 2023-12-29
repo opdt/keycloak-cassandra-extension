@@ -14,28 +14,26 @@
  *  limitations under the License.
  */
 
-package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
+package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
-import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
-import org.keycloak.models.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.UserProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
-@JBossLog
-@AutoService(UserSessionProviderFactory.class)
-public class CassandraUserSessionProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
-
+@AutoService(UserProviderFactory.class)
+public class CassandraUserProviderFactory implements UserProviderFactory<CassandraUserProvider>, EnvironmentDependentProviderFactory {
     @Override
-    public CassandraUserSessionProvider create(KeycloakSession session) {
+    public CassandraUserProvider create(KeycloakSession session) {
         CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
-        return new CassandraUserSessionProvider(session, cassandraConnectionProvider.getRepository());
+        return new CassandraUserProvider(session, cassandraConnectionProvider.getRepository());
     }
 
     @Override
@@ -55,7 +53,7 @@ public class CassandraUserSessionProviderFactory implements UserSessionProviderF
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
@@ -65,11 +63,6 @@ public class CassandraUserSessionProviderFactory implements UserSessionProviderF
 
     @Override
     public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
-
-    @Override
-    public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
-
+        return isCassandraProfileEnabled();
     }
 }

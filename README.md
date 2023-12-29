@@ -15,29 +15,18 @@ Use version `1.3.2-22.0.1` for Keycloak up until 22.x.x.
 
 - Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/1.1.0-22.0.1/keycloak-cassandra-extension-1.1.0-22.0.1.jar
 - Put the JAR in Keycloak's providers folder
-- Set "cassandra" (or "cassandra-cache" if you only want to use cassandra for caching areas) as implementation for the "datastore"-SPI, for example via ENV-variable: `KC_SPI_DATASTORE_PROVIDER=cassandra-map` (for alternatives see
-the [Keycloak configuration guide](https://www.keycloak.org/server/configuration))
+- Set `KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true` (`kc.community.datastore.cassandra.enabled=true` as system property) or `KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true` (`kc.community.datastore.cassandra.cache.enabled=true` as system property) to enable the extension
 - Set the necessary configuration options like cassandra endpoints (see the overview below)
 
 > :warning: **Important information:**
 Since map storage has been removed from Keycloak, using different storage providers for different storage areas (like users, roles) requires you to implement your own `DatastoreProvider`.
-Additionally, there are storage-relevant parts of Keycloak, which are not covered by `Datastore-SPI`, like `DeploymentStateProvider` and`PublicKeyStorageProvider`.
+If "cache mode" is active (`KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true`), default providers (jpa) are used for non-cache areas.
 
 The following parameters might be needed in addition to the configuration options of this extension (see below):
 
 | CLI-Parameter                                      | Description                                                                                                            |
 |----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | --features-disabled=authorization                  | Disable authorization (this is essential as otherwise Keycloak tries to use InfinispanStoreFactory at a lot of places) |
-| --spi-connections-infinispan-quarkus-enabled=false | Disable Infinispan (yes this needs to be done twice)                                                                   |
-| --spi-connections-infinispan-default-enabled=false | Disable Infinispan (yes this needs to be done twice)                                                                   |
-| --spi-user-sessions-provider=cassandra             | Prevent infinispan-initialization for user-sessions                                                                    |
-| --spi-login-failure-provider=cassandra             | Prevent infinispan-initialization login-failures                                                                       |
-| --spi-authentication-sessions-provider=cassandra   | Prevent infinispan-initialization authentication-sessions                                                              |
-| --spi-single-use-object-provider=cassandra         | Prevent infinispan-initialization single-use-objects                                                                   |
-| --spi-global-lock-provider=none                    | Deactivate global lock                                                                                                 |
-| --spi-sticky-session-encoder-provider=disabled     | Deactivate sticky sessions (backed by infinispan)                                                                      |
-| --spi-deployment-state-provider=map                | Use map (forked from pre-23 Keycloak) for deployment-state                                                             |
-| --spi-public-key-storage-provider=map              | Use map (forked from pre-23 Keycloak) for public-key-storage                                                           |
 | --spi-connections-jpa-legacy-enabled=false         | Deactivate automatic JPA schema migration                                                                              |
 
 ## Configuration options

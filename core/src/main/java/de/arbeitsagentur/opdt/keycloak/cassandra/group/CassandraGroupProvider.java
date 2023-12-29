@@ -24,7 +24,7 @@ public class CassandraGroupProvider  implements GroupProvider {
     private final Set<String> groupsChanged = new HashSet<>();
     private final Set<String> groupsDeleted = new HashSet<>();
 
-    public CassandraGroupProvider(GroupRepository groupRepository, KeycloakSession session) {
+    public CassandraGroupProvider(KeycloakSession session, GroupRepository groupRepository) {
         this.groupRepository = groupRepository;
         this.session = session;
     }
