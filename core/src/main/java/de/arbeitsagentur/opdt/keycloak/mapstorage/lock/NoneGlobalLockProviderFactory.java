@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.mapstorage.lock;
 
 import com.google.auto.service.AutoService;
 import org.keycloak.Config;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakSessionTaskWithResult;
@@ -29,6 +30,7 @@ import java.time.Duration;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 /**
@@ -41,7 +43,7 @@ public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory,
 
     @Override
     public GlobalLockProvider create(KeycloakSession session) {
-        return new GlobalLockProvider() {
+        return createProviderCached(session, GlobalLockProvider.class, () -> new GlobalLockProvider() {
             @Override
             public void close() {
             }
@@ -55,7 +57,7 @@ public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory,
             public void forceReleaseAllLocks() {
 
             }
-        };
+        });
     }
 
     @Override

@@ -21,6 +21,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.authorization.model.*;
 import org.keycloak.authorization.store.*;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -38,6 +39,7 @@ import java.util.function.Consumer;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
@@ -45,7 +47,7 @@ import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_P
 public class NullCachedStoreProviderFactory implements CachedStoreProviderFactory, EnvironmentDependentProviderFactory {
     @Override
     public CachedStoreFactoryProvider create(KeycloakSession session) {
-        return new CachedStoreFactoryProvider() {
+        return createProviderCached(session, CachedStoreFactoryProvider.class, () -> new CachedStoreFactoryProvider() {
             @Override
             public ResourceStore getResourceStore() {
                 return new ResourceStore() {
@@ -305,7 +307,7 @@ public class NullCachedStoreProviderFactory implements CachedStoreProviderFactor
             public void close() {
 
             }
-        };
+        });
     }
 
     @Override

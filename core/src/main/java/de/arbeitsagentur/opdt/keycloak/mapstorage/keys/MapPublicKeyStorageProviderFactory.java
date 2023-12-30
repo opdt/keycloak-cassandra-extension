@@ -19,6 +19,7 @@ package de.arbeitsagentur.opdt.keycloak.mapstorage.keys;
 
 import com.google.auto.service.AutoService;
 import org.keycloak.Config;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.crypto.PublicKeysWrapper;
 import org.keycloak.keys.PublicKeyStorageProviderFactory;
 import org.keycloak.models.KeycloakSession;
@@ -31,6 +32,7 @@ import java.util.concurrent.FutureTask;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(PublicKeyStorageProviderFactory.class)
@@ -40,7 +42,7 @@ public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProvi
 
     @Override
     public MapPublicKeyStorageProvider create(KeycloakSession session) {
-        return  new MapPublicKeyStorageProvider(session, tasksInProgress);
+        return createProviderCached(session, MapPublicKeyStorageProvider.class, () -> new MapPublicKeyStorageProvider(session, tasksInProgress));
     }
 
     @Override

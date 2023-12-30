@@ -23,6 +23,7 @@ import org.keycloak.Config;
 import org.keycloak.common.Version;
 import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.SecretGenerator;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.migration.MigrationModel;
 import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
@@ -32,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(DeploymentStateProviderFactory.class)
@@ -43,7 +45,7 @@ public class MapDeploymentStateProviderFactory implements DeploymentStateProvide
 
     @Override
     public DeploymentStateProvider create(KeycloakSession session) {
-        return INSTANCE;
+        return createProviderCached(session, DeploymentStateProvider.class, () -> INSTANCE);
     }
 
     @Override

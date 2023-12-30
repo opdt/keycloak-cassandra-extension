@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.cluster.*;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
@@ -29,6 +30,7 @@ import java.util.concurrent.Future;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
@@ -41,7 +43,7 @@ public class NullInfinispanClusterProviderFactory implements ClusterProviderFact
 
     @Override
     public ClusterProvider create(KeycloakSession session) {
-        return new ClusterProvider() {
+        return createProviderCached(session, ClusterProvider.class, () -> new ClusterProvider() {
             @Override
             public int getClusterStartupTime() {
                 return 0;
@@ -71,7 +73,7 @@ public class NullInfinispanClusterProviderFactory implements ClusterProviderFact
             public void close() {
 
             }
-        };
+        });
     }
 
     @Override

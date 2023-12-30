@@ -30,6 +30,7 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
@@ -42,7 +43,7 @@ public class NullQuarkusInfinispanConnectionProviderFactory implements Infinispa
 
     @Override
     public InfinispanConnectionProvider create(KeycloakSession session) {
-        return new InfinispanConnectionProvider() {
+        return createProviderCached(session, InfinispanConnectionProvider.class, () -> new InfinispanConnectionProvider() {
             @Override
             public <K, V> Cache<K, V> getCache(String s) {
                 return null;
@@ -62,7 +63,7 @@ public class NullQuarkusInfinispanConnectionProviderFactory implements Infinispa
             public void close() {
 
             }
-        };
+        });
     }
 
     @Override

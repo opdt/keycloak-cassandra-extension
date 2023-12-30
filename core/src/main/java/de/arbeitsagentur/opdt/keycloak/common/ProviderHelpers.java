@@ -16,11 +16,13 @@
 
 package de.arbeitsagentur.opdt.keycloak.common;
 
+import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.Provider;
 
 import java.util.function.Supplier;
 
+@JBossLog
 public class ProviderHelpers {
     public static <T extends Provider> T createProviderCached(KeycloakSession session, Class<T> providerClass) {
         return createProviderCached(session, providerClass, () -> session.getProvider(providerClass));
@@ -32,6 +34,7 @@ public class ProviderHelpers {
             return provider;
         }
 
+        log.debugf("Using provider %s", providerClass.getName());
         provider = providerSupplier.get();
         session.setAttribute(providerClass.getName(), provider);
 
