@@ -30,13 +30,14 @@ import org.keycloak.storage.DatastoreProviderFactory;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.*;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
 public class CassandraDatastoreProviderFactory implements DatastoreProviderFactory, InvalidationHandler, EnvironmentDependentProviderFactory {
-    private static final String PROVIDER_ID = "cassandra";
+    private static final String PROVIDER_ID = "legacy"; // Override legacy provider to disable timers / event listeners and stuff...
 
     @Override
     public String getId() {
@@ -45,7 +46,7 @@ public class CassandraDatastoreProviderFactory implements DatastoreProviderFacto
 
     @Override
     public DatastoreProvider create(KeycloakSession session) {
-        return new CassandraDatastoreProvider(session);
+        return createProviderCached(session, DatastoreProvider.class, () -> new CassandraDatastoreProvider(session));
     }
 
     @Override
