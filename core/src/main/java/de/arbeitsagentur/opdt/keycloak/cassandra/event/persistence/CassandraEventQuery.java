@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Data
 class CassandraEventQuery implements EventQuery {
@@ -104,33 +105,9 @@ class CassandraEventQuery implements EventQuery {
 
   @Override
   public Stream<Event> getResultStream() {
-    /* jpa
-    if (!predicates.isEmpty()) {
-      cq.where(cb.and(predicates.toArray(new Predicate[predicates.size()])));
-    }
-
-    if(orderByDescTime) {
-      cq.orderBy(cb.desc(root.get("time")));
-    } else {
-      cq.orderBy(cb.asc(root.get("time")));
-    }
-
-    TypedQuery<EventEntity> query = em.createQuery(cq);
-
-    return closing(paginateQuery(query, firstResult, maxResults).getResultStream().map(JpaEventStoreProvider::convertEvent));
-    */
-
-    return null;
-    
-    /* suggestion for how to get a stream 
-      
-    ResultSet rs = this.getResultSet(); // Takes <1 second
-
-StreamSupport.stream(
-    Spliterators.spliteratorUnknownSize(
-                rs.iterator(), Spliterator.ORDERED), false)
-       .parallel().forEach(this::processRow);
-    */
+    return StreamSupport.stream(dao.getEvents(types, realmId, clientId, userId, fromDate, toDate, ipAddress, firstResult, maxResults, orderByDescTime).spliterator(), false).map(ee -> {
+        return (Event)null;
+      });
   }
   
 }
