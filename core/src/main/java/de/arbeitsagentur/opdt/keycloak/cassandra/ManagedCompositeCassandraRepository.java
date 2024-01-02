@@ -24,6 +24,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.EventRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.Groups;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
@@ -45,6 +48,8 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import lombok.Setter;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.events.EventQuery;
+import org.keycloak.events.admin.AdminEventQuery;
 
 import java.util.List;
 import java.util.Set;
@@ -73,6 +78,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     private ClientRepository clientRepository;
 
     private ClientScopeRepository clientScopeRepository;
+
+    private EventRepository eventRepository;
 
     public Stream<User> findAllUsers() {
         return this.userRepository.findAllUsers();
@@ -577,4 +584,29 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     public void deleteRealmGroups(String realmId) {
         this.groupRepository.deleteRealmGroups(realmId);
     }
+
+  public void insertEvent(EventEntity event) {
+    this.eventRepository.insertEvent(event);
+  }
+  
+  public void insertAdminEvent(AdminEventEntity adminEvent) {
+    this.eventRepository.insertAdminEvent(adminEvent);
+  }
+  
+  public void deleteRealmEvents(String realmId, long olderThan) {
+    this.eventRepository.deleteRealmEvents(realmId, olderThan);
+  }
+  
+  public void deleteAdminRealmEvents(String realmId, long olderThan) {
+    this.eventRepository.deleteAdminRealmEvents(realmId, olderThan);
+  }
+
+  public EventQuery eventQuery() {
+    return this.eventRepository.eventQuery();
+  }
+  
+  public AdminEventQuery adminEventQuery() {
+    return this.eventRepository.adminEventQuery();
+  }
+
 }

@@ -18,7 +18,7 @@ public class CassandraEventRepository implements EventRepository {
     
   @Override
   public void insertAdminEvent(AdminEventEntity adminEvent) {
-    dao.insertAdminEvent();
+    dao.insertAdminEvent(adminEvent);
   }
   
   @Override

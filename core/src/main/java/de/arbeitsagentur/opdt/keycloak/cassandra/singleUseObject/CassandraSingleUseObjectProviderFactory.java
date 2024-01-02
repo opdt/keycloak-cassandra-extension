@@ -34,8 +34,8 @@ public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectP
 
     @Override
     public CassandraSingleUseObjectProvider create(KeycloakSession session) {
-        CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
-        return new CassandraSingleUseObjectProvider(cassandraConnectionProvider.getRepository());
+      CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
+      return new CassandraSingleUseObjectProvider(cassandraConnectionProvider.getRepository());
     }
 
     @Override

@@ -39,6 +39,10 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientS
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapperBuilder;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.CassandraEventRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.EventMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.EventMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.EventRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.CassandraGroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapper;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapperBuilder;
@@ -265,6 +269,10 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .build();
         ClientScopeRepository clientScopeRepository = new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
 
+        EventMapper eventMapper = new EventMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        EventRepository eventRepository = new CassandraEventRepository(eventMapper.eventDao());
+
         ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
         cassandraRepository.setRoleRepository(roleRepository);
         cassandraRepository.setGroupRepository(groupRepository);
@@ -276,6 +284,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
         cassandraRepository.setClientRepository(clientRepository);
         cassandraRepository.setClientScopeRepository(clientScopeRepository);
+        cassandraRepository.setEventRepository(eventRepository);
 
         return cassandraRepository;
     }

@@ -17,20 +17,26 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.event;
 
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import org.keycloak.Config;
 import org.keycloak.events.EventStoreProvider;
 import org.keycloak.events.EventStoreProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(EventStoreProviderFactory.class)
-public class CassandraEventStoreProviderFactory implements EventStoreProviderFactory {
+public class CassandraEventStoreProviderFactory implements EventStoreProviderFactory, EnvironmentDependentProviderFactory {
 
   @Override
   public CassandraEventStoreProvider create(KeycloakSession session) {
-    return (CassandraEventStoreProvider) session.getProvider(EventStoreProvider.class);
+    CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
+    return new CassandraEventStoreProvider(cassandraConnectionProvider.getRepository());
   }
   
   @Override
@@ -56,5 +62,11 @@ public class CassandraEventStoreProviderFactory implements EventStoreProviderFac
   @Override
   public int order() {
     return PROVIDER_PRIORITY + 1;
+  }
+
+
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
   }
 }

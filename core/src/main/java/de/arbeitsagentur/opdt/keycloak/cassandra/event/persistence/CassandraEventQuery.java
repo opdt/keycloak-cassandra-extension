@@ -4,11 +4,14 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
+import org.keycloak.events.Event;
 import org.keycloak.events.EventQuery;
+import org.keycloak.events.EventType;
 import lombok.Data;
 import java.util.Date;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.stream.Stream;
 
 @Data
 class CassandraEventQuery implements EventQuery {
@@ -31,9 +34,9 @@ class CassandraEventQuery implements EventQuery {
   }
   
   @Override
-  public EventQuery type(EventType... types) {
+  public EventQuery type(EventType... typesArr) {
     types = new LinkedList<String>();
-    for (EventType e : types) {
+    for (EventType e : typesArr) {
       types.add(e.toString());
     }
     return this;
@@ -71,7 +74,7 @@ class CassandraEventQuery implements EventQuery {
     
   @Override
   public EventQuery ipAddress(String ipAddress) {
-    predicates.add(cb.equal(root.get("ipAddress"), ipAddress));
+    this.ipAddress = ipAddress;
     return this;
   }
 
@@ -101,6 +104,7 @@ class CassandraEventQuery implements EventQuery {
 
   @Override
   public Stream<Event> getResultStream() {
+    /* jpa
     if (!predicates.isEmpty()) {
       cq.where(cb.and(predicates.toArray(new Predicate[predicates.size()])));
     }
@@ -114,7 +118,10 @@ class CassandraEventQuery implements EventQuery {
     TypedQuery<EventEntity> query = em.createQuery(cq);
 
     return closing(paginateQuery(query, firstResult, maxResults).getResultStream().map(JpaEventStoreProvider::convertEvent));
+    */
 
+    return null;
+    
     /* suggestion for how to get a stream 
       
     ResultSet rs = this.getResultSet(); // Takes <1 second
