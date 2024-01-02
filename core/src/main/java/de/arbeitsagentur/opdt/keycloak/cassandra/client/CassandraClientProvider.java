@@ -207,7 +207,7 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
                     .map(entityToAdapterFunc(realm)))
             .distinct()
             .map(ClientModel.class::cast)
-            .filter(c -> c.getAttributes().entrySet().containsAll(attributes.entrySet()))
+            .filter(c -> attributes.isEmpty() || c.getAttributes().entrySet().containsAll(attributes.entrySet()))
             .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
             .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults);
     }

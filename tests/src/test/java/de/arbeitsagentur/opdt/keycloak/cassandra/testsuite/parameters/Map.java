@@ -17,9 +17,19 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters;
 
 import com.google.common.collect.ImmutableSet;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraAuthSessionProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraLoginFailureProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
-import org.keycloak.authorization.store.StoreFactorySpi;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.deploymentstate.MapDeploymentStateProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.mapstorage.keys.MapPublicKeyStorageProviderFactory;
 import org.keycloak.credential.CredentialSpi;
 import org.keycloak.credential.OTPCredentialProviderFactory;
 import org.keycloak.credential.PasswordCredentialProviderFactory;
@@ -27,10 +37,8 @@ import org.keycloak.credential.hash.PasswordHashSpi;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
 import org.keycloak.device.DeviceRepresentationProviderFactoryImpl;
 import org.keycloak.device.DeviceRepresentationSpi;
-import org.keycloak.events.EventStoreSpi;
 import org.keycloak.keys.*;
 import org.keycloak.models.*;
-import org.keycloak.models.locking.GlobalLockProviderSpi;
 import org.keycloak.models.locking.NoneGlobalLockProviderFactory;
 import org.keycloak.policy.*;
 import org.keycloak.provider.ProviderFactory;
@@ -39,7 +47,6 @@ import org.keycloak.services.clientpolicy.ClientPolicyManagerSpi;
 import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicySpi;
 import org.keycloak.services.clientregistration.policy.impl.*;
-import org.keycloak.sessions.AuthenticationSessionProviderFactory;
 import org.keycloak.sessions.AuthenticationSessionSpi;
 
 import java.util.Set;
@@ -64,8 +71,19 @@ public class Map extends KeycloakModelParameters {
         .build();
 
     static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES = ImmutableSet.<Class<? extends ProviderFactory>>builder()
+        .add(CassandraClientProviderFactory.class)
+        .add(CassandraClientScopeProviderFactory.class)
+        .add(CassandraGroupProviderFactory.class)
+        .add(CassandraRealmsProviderFactory.class)
+        .add(CassandraRoleProviderFactory.class)
+        .add(CassandraAuthSessionProviderFactory.class)
+        .add(MapDeploymentStateProviderFactory.class)
+        .add(CassandraUserProviderFactory.class)
+        .add(CassandraUserSessionProviderFactory.class)
+        .add(CassandraLoginFailureProviderFactory.class)
         .add(NoneGlobalLockProviderFactory.class)
         .add(SingleUseObjectProviderFactory.class)
+        .add(MapPublicKeyStorageProviderFactory.class)
         .add(DefaultClientPolicyManagerFactory.class)
         .add(GeneratedAesKeyProviderFactory.class)
         .add(GeneratedHmacKeyProviderFactory.class)
@@ -127,7 +145,7 @@ public class Map extends KeycloakModelParameters {
                 .provider(ScopeClientRegistrationPolicyFactory.PROVIDER_ID)
                 .provider(MaxClientsClientRegistrationPolicyFactory.PROVIDER_ID)
             .spi(DeviceRepresentationSpi.NAME)
-            .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID)
+                .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID)
         ;
     }
 }

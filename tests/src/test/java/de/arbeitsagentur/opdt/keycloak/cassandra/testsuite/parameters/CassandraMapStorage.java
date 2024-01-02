@@ -54,7 +54,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
 
     @Override
     public void updateConfig(Config cf) {
-        cf.spi("datastore").defaultProvider("cassandra")
+        cf.spi("datastore").defaultProvider("legacy")
             .config("dir", "${project.build.directory:target}");
 
         cf.spi(CassandraConnectionSpi.NAME).provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)

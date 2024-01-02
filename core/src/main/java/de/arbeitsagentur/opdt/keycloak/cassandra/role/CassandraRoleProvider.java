@@ -39,7 +39,7 @@ public class CassandraRoleProvider implements RoleProvider {
     private final Set<String> rolesChanged = new HashSet<>();
     private final Set<String> rolesDeleted = new HashSet<>();
 
-    public CassandraRoleProvider(RoleRepository roleRepository, KeycloakSession session) {
+    public CassandraRoleProvider( KeycloakSession session, RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
         this.session = session;
     }

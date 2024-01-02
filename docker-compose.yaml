@@ -29,7 +29,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.3 
     volumes:
-      - ${PWD}/core/target/keycloak-cassandra-extension-2.0.0-23.0.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
+      - ${PWD}/core/target/keycloak-cassandra-extension-2.0.5-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
     environment:
       - KC_SPI_CONNECTIONS_INFINISPAN_QUARKUS_ENABLED=false
       - KC_SPI_CONNECTIONS_INFINISPAN_DEFAULT_ENABLED=false

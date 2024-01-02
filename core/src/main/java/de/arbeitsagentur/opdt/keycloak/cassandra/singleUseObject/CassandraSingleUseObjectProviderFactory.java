@@ -17,19 +17,25 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject;
 
 import com.google.auto.service.AutoService;
+import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.SingleUseObjectProvider;
 import org.keycloak.models.SingleUseObjectProviderFactory;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(SingleUseObjectProviderFactory.class)
-public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider> {
+public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider>, EnvironmentDependentProviderFactory {
+
     @Override
     public CassandraSingleUseObjectProvider create(KeycloakSession session) {
-        return (CassandraSingleUseObjectProvider) session.getProvider(SingleUseObjectProvider.class);
+        CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
+        return new CassandraSingleUseObjectProvider(cassandraConnectionProvider.getRepository());
     }
 
     @Override
@@ -49,11 +55,16 @@ public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectP
 
     @Override
     public String getId() {
-        return "cassandra";
+        return "infinispan"; // use same name as infinispan provider to override it
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
+    }
+
+    @Override
+    public boolean isSupported() {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

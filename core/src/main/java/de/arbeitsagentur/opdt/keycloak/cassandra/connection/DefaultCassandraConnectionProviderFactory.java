@@ -23,13 +23,55 @@ import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCod
 import com.datastax.oss.driver.internal.core.type.codec.extras.json.JsonCodec;
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
+import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.ManagedCompositeCassandraRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.CassandraAuthSessionRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.cache.L1CacheInterceptor;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.CassandraClientRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.CassandraClientScopeRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.CassandraGroupRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.GroupValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.CassandraLoginFailureRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.CassandraRealmRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.RoleValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.CassandraSingleUseObjectRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.CredentialValue;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.CassandraUserSessionRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionMapper;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionMapperBuilder;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import lombok.extern.jbosslog.JBossLog;
-
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationConfiguration;
 import org.cognitor.cassandra.migration.MigrationRepository;
@@ -41,12 +83,11 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.CommonClientSessionModel;
 
+import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @JBossLog
@@ -54,6 +95,7 @@ import java.util.stream.Collectors;
 public class DefaultCassandraConnectionProviderFactory implements CassandraConnectionProviderFactory<CassandraConnectionProvider>, EnvironmentDependentProviderFactory {
     public static final String PROVIDER_ID = "default";
     private CqlSession cqlSession;
+    private CompositeRepository repository;
 
     @Override
     public CassandraConnectionProvider create(KeycloakSession session) {
@@ -61,6 +103,13 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             @Override
             public CqlSession getCqlSession() {
                 return cqlSession;
+            }
+
+            @Override
+            public CompositeRepository getRepository() {
+                L1CacheInterceptor intercepted = new L1CacheInterceptor(session, repository);
+                return (CompositeRepository) Proxy.newProxyInstance(Thread.currentThread()
+                    .getContextClassLoader(), new Class[]{CompositeRepository.class}, intercepted);
             }
 
             @Override
@@ -110,27 +159,29 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
             .addTypeCodecs(new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
             .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
-        .build();
+            .build();
+
+        repository = createRepository(cqlSession);
     }
 
     private void createDbIfNotExists(List<InetSocketAddress> contactPointsList, String username, String password, String localDatacenter, String keyspace, int replicationFactor) {
         try (CqlSession createKeyspaceSession =
-                CqlSession.builder()
-                    .addContactPoints(contactPointsList)
-                    .withAuthCredentials(username, password)
-                    .withLocalDatacenter(localDatacenter)
-                    .build()) {
+                 CqlSession.builder()
+                     .addContactPoints(contactPointsList)
+                     .withAuthCredentials(username, password)
+                     .withLocalDatacenter(localDatacenter)
+                     .build()) {
             createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
         }
 
         log.info("Create schema...");
         try (CqlSession createKeyspaceSession =
-                CqlSession.builder()
-                    .addContactPoints(contactPointsList)
-                    .withAuthCredentials(username, password)
-                    .withLocalDatacenter(localDatacenter)
-                    .withKeyspace(keyspace)
-                    .build()) {
+                 CqlSession.builder()
+                     .addContactPoints(contactPointsList)
+                     .withAuthCredentials(username, password)
+                     .withLocalDatacenter(localDatacenter)
+                     .withKeyspace(keyspace)
+                     .build()) {
             createTables(createKeyspaceSession, keyspace);
         }
     }
@@ -171,6 +222,62 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
             .setConsistencyLevel(ConsistencyLevel.ALL);
         MigrationTask migration = new MigrationTask(database, new MigrationRepository());
         migration.migrate();
+    }
+
+    private CompositeRepository createRepository(CqlSession cqlSession) {
+        UserMapper userMapper = new UserMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        UserRepository userRepository = new CassandraUserRepository(userMapper.userDao());
+
+        RoleMapper roleMapper = new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        RoleRepository roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
+
+        GroupMapper groupMapper = new GroupMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        GroupRepository groupRepository = new CassandraGroupRepository(groupMapper.groupDao());
+
+        RealmMapper realmMapper = new RealmMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        RealmRepository realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
+
+        UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        UserSessionRepository userSessionRepository = new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
+
+        AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        AuthSessionRepository authSessionRepository = new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
+
+        LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        LoginFailureRepository loginFailureRepository = new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
+
+        SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        SingleUseObjectRepository singleUseObjectRepository = new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
+
+        ClientMapper clientMapper = new ClientMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        ClientRepository clientRepository = new CassandraClientRepository(clientMapper.clientDao());
+
+        ClientScopeMapper clientScopeMapper = new ClientScopeMapperBuilder(cqlSession).withSchemaValidationEnabled(false)
+            .build();
+        ClientScopeRepository clientScopeRepository = new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
+
+        ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
+        cassandraRepository.setRoleRepository(roleRepository);
+        cassandraRepository.setGroupRepository(groupRepository);
+        cassandraRepository.setUserRepository(userRepository);
+        cassandraRepository.setRealmRepository(realmRepository);
+        cassandraRepository.setUserSessionRepository(userSessionRepository);
+        cassandraRepository.setAuthSessionRepository(authSessionRepository);
+        cassandraRepository.setLoginFailureRepository(loginFailureRepository);
+        cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
+        cassandraRepository.setClientRepository(clientRepository);
+        cassandraRepository.setClientScopeRepository(clientScopeRepository);
+
+        return cassandraRepository;
     }
 
 }

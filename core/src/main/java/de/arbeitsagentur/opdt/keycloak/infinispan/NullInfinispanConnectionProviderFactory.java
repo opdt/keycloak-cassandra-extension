@@ -14,13 +14,18 @@
  *  limitations under the License.
  */
 
-package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
+package de.arbeitsagentur.opdt.keycloak.infinispan;
 
 import com.google.auto.service.AutoService;
-import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import lombok.extern.jbosslog.JBossLog;
+import org.infinispan.Cache;
+import org.infinispan.client.hotrod.RemoteCache;
 import org.keycloak.Config;
-import org.keycloak.models.*;
+import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
+import org.keycloak.connections.infinispan.InfinispanConnectionProviderFactory;
+import org.keycloak.connections.infinispan.TopologyInfo;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
@@ -29,18 +34,41 @@ import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProvi
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
-@AutoService(UserSessionProviderFactory.class)
-public class CassandraUserSessionProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
+@AutoService(InfinispanConnectionProviderFactory.class)
+public class NullInfinispanConnectionProviderFactory implements InfinispanConnectionProviderFactory, EnvironmentDependentProviderFactory {
+    @Override
+    public boolean isSupported() {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 
     @Override
-    public CassandraUserSessionProvider create(KeycloakSession session) {
-        CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
-        return new CassandraUserSessionProvider(session, cassandraConnectionProvider.getRepository());
+    public InfinispanConnectionProvider create(KeycloakSession session) {
+        return createProviderCached(session, InfinispanConnectionProvider.class, () -> new InfinispanConnectionProvider() {
+            @Override
+            public <K, V> Cache<K, V> getCache(String s) {
+                return null;
+            }
+
+            @Override
+            public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
+                return null;
+            }
+
+            @Override
+            public TopologyInfo getTopologyInfo() {
+                return null;
+            }
+
+            @Override
+            public void close() {
+
+            }
+        });
     }
 
     @Override
     public void init(Config.Scope config) {
-
+        log.info("Infinispan deactivated...");
     }
 
     @Override
@@ -54,22 +82,12 @@ public class CassandraUserSessionProviderFactory implements UserSessionProviderF
     }
 
     @Override
-    public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
-    }
-
-    @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
     }
 
     @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
-
-    @Override
-    public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
-
+    public String getId() {
+        return "default";
     }
 }

@@ -24,18 +24,18 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
-import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.CassandraGroupRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.Groups;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.CassandraRoleRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.CassandraUserRepository;
+import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserConsent;
@@ -54,11 +54,11 @@ import static de.arbeitsagentur.opdt.keycloak.cassandra.cache.KeycloakSessionCac
 
 @Setter
 public class ManagedCompositeCassandraRepository implements CompositeRepository {
-    private CassandraUserRepository userRepository;
+    private UserRepository userRepository;
 
-    private CassandraRoleRepository roleRepository;
+    private RoleRepository roleRepository;
 
-    private CassandraGroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     private RealmRepository realmRepository;
 
