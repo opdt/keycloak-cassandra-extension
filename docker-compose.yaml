@@ -31,18 +31,8 @@ services:
     volumes:
       - ${PWD}/core/target/keycloak-cassandra-extension-2.0.5-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
     environment:
-      - KC_SPI_CONNECTIONS_INFINISPAN_QUARKUS_ENABLED=false
-      - KC_SPI_CONNECTIONS_INFINISPAN_DEFAULT_ENABLED=false
-      - KC_SPI_USER_SESSIONS_PROVIDER=cassandra
-      - KC_SPI_LOGIN_FAILURE_PROVIDER=cassandra
-      - KC_SPI_AUTHENTICATION_SESSIONS_PROVIDER=cassandra
-      - KC_SPI_SINGLE_USE_OBJECT_PROVIDER=cassandra
-      - KC_SPI_GLOBAL_LOCK_PROVIDER=none
-      - KC_SPI_STICKY_SESSION_ENCODER_PROVIDER=disabled
-      - KC_SPI_DEPLOYMENT_STATE_PROVIDER=map
-      - KC_SPI_PUBLIC_KEY_STORAGE_PROVIDER=map
+      - KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true
       - KC_SPI_CONNECTIONS_JPA_LEGACY_ENABLED=false
-      - KC_SPI_DATASTORE_PROVIDER=cassandra
       - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_PORT=9042
       - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_CONTACT_POINTS=cassandra
       - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_USERNAME=cassandra
@@ -54,7 +44,7 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - JAVA_OPTS_APPEND="-Ddatastax-java-driver.advanced.ssl-engine-factory=none"
     entrypoint: /opt/keycloak/bin/kc.sh
-    command: -v start-dev
+    command: -v start-dev --cache=local --features-disabled=authorization
     ports:
       - 8080:8080
     networks:
