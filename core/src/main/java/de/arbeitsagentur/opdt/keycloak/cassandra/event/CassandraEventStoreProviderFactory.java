@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 IT-Systemhaus der Bundesagentur fuer Arbeit
+ * Copyright 2024 Phase Two, Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package de.arbeitsagentur.opdt.keycloak.cassandra.event;
 
 import com.google.auto.service.AutoService;
