@@ -130,9 +130,15 @@ public class AdminEventQueryProvider {
       boundStatementBuilder.setLocalDate("to_time", toTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
-    //TODO range
-    //firstResult, maxResults
-
+    //TODO range (i.e. use firstResult, maxResults)
+    // Maybe? https://gist.github.com/stevesun21/df3fa5141bd01a4f83fc
+    // We're doing:
+    //    .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+    //    .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
+    // in the stream above this, but my guess is that will lead to disastrous
+    // performance problems, as it actually causes cassandra to load all of the results.
+    // Anyway, need to update this with something that skips without actually causing
+    // the data to be moved from cassandra to the client
     
     // (4) execute and map the results
     return session.execute(boundStatementBuilder.build()).map(adminEventEntityHelper::get);

@@ -148,10 +148,12 @@ class CassandraAdminEventQuery implements AdminEventQuery {
   
   @Override
   public Stream<AdminEvent> getResultStream() {
-    return StreamSupport.stream(dao.getAdminEvents(operationTypes, resourceTypes, realmId, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, fromTime, toTime, firstResult, maxResults,  orderByDescTime).spliterator(), false).map(ee -> {
+    return StreamSupport.stream(dao.getAdminEvents(operationTypes, resourceTypes, realmId, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, fromTime, toTime, firstResult, maxResults,  orderByDescTime).spliterator(), false)
+        .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+        .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
+        .map(ee -> {
         return (AdminEvent)null;
       });
   }
 
-  //    getAdminEvents(operationTypes, resourceTypes, realmId, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, fromTime, toTime, firstResult, maxResults,  orderByDescTime);
 }

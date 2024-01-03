@@ -120,7 +120,10 @@ class CassandraEventQuery implements EventQuery {
 
   @Override
   public Stream<Event> getResultStream() {
-    return StreamSupport.stream(dao.getEvents(types, realmId, clientId, userId, fromDate, toDate, ipAddress, firstResult, maxResults, orderByDescTime).spliterator(), false).map(ee -> {
+    return StreamSupport.stream(dao.getEvents(types, realmId, clientId, userId, fromDate, toDate, ipAddress, firstResult, maxResults, orderByDescTime).spliterator(), false)
+        .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
+        .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
+        .map(ee -> {
         return (Event)null;
       });
   }
