@@ -1,10 +1,13 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.QueryProviders.*;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -42,22 +45,22 @@ public class AdminEventQueryProvider {
     }
 
     //realmId
-    field("realm_id", realmId);
+    field(select, "realm_id", realmId);
 
     //authRealmId
-    field("auth_realm_id", authRealmId);
+    field(select, "auth_realm_id", authRealmId);
 
     //authClientId
-    field("auth_client_id", authClientId);
+    field(select, "auth_client_id", authClientId);
     
     //authUserId
-    field("auth_user_id", authUserId);
+    field(select, "auth_user_id", authUserId);
 
     //authIpAddress
-    field("auth_ip_address", authIpAddress);
+    field(select, "auth_ip_address", authIpAddress);
 
     //resourcePath
-    field("resource_path", resourcePath);
+    field(select, "resource_path", resourcePath);
 
     //fromTime, toTime
     if (fromTime != null) {
@@ -66,6 +69,9 @@ public class AdminEventQueryProvider {
     if (toTime != null) {
       select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_time"));
     }
+
+    //order
+    select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
     // (2) prepare
     PreparedStatement preparedStatement = session.prepare(select.build());
@@ -109,24 +115,13 @@ public class AdminEventQueryProvider {
       boundStatementBuilder.setLocalDate("to_time", toTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
-    //TODO range, order
+    //TODO range
+    //firstResult, maxResults
 
+    
     // (4) execute and map the results
     return session.execute(boundStatementBuilder.build()).map(adminEventEntityHelper::get);
 
   }
-  
-  void field(String name, String value) {
-    if (!Strings.isNullOrEmpty(value)) {
-      select.whereColumn(name).isEqualTo(bindMarker());
-    }
-  }
-
-  void bind(BoundStatementBuilder boundStatementBuilder, String name, String value) {
-    if (!Strings.isNullOrEmpty(value)) {
-      boundStatementBuilder.setString(name, value);
-    }
-  }
-
   
 }

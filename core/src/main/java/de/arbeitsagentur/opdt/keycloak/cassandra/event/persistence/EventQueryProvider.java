@@ -1,10 +1,13 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.QueryProviders.*;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
@@ -37,16 +40,16 @@ public class EventQueryProvider {
     }
     
     //realmId
-    field("realm_id", realmId);
+    field(select, "realm_id", realmId);
 
     //clientId
-    field("client_id", clientId);
+    field(select, "client_id", clientId);
     
     //userId
-    field("user_id", userId);
+    field(select, "user_id", userId);
 
     //ipAddress
-    field("ip_address", ipAddress);
+    field(select, "ip_address", ipAddress);
 
     //fromDate, toDate
     if (fromDate != null) {
@@ -55,6 +58,9 @@ public class EventQueryProvider {
     if (toDate != null) {
       select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_date"));
     }
+
+    //order
+    select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
     // (2) prepare
     PreparedStatement preparedStatement = session.prepare(select.build());
@@ -87,22 +93,12 @@ public class EventQueryProvider {
       boundStatementBuilder.setLocalDate("to_date", toDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
-    //TODO range, order
+    //TODO range
+    //firstResult, maxResults
+
     
     // (4) execute and map the results
     return session.execute(boundStatementBuilder.build()).map(eventEntityHelper::get);
 
-  }
-  
-  void field(String name, String value) {
-    if (!Strings.isNullOrEmpty(value)) {
-      select.whereColumn(name).isEqualTo(bindMarker());
-    }
-  }
-
-  void bind(BoundStatementBuilder boundStatementBuilder, String name, String value) {
-    if (!Strings.isNullOrEmpty(value)) {
-      boundStatementBuilder.setString(name, value);
-    }
   }
 }
