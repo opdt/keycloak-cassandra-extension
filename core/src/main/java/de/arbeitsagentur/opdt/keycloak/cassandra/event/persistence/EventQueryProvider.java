@@ -32,52 +32,54 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import lombok.extern.jbosslog.JBossLog;
 
+@JBossLog
 public class EventQueryProvider {
   private final CqlSession session;
   private final EntityHelper<EventEntity> eventEntityHelper;
-  private final Select select;
 
   public EventQueryProvider(
       MapperContext context, EntityHelper<EventEntity> eventEntityHelper) {
     this.session = context.getSession();
     this.eventEntityHelper = eventEntityHelper;
-    this.select = eventEntityHelper.selectStart();
   }
 
   public PagingIterable<EventEntity> getEvents(List<String> types, String realmId, String clientId, String userId, Date fromDate, Date toDate, String ipAddress, Integer firstResult, Integer maxResults, boolean orderByDescTime) {
 
     // (1) complete the query
+    Select select = eventEntityHelper.selectStart();
 
     //types
     if (types != null && types.size() > 0) {
-      select.whereColumn("operation_type").in(bindMarker());
+      select = select.whereColumn("operation_type").in(bindMarker());
     }
     
     //realmId
-    field(select, "realm_id", realmId);
+    select = field(select, "realm_id", realmId);
 
     //clientId
-    field(select, "client_id", clientId);
+    select = field(select, "client_id", clientId);
     
     //userId
-    field(select, "user_id", userId);
+    select = field(select, "user_id", userId);
 
     //ipAddress
-    field(select, "ip_address", ipAddress);
+    select = field(select, "ip_address", ipAddress);
 
     //fromDate, toDate
     if (fromDate != null) {
-      select.whereColumn("time").isGreaterThanOrEqualTo(bindMarker("from_date"));
+      select = select.whereColumn("time").isGreaterThanOrEqualTo(bindMarker("from_date"));
     }
     if (toDate != null) {
-      select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_date"));
+      select = select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_date"));
     }
 
     //order
-    select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
+    select = select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
     // (2) prepare
+    log.infof("cql is %s", select.asCql());
     PreparedStatement preparedStatement = session.prepare(select.build());
 
     // (3) bind
@@ -85,27 +87,27 @@ public class EventQueryProvider {
 
     //types
     if (types != null && types.size() > 0) {
-      boundStatementBuilder.setList("type", types, String.class);
+      boundStatementBuilder = boundStatementBuilder.setList("type", types, String.class);
     }
 
     //realmId
-    bind(boundStatementBuilder, "realm_id", realmId);
+    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
     //clientId
-    bind(boundStatementBuilder, "client_id", clientId);
+    boundStatementBuilder = bind(boundStatementBuilder, "client_id", clientId);
     
     //userId
-    bind(boundStatementBuilder, "user_id", userId);
+    boundStatementBuilder = bind(boundStatementBuilder, "user_id", userId);
 
     //ipAddress
-    bind(boundStatementBuilder, "ip_address", ipAddress);
+    boundStatementBuilder = bind(boundStatementBuilder, "ip_address", ipAddress);
 
     //fromDate, toDate
     if (fromDate != null) {
-      boundStatementBuilder.setLocalDate("from_date", fromDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLocalDate("from_date", fromDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
     if (toDate != null) {
-      boundStatementBuilder.setLocalDate("to_date", toDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLocalDate("to_date", toDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
     //TODO range

@@ -32,63 +32,65 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import lombok.extern.jbosslog.JBossLog;
 
-public class AdminEventQueryProvider {
+@JBossLog
+ class AdminEventQueryProvider {
   private final CqlSession session;
   private final EntityHelper<AdminEventEntity> adminEventEntityHelper;
-  private final Select select;
 
   public AdminEventQueryProvider(
       MapperContext context, EntityHelper<AdminEventEntity> adminEventEntityHelper) {
     this.session = context.getSession();
     this.adminEventEntityHelper = adminEventEntityHelper;
-    this.select = adminEventEntityHelper.selectStart();
   }
 
   public PagingIterable<AdminEventEntity> getAdminEvents(List<String> operationTypes, List<String> resourceTypes, String realmId, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, Date fromTime, Date toTime, Integer firstResult, Integer maxResults, boolean orderByDescTime) {
 
     // (1) complete the query
+    Select select = adminEventEntityHelper.selectStart();
 
     //operationTypes
     if (operationTypes != null && operationTypes.size() > 0) {
-      select.whereColumn("operation_type").in(bindMarker());
+      select = select.whereColumn("operation_type").in(bindMarker());
     }
     
     //resourceTypes
     if (resourceTypes != null && resourceTypes.size() > 0) {
-      select.whereColumn("resource_type").in(bindMarker());
+      select = select.whereColumn("resource_type").in(bindMarker());
     }
 
     //realmId
-    field(select, "realm_id", realmId);
+    select = field(select, "realm_id", realmId);
 
     //authRealmId
-    field(select, "auth_realm_id", authRealmId);
+    select = field(select, "auth_realm_id", authRealmId);
 
     //authClientId
-    field(select, "auth_client_id", authClientId);
+    select = field(select, "auth_client_id", authClientId);
     
     //authUserId
-    field(select, "auth_user_id", authUserId);
+    select = field(select, "auth_user_id", authUserId);
 
     //authIpAddress
-    field(select, "auth_ip_address", authIpAddress);
+    select = field(select, "auth_ip_address", authIpAddress);
 
     //resourcePath
-    field(select, "resource_path", resourcePath);
+    select = field(select, "resource_path", resourcePath);
 
     //fromTime, toTime
     if (fromTime != null) {
-      select.whereColumn("time").isGreaterThanOrEqualTo(bindMarker("from_time"));
+      select = select.whereColumn("time").isGreaterThanOrEqualTo(bindMarker("from_time"));
     }
     if (toTime != null) {
-      select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_time"));
+      select = select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_time"));
     }
 
     //order
-    select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
+    select = select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
     // (2) prepare
+    log.infof("cql is %s", select.asCql());
     PreparedStatement preparedStatement = session.prepare(select.build());
 
     // (3) bind
@@ -96,38 +98,38 @@ public class AdminEventQueryProvider {
 
     //operationTypes
     if (operationTypes != null && operationTypes.size() > 0) {
-      boundStatementBuilder.setList("operation_type", operationTypes, String.class);
+      boundStatementBuilder = boundStatementBuilder.setList("operation_type", operationTypes, String.class);
     }
 
     //resourceTypes
     if (resourceTypes != null && resourceTypes.size() > 0) {
-      boundStatementBuilder.setList("resource_type", resourceTypes, String.class);
+      boundStatementBuilder = boundStatementBuilder.setList("resource_type", resourceTypes, String.class);
     }
 
     //realmId
-    bind(boundStatementBuilder, "realm_id", realmId);
+    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
     //authRealmId
-    bind(boundStatementBuilder, "auth_realm_id", authRealmId);
+    boundStatementBuilder = bind(boundStatementBuilder, "auth_realm_id", authRealmId);
 
     //authClientId
-    bind(boundStatementBuilder, "auth_client_id", authClientId);
+    boundStatementBuilder = bind(boundStatementBuilder, "auth_client_id", authClientId);
     
     //authUserId
-    bind(boundStatementBuilder, "auth_user_id", authUserId);
+    boundStatementBuilder = bind(boundStatementBuilder, "auth_user_id", authUserId);
 
     //authIpAddress
-    bind(boundStatementBuilder, "auth_ip_address", authIpAddress);
+    boundStatementBuilder = bind(boundStatementBuilder, "auth_ip_address", authIpAddress);
 
     //resourcePath
-    bind(boundStatementBuilder, "resource_path", resourcePath);
+    boundStatementBuilder = bind(boundStatementBuilder, "resource_path", resourcePath);
 
     //fromTime, toTime
     if (fromTime != null) {
-      boundStatementBuilder.setLocalDate("from_time", fromTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLocalDate("from_time", fromTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
     if (toTime != null) {
-      boundStatementBuilder.setLocalDate("to_time", toTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLocalDate("to_time", toTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
     //TODO range (i.e. use firstResult, maxResults)

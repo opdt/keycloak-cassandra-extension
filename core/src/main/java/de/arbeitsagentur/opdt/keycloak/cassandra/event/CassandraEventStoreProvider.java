@@ -15,6 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.event;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.Converters.*;
+
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.EventRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
@@ -38,18 +40,17 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraEventStoreProvider implements EventStoreProvider {
-  private static final String EMPTY_NOTE = "internal.emptyNote";
 
   private final EventRepository repository;
 
   @Override
   public void onEvent(Event event) {
-    
+    repository.insertEvent(eventToEntity(event));
   }
 
   @Override
   public void onEvent(AdminEvent event, boolean includeRepresentation) {
-
+    repository.insertAdminEvent(adminEventToEntity(event, includeRepresentation));
   }
   
   @Override

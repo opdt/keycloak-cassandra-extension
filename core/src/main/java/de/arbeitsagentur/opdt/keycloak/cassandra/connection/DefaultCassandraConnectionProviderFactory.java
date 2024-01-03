@@ -17,6 +17,9 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
@@ -89,6 +92,7 @@ import org.keycloak.sessions.CommonClientSessionModel;
 
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -168,9 +172,20 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
         repository = createRepository(cqlSession);
     }
 
+  public CqlSessionBuilder configure(CqlSessionBuilder cqlSessionBuilder) {
+    log.info("Configuring CqlSession Builder");
+    return cqlSessionBuilder
+        .withConfigLoader(DriverConfigLoader.programmaticBuilder()
+                          // Resolves the timeout query for create table timed out after PT2S
+                          .withDuration(DefaultDriverOption.METADATA_SCHEMA_REQUEST_TIMEOUT, Duration.ofMillis(60000))
+                          .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofMillis(60000))
+                          .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofMillis(15000))
+                          .build());
+  }
+
     private void createDbIfNotExists(List<InetSocketAddress> contactPointsList, String username, String password, String localDatacenter, String keyspace, int replicationFactor) {
         try (CqlSession createKeyspaceSession =
-                 CqlSession.builder()
+             CqlSession.builder()
                      .addContactPoints(contactPointsList)
                      .withAuthCredentials(username, password)
                      .withLocalDatacenter(localDatacenter)
@@ -180,7 +195,7 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
 
         log.info("Create schema...");
         try (CqlSession createKeyspaceSession =
-                 CqlSession.builder()
+             configure(CqlSession.builder())
                      .addContactPoints(contactPointsList)
                      .withAuthCredentials(username, password)
                      .withLocalDatacenter(localDatacenter)

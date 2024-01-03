@@ -48,11 +48,11 @@ public class CassandraEventRepository implements EventRepository {
 
   @Override
   public EventQuery eventQuery() {
-    return null;
+    return new CassandraEventQuery(dao);
   }
 
   @Override
   public AdminEventQuery adminEventQuery() {
-    return null;
+    return new CassandraAdminEventQuery(dao);
   }
 }

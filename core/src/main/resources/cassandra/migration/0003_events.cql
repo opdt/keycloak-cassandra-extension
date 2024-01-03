@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS events (
     id text,
-    time timestamp,
+    time bigint,
     type text,
     realm_id text,
     client_id text,
@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS events (
     session_id text,
     ip_address text,
     error text,
-    details_json,
-    details_json_long_value,
-    PRIMARY KEY (realm_id, id)
-) WITH CLUSTERING ORDER BY (id ASC);
+    details_json text,
+    details_json_long_value text,
+    PRIMARY KEY (realm_id, time, id)
+) WITH CLUSTERING ORDER BY (time DESC);
 
 CREATE TABLE IF NOT EXISTS admin_events (
     id text,
-    time timestamp,
+    time bigint,
     realm_id text,
     operation_type text,
     resource_type text,
@@ -26,5 +26,5 @@ CREATE TABLE IF NOT EXISTS admin_events (
     resource_path text,
     representation text,
     error text,
-    PRIMARY KEY (realm_id, id)
-) WITH CLUSTERING ORDER BY (id ASC);
+    PRIMARY KEY (realm_id, time, id)
+) WITH CLUSTERING ORDER BY (time DESC);

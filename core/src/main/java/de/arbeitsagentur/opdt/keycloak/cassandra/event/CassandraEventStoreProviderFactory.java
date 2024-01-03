@@ -55,7 +55,7 @@ public class CassandraEventStoreProviderFactory implements EventStoreProviderFac
   
   @Override
   public String getId() {
-    return "cassandra";
+    return "cassandra-event-store";
   }
   
   @Override
