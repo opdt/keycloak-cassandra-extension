@@ -36,6 +36,7 @@
     <modules>
         <module>core</module>
         <module>tests</module>
+        <module>metrics</module>
     </modules>
 
     <properties>
