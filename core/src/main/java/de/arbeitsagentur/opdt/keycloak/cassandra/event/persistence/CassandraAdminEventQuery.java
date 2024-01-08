@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+import static de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.Converters.*;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
@@ -152,8 +153,8 @@ class CassandraAdminEventQuery implements AdminEventQuery {
         .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
         .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
         .map(ee -> {
-        return (AdminEvent)null;
-      });
+            return entityToAdminEvent(ee);
+          });
   }
 
 }

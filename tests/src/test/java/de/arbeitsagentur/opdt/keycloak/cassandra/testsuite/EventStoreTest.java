@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -56,6 +55,7 @@ public class EventStoreTest extends KeycloakModelTest {
   
   @Override
   public void createEnvironment(KeycloakSession s) {
+    System.err.println("createEnvironment");
     RealmModel realm = s.realms().createRealm("test-id-1", "test1");
     this.realmId = realm.getId();
     realm = s.realms().createRealm("test-id-2", "test2");
@@ -64,6 +64,7 @@ public class EventStoreTest extends KeycloakModelTest {
 
   @Override
   public void cleanEnvironment(KeycloakSession s) {
+    System.err.println("clearEnvironment");
     s.realms().removeRealm(realmId);
     s.realms().removeRealm(realmId2);
   }
@@ -82,10 +83,6 @@ public class EventStoreTest extends KeycloakModelTest {
         events.onEvent(create(EventType.LOGIN, realmId2, "clientId", "userId", "127.0.0.1", "error"));
         events.onEvent(create(oldest, EventType.LOGIN, realmId, "clientId2", "userId", "127.0.0.1", "error"));
         events.onEvent(create(EventType.LOGIN, realmId, "clientId", "userId2", "127.0.0.1", "error"));
-      });
-    
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
 
         Assert.assertEquals(4, queryEvents(events, realmId, null, "clientId", null, null, null, null, null, null).size());
         Assert.assertEquals(5, queryEvents(events, realmId, null, null, null, null, null, null, null, null).size());
@@ -111,39 +108,31 @@ public class EventStoreTest extends KeycloakModelTest {
         Assert.assertEquals(newest, queryEvents(events, realmId, null, null, null, null, null, null, null, 1).get(0).getTime());
         Assert.assertEquals(oldest, queryEvents(events, realmId, null, null, null, null, null, null, 4, 1).get(0).getTime());
 
-      });
-    
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
-
         events.clear(session.realms().getRealm(realmId));
         events.clear(session.realms().getRealm(realmId2));
-      });
-    
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
 
         Assert.assertEquals(0, queryEvents(events, realmId, null, null, null, null, null, null, null, null).size());
-      });
     
-    String d04 = "2015-03-04";
-    String d05 = "2015-03-05";
-    String d06 = "2015-03-06";
-    String d07 = "2015-03-07";
-    
-    String d01 = "2015-03-01";
-    String d03 = "2015-03-03";
-    String d08 = "2015-03-08";
-    String d10 = "2015-03-10";
-    
-    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-    final Date date04 = formatter.parse(d04);
-    final Date date05 = formatter.parse(d05);
-    final Date date06 = formatter.parse(d06);
-    final Date date07 = formatter.parse(d07);
-    
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
+        String d04 = "2015-03-04";
+        String d05 = "2015-03-05";
+        String d06 = "2015-03-06";
+        String d07 = "2015-03-07";
+        
+        String d01 = "2015-03-01";
+        String d03 = "2015-03-03";
+        String d08 = "2015-03-08";
+        String d10 = "2015-03-10";
+        
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        Date date04 = null, date05 = null, date06 = null, date07 = null;
+        try {
+            date04 = formatter.parse(d04);
+            date05 = formatter.parse(d05);
+            date06 = formatter.parse(d06);
+            date07 = formatter.parse(d07);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
         events.onEvent(create(date04, EventType.LOGIN, realmId, "clientId", "userId", "127.0.0.1", "error"));
         events.onEvent(create(date04, EventType.LOGIN, realmId, "clientId", "userId", "127.0.0.1", "error"));
@@ -153,10 +142,6 @@ public class EventStoreTest extends KeycloakModelTest {
         events.onEvent(create(date06, EventType.LOGOUT, realmId, "clientId", "userId2", "127.0.0.1", "error"));
         events.onEvent(create(date07, EventType.UPDATE_PROFILE, realmId2, "clientId2", "userId2", "127.0.0.1", "error"));
         events.onEvent(create(date07, EventType.UPDATE_EMAIL, realmId2, "clientId2", "userId2", "127.0.0.1", "error"));
-      });
-
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
 
         Assert.assertEquals(6, queryEvents(events, realmId, null, "clientId", null, null, null, null, null, null).size());
         Assert.assertEquals(2, queryEvents(events, realmId2, null, "clientId2", null, null, null, null, null, null).size());
@@ -209,18 +194,15 @@ public class EventStoreTest extends KeycloakModelTest {
         events.onEvent(create(System.currentTimeMillis(), EventType.LOGIN, realmId, "clientId", "userId", "127.0.0.1", "error"));
         events.onEvent(create(System.currentTimeMillis(), EventType.LOGIN, realmId, "clientId", "userId", "127.0.0.1", "error"));
         events.onEvent(create(System.currentTimeMillis() - 30000, EventType.LOGIN, realmId2, "clientId", "userId", "127.0.0.1", "error"));
-      });
 
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
         events.clear(session.realms().getRealm(realmId));
-      });
-
-    inComittedTransaction(session -> {
-        EventStoreProvider events = session.getProvider(EventStoreProvider.class);
 
         Assert.assertEquals(0, queryEvents(events, realmId, null, null, null, null, null, null, null, null).size());
         Assert.assertEquals(1, queryEvents(events, realmId2, null, null, null, null, null, null, null, null).size());
+
+        events.clear(session.realms().getRealm(realmId2));
+
+        Assert.assertEquals(0, queryEvents(events, realmId2, null, null, null, null, null, null, null, null).size());
       });
   }
   
@@ -248,7 +230,8 @@ public class EventStoreTest extends KeycloakModelTest {
     details.put("key2", "value2");
     
     e.setDetails(details);
-    
+
+    System.err.println(String.format("Created event (%s) %d, %s, %s %s %s %s %s", e.getId(), time, event, realmId, clientId, userId, ipAddress, error));
     return e;
   }
 
@@ -272,7 +255,7 @@ public class EventStoreTest extends KeycloakModelTest {
                        .toDate(toDate)
                        .ipAddress(ipAddress);
     if (firstResult != null) query.firstResult(firstResult);
-    if (maxResults != null) query.maxResults(firstResult);
+    if (maxResults != null) query.maxResults(maxResults);
     return query.getResultStream()
         .collect(Collectors.toList());
   }
