@@ -50,13 +50,13 @@ public class EventQueryProvider {
     // (1) complete the query
     Select select = eventEntityHelper.selectStart();
 
-    //types
-    if (types != null && types.size() > 0) {
-      select = select.whereColumn("operation_type").in(bindMarker());
-    }
-    
     //realmId
     select = field(select, "realm_id", realmId);
+
+    //types
+    if (types != null && types.size() > 0) {
+      select = select.whereColumn("type").in(bindMarker("type"));
+    }
 
     //clientId
     select = field(select, "client_id", clientId);
@@ -78,6 +78,9 @@ public class EventQueryProvider {
     //order
     select = select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
+    //allow filtering
+    select = select.allowFiltering();
+    
     // (2) prepare
     log.infof("cql is %s", select.asCql());
     PreparedStatement preparedStatement = session.prepare(select.build());
@@ -85,13 +88,13 @@ public class EventQueryProvider {
     // (3) bind
     BoundStatementBuilder boundStatementBuilder = preparedStatement.boundStatementBuilder();
 
+    //realmId
+    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
+
     //types
     if (types != null && types.size() > 0) {
       boundStatementBuilder = boundStatementBuilder.setList("type", types, String.class);
     }
-
-    //realmId
-    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
     //clientId
     boundStatementBuilder = bind(boundStatementBuilder, "client_id", clientId);

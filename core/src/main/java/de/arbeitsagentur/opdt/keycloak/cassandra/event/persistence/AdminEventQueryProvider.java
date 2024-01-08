@@ -50,18 +50,18 @@ import lombok.extern.jbosslog.JBossLog;
     // (1) complete the query
     Select select = adminEventEntityHelper.selectStart();
 
+    //realmId
+    select = field(select, "realm_id", realmId);
+
     //operationTypes
     if (operationTypes != null && operationTypes.size() > 0) {
-      select = select.whereColumn("operation_type").in(bindMarker());
+      select = select.whereColumn("operation_type").in(bindMarker("operation_type"));
     }
     
     //resourceTypes
     if (resourceTypes != null && resourceTypes.size() > 0) {
-      select = select.whereColumn("resource_type").in(bindMarker());
+      select = select.whereColumn("resource_type").in(bindMarker("resource_type"));
     }
-
-    //realmId
-    select = field(select, "realm_id", realmId);
 
     //authRealmId
     select = field(select, "auth_realm_id", authRealmId);
@@ -89,12 +89,18 @@ import lombok.extern.jbosslog.JBossLog;
     //order
     select = select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
+    //allow filtering
+    select = select.allowFiltering();
+
     // (2) prepare
     log.infof("cql is %s", select.asCql());
     PreparedStatement preparedStatement = session.prepare(select.build());
 
     // (3) bind
     BoundStatementBuilder boundStatementBuilder = preparedStatement.boundStatementBuilder();
+
+    //realmId
+    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
     //operationTypes
     if (operationTypes != null && operationTypes.size() > 0) {
@@ -105,9 +111,6 @@ import lombok.extern.jbosslog.JBossLog;
     if (resourceTypes != null && resourceTypes.size() > 0) {
       boundStatementBuilder = boundStatementBuilder.setList("resource_type", resourceTypes, String.class);
     }
-
-    //realmId
-    boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
     //authRealmId
     boundStatementBuilder = bind(boundStatementBuilder, "auth_realm_id", authRealmId);

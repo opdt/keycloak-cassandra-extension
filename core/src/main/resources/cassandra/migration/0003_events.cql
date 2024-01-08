@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS events (
     error text,
     details_json text,
     details_json_long_value text,
-    PRIMARY KEY (realm_id, time, id)
+    PRIMARY KEY ((realm_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
 
 CREATE TABLE IF NOT EXISTS admin_events (
@@ -26,5 +26,5 @@ CREATE TABLE IF NOT EXISTS admin_events (
     resource_path text,
     representation text,
     error text,
-    PRIMARY KEY (realm_id, time, id)
+    PRIMARY KEY ((realm_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
