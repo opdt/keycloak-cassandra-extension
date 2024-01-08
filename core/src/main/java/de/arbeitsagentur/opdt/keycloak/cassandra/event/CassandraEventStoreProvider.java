@@ -70,7 +70,7 @@ public class CassandraEventStoreProvider implements EventStoreProvider {
 
   @Override
   public void clear(RealmModel realm) {
-    repository.deleteRealmEvents(realm.getId(), System.currentTimeMillis());
+    repository.deleteRealmEvents(realm.getId());
   }
 
   @Override
@@ -90,7 +90,7 @@ public class CassandraEventStoreProvider implements EventStoreProvider {
 
   @Override
   public void clearAdmin(RealmModel realm) {
-    repository.deleteAdminRealmEvents(realm.getId(), System.currentTimeMillis());
+    repository.deleteAdminRealmEvents(realm.getId());
   }
 
   @Override

@@ -37,8 +37,18 @@ public class CassandraEventRepository implements EventRepository {
   }
   
   @Override
+  public void deleteRealmEvents(String realmId) {
+    dao.deleteRealmEvents(realmId);
+  }
+  
+  @Override
   public void deleteRealmEvents(String realmId, long olderThan) {
     dao.deleteRealmEvents(realmId, olderThan);
+  }
+
+  @Override
+  public void deleteAdminRealmEvents(String realmId) {
+    dao.deleteAdminRealmEvents(realmId);
   }
 
   @Override

@@ -36,9 +36,15 @@ public interface EventDao extends BaseDao {
   @Insert
   void insertAdminEvent(AdminEventEntity adminEvent);
   
+  @Delete(entityClass = EventEntity.class, customWhereClause = "realm_id = :realmId")
+  void deleteRealmEvents(String realmId);
+  
   @Delete(entityClass = EventEntity.class, customWhereClause = "realm_id = :realmId AND time < :olderThan")
   void deleteRealmEvents(String realmId, long olderThan);
   
+  @Delete(entityClass = AdminEventEntity.class, customWhereClause = "realm_id = :realmId")
+  void deleteAdminRealmEvents(String realmId);
+
   @Delete(entityClass = AdminEventEntity.class, customWhereClause = "realm_id = :realmId AND time < :olderThan")
   void deleteAdminRealmEvents(String realmId, long olderThan);
 

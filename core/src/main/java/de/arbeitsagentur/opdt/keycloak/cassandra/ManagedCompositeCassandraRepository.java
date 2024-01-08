@@ -593,8 +593,16 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     this.eventRepository.insertAdminEvent(adminEvent);
   }
   
+  public void deleteRealmEvents(String realmId) {
+    this.eventRepository.deleteRealmEvents(realmId);
+  }
+  
   public void deleteRealmEvents(String realmId, long olderThan) {
     this.eventRepository.deleteRealmEvents(realmId, olderThan);
+  }
+  
+  public void deleteAdminRealmEvents(String realmId) {
+    this.eventRepository.deleteAdminRealmEvents(realmId);
   }
   
   public void deleteAdminRealmEvents(String realmId, long olderThan) {

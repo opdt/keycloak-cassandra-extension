@@ -129,10 +129,10 @@ import lombok.extern.jbosslog.JBossLog;
 
     //fromTime, toTime
     if (fromTime != null) {
-      boundStatementBuilder = boundStatementBuilder.setLocalDate("from_time", fromTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLong("from_date", fromDate.getTime());
     }
     if (toTime != null) {
-      boundStatementBuilder = boundStatementBuilder.setLocalDate("to_time", toTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLong("to_date", toDate.getTime());
     }
 
     //TODO range (i.e. use firstResult, maxResults)

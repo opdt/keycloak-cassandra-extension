@@ -88,13 +88,6 @@ public class EventStoreTest extends KeycloakModelTest {
         Assert.assertEquals(5, queryEvents(events, realmId, null, null, null, null, null, null, null, null).size());
         Assert.assertEquals(3, queryEvents(events, realmId, toList(EventType.LOGIN), null, null, null, null, null, null, null).size());
 
-
-        List<Event> evs = queryEvents(events, realmId2, toList(EventType.LOGIN), null, null, null, null, null, null, null);
-        for (Event e : evs) {
-          System.err.println(String.format("event %s %s %s %s %d", e.getId(), e.getRealmId(), e.getClientId(), e.getType().name(), e.getTime()));
-        }
-        
-        
         Assert.assertEquals(1, queryEvents(events, realmId2, toList(EventType.LOGIN), null, null, null, null, null, null, null).size());
         Assert.assertEquals(5, queryEvents(events, realmId, toList(EventType.LOGIN, EventType.REGISTER), null, null, null, null, null, null, null).size());
         Assert.assertEquals(1, queryEvents(events, realmId2, toList(EventType.LOGIN, EventType.REGISTER), null, null, null, null, null, null, null).size());
@@ -110,7 +103,7 @@ public class EventStoreTest extends KeycloakModelTest {
 
         events.clear(session.realms().getRealm(realmId));
         events.clear(session.realms().getRealm(realmId2));
-
+        
         Assert.assertEquals(0, queryEvents(events, realmId, null, null, null, null, null, null, null, null).size());
     
         String d04 = "2015-03-04";
@@ -234,6 +227,7 @@ public class EventStoreTest extends KeycloakModelTest {
     System.err.println(String.format("Created event (%s) %d, %s, %s %s %s %s %s", e.getId(), time, event, realmId, clientId, userId, ipAddress, error));
     return e;
   }
+  //        Assert.assertEquals(6, queryEvents(events, realmId, null, null, null, d04, null, null, null, null).size());
 
   private List<Event> queryEvents(EventStoreProvider events, String realmId, List<String> types, String client, String user, String dateFrom, String dateTo, String ipAddress, Integer firstResult, Integer maxResults) {
     if (types == null) types = ImmutableList.of();

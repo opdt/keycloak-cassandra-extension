@@ -107,15 +107,14 @@ public class EventQueryProvider {
 
     //fromDate, toDate
     if (fromDate != null) {
-      boundStatementBuilder = boundStatementBuilder.setLocalDate("from_date", fromDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLong("from_date", fromDate.getTime());
     }
     if (toDate != null) {
-      boundStatementBuilder = boundStatementBuilder.setLocalDate("to_date", toDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+      boundStatementBuilder = boundStatementBuilder.setLong("to_date", toDate.getTime());
     }
 
     //TODO range
     //firstResult, maxResults
-
     
     // (4) execute and map the results
     return session.execute(boundStatementBuilder.build()).map(eventEntityHelper::get);
