@@ -26,10 +26,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.google.common.base.Strings;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import lombok.extern.jbosslog.JBossLog;
@@ -39,35 +36,44 @@ public class EventQueryProvider {
   private final CqlSession session;
   private final EntityHelper<EventEntity> eventEntityHelper;
 
-  public EventQueryProvider(
-      MapperContext context, EntityHelper<EventEntity> eventEntityHelper) {
+  public EventQueryProvider(MapperContext context, EntityHelper<EventEntity> eventEntityHelper) {
     this.session = context.getSession();
     this.eventEntityHelper = eventEntityHelper;
   }
 
-  public PagingIterable<EventEntity> getEvents(List<String> types, String realmId, String clientId, String userId, Date fromDate, Date toDate, String ipAddress, Integer firstResult, Integer maxResults, boolean orderByDescTime) {
+  public PagingIterable<EventEntity> getEvents(
+      List<String> types,
+      String realmId,
+      String clientId,
+      String userId,
+      Date fromDate,
+      Date toDate,
+      String ipAddress,
+      Integer firstResult,
+      Integer maxResults,
+      boolean orderByDescTime) {
 
     // (1) complete the query
     Select select = eventEntityHelper.selectStart();
 
-    //realmId
+    // realmId
     select = field(select, "realm_id", realmId);
 
-    //types
+    // types
     if (types != null && types.size() > 0) {
       select = select.whereColumn("type").in(bindMarker("type"));
     }
 
-    //clientId
+    // clientId
     select = field(select, "client_id", clientId);
-    
-    //userId
+
+    // userId
     select = field(select, "user_id", userId);
 
-    //ipAddress
+    // ipAddress
     select = field(select, "ip_address", ipAddress);
 
-    //fromDate, toDate
+    // fromDate, toDate
     if (fromDate != null) {
       select = select.whereColumn("time").isGreaterThanOrEqualTo(bindMarker("from_date"));
     }
@@ -75,12 +81,12 @@ public class EventQueryProvider {
       select = select.whereColumn("time").isLessThanOrEqualTo(bindMarker("to_date"));
     }
 
-    //order
+    // order
     select = select.orderBy("time", orderByDescTime ? ClusteringOrder.DESC : ClusteringOrder.ASC);
 
-    //allow filtering
+    // allow filtering
     select = select.allowFiltering();
-    
+
     // (2) prepare
     log.infof("cql is %s", select.asCql());
     PreparedStatement preparedStatement = session.prepare(select.build());
@@ -88,24 +94,24 @@ public class EventQueryProvider {
     // (3) bind
     BoundStatementBuilder boundStatementBuilder = preparedStatement.boundStatementBuilder();
 
-    //realmId
+    // realmId
     boundStatementBuilder = bind(boundStatementBuilder, "realm_id", realmId);
 
-    //types
+    // types
     if (types != null && types.size() > 0) {
       boundStatementBuilder = boundStatementBuilder.setList("type", types, String.class);
     }
 
-    //clientId
+    // clientId
     boundStatementBuilder = bind(boundStatementBuilder, "client_id", clientId);
-    
-    //userId
+
+    // userId
     boundStatementBuilder = bind(boundStatementBuilder, "user_id", userId);
 
-    //ipAddress
+    // ipAddress
     boundStatementBuilder = bind(boundStatementBuilder, "ip_address", ipAddress);
 
-    //fromDate, toDate
+    // fromDate, toDate
     if (fromDate != null) {
       boundStatementBuilder = boundStatementBuilder.setLong("from_date", fromDate.getTime());
     }
@@ -113,11 +119,10 @@ public class EventQueryProvider {
       boundStatementBuilder = boundStatementBuilder.setLong("to_date", toDate.getTime());
     }
 
-    //TODO range
-    //firstResult, maxResults
-    
+    // TODO range
+    // firstResult, maxResults
+
     // (4) execute and map the results
     return session.execute(boundStatementBuilder.build()).map(eventEntityHelper::get);
-
   }
 }

@@ -17,9 +17,9 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
+import lombok.RequiredArgsConstructor;
 import org.keycloak.events.EventQuery;
 import org.keycloak.events.admin.AdminEventQuery;
-import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class CassandraEventRepository implements EventRepository {
@@ -30,17 +30,17 @@ public class CassandraEventRepository implements EventRepository {
   public void insertEvent(EventEntity event) {
     dao.insertEvent(event);
   }
-    
+
   @Override
   public void insertAdminEvent(AdminEventEntity adminEvent) {
     dao.insertAdminEvent(adminEvent);
   }
-  
+
   @Override
   public void deleteRealmEvents(String realmId) {
     dao.deleteRealmEvents(realmId);
   }
-  
+
   @Override
   public void deleteRealmEvents(String realmId, long olderThan) {
     dao.deleteRealmEvents(realmId, olderThan);

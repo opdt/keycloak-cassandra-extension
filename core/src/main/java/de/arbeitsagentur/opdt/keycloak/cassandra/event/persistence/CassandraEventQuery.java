@@ -18,23 +18,21 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import static de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.Converters.*;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.AdminEventEntity;
-import de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities.EventEntity;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import lombok.Data;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventQuery;
 import org.keycloak.events.EventType;
-import lombok.Data;
-import java.util.Date;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 @Data
 class CassandraEventQuery implements EventQuery {
 
   private final EventDao dao;
-  
+
   private List<String> types;
   private String realmId;
   private String clientId;
@@ -49,7 +47,7 @@ class CassandraEventQuery implements EventQuery {
   CassandraEventQuery(EventDao dao) {
     this.dao = dao;
   }
-  
+
   @Override
   public EventQuery type(EventType... typesArr) {
     types = new LinkedList<String>();
@@ -88,7 +86,7 @@ class CassandraEventQuery implements EventQuery {
     this.toDate = toDate;
     return this;
   }
-    
+
   @Override
   public EventQuery ipAddress(String ipAddress) {
     this.ipAddress = ipAddress;
@@ -121,12 +119,25 @@ class CassandraEventQuery implements EventQuery {
 
   @Override
   public Stream<Event> getResultStream() {
-    return StreamSupport.stream(dao.getEvents(types, realmId, clientId, userId, fromDate, toDate, ipAddress, firstResult, maxResults, orderByDescTime).spliterator(), false)
+    return StreamSupport.stream(
+            dao.getEvents(
+                    types,
+                    realmId,
+                    clientId,
+                    userId,
+                    fromDate,
+                    toDate,
+                    ipAddress,
+                    firstResult,
+                    maxResults,
+                    orderByDescTime)
+                .spliterator(),
+            false)
         .skip(firstResult == null || firstResult < 0 ? 0 : firstResult)
         .limit(maxResults == null || maxResults < 0 ? Long.MAX_VALUE : maxResults)
-        .map(ee -> {
-            return entityToEvent(ee);
-          });
+        .map(
+            ee -> {
+              return entityToEvent(ee);
+            });
   }
-  
 }

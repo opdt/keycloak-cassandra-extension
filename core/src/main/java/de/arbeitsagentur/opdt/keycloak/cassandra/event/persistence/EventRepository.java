@@ -24,13 +24,13 @@ public interface EventRepository {
   void insertEvent(EventEntity event);
 
   void insertAdminEvent(AdminEventEntity adminEvent);
-  
+
   void deleteRealmEvents(String realmId);
-  
+
   void deleteRealmEvents(String realmId, long olderThan);
-  
+
   void deleteAdminRealmEvents(String realmId);
-  
+
   void deleteAdminRealmEvents(String realmId, long olderThan);
 
   EventQuery eventQuery();

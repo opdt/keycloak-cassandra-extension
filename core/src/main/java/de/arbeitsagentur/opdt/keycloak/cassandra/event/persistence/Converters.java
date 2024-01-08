@@ -65,25 +65,26 @@ public class Converters {
   }
 
   public static AdminEventEntity adminEventToEntity(AdminEvent ev, boolean includeRepresentation) {
-    AdminEventEntity e = AdminEventEntity.builder()
-        .id(ev.getId())
-        .time(ev.getTime())
-        .realmId(ev.getRealmId())
-        .resourceType(ev.getResourceType().name())
-        .operationType(ev.getOperationType().name())
-        .authRealmId(ev.getAuthDetails().getRealmId())
-        .authClientId(ev.getAuthDetails().getClientId())
-        .authUserId(ev.getAuthDetails().getUserId())
-        .authIpAddress(ev.getAuthDetails().getIpAddress())
-        .resourcePath(ev.getResourcePath())
-        .error(ev.getError())
-        .build();
+    AdminEventEntity e =
+        AdminEventEntity.builder()
+            .id(ev.getId())
+            .time(ev.getTime())
+            .realmId(ev.getRealmId())
+            .resourceType(ev.getResourceType().name())
+            .operationType(ev.getOperationType().name())
+            .authRealmId(ev.getAuthDetails().getRealmId())
+            .authClientId(ev.getAuthDetails().getClientId())
+            .authUserId(ev.getAuthDetails().getUserId())
+            .authIpAddress(ev.getAuthDetails().getIpAddress())
+            .resourcePath(ev.getResourcePath())
+            .error(ev.getError())
+            .build();
     if (includeRepresentation) {
       e.setRepresentation(ev.getRepresentation());
     }
     return e;
   }
-  
+
   public static AdminEvent entityToAdminEvent(AdminEventEntity ee) {
     AdminEvent ev = new AdminEvent();
     ev.setId(ee.getId());
@@ -112,12 +113,11 @@ public class Converters {
   }
 
   @SuppressWarnings("unchecked")
-  public static Map<String,String> stringToJson(String s) {
+  public static Map<String, String> stringToJson(String s) {
     try {
-      return JsonSerialization.readValue(s, new TypeReference<HashMap<String,String>>() {}); 
+      return JsonSerialization.readValue(s, new TypeReference<HashMap<String, String>>() {});
     } catch (IOException e) {
       return ImmutableMap.of();
     }
   }
-
 }

@@ -15,38 +15,18 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 
-import com.google.common.collect.ImmutableList;
-import de.arbeitsagentur.opdt.keycloak.cassandra.event.CassandraEventStoreProvider;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.junit.Assert;
-import org.junit.Test;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.utils.KeycloakModelUtils;
-import org.keycloak.events.Event;
-import org.keycloak.events.EventQuery;
-import org.keycloak.events.EventType;
-import org.keycloak.events.EventStoreProvider;
+import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.AuthDetails;
 import org.keycloak.events.admin.OperationType;
-import org.keycloak.events.admin.ResourceType;
-import org.keycloak.representations.idm.RealmRepresentation;
-import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 
 /**
- * Adapted from testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/events/AdminEventStoreProviderTest.java
+ * Adapted from
+ * testsuite/integration-arquillian/tests/base/src/test/java/org/keycloak/testsuite/events/AdminEventStoreProviderTest.java
  */
 @JBossLog
 public class AdminEventStoreTest extends KeycloakModelTest {
@@ -56,7 +36,7 @@ public class AdminEventStoreTest extends KeycloakModelTest {
   static void log(String tmpl, Object... args) {
     System.err.println(String.format(tmpl, args));
   }
-  
+
   @Override
   public void createEnvironment(KeycloakSession s) {
     RealmModel realm = s.realms().createRealm("test-id-1", "test1");
@@ -186,89 +166,213 @@ public class AdminEventStoreTest extends KeycloakModelTest {
 
     }
   */
-  
-    // @Test
-    // public void queryResourcePath() {
-    //     long oldest = System.currentTimeMillis() - 30000;
-    //     long newest = System.currentTimeMillis() + 30000;
 
-    //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(newest, realmId, OperationType.ACTION, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(newest, realmId, OperationType.ACTION, realmId, "clientId", "userId2", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(realmId2, OperationType.CREATE, realmId2, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(oldest, realmId, OperationType.CREATE, realmId, "clientId2", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId", "userId2", "127.0.0.1", "/admin/realms/master", "error"), false);
+  // @Test
+  // public void queryResourcePath() {
+  //     long oldest = System.currentTimeMillis() - 30000;
+  //     long newest = System.currentTimeMillis() + 30000;
 
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "/admin/*", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "*/realms/*", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "*/master", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "/admin/realms/*", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "*/realms/master", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "/admin/*/master", null, null, null, null).size());
-    //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null, "/ad*/*/master", null, null, null, null).size());
+  //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId", "userId",
+  // "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(newest, realmId, OperationType.ACTION, realmId, "clientId",
+  // "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(newest, realmId, OperationType.ACTION, realmId, "clientId",
+  // "userId2", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(realmId2, OperationType.CREATE, realmId2, "clientId",
+  // "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(oldest, realmId, OperationType.CREATE, realmId, "clientId2",
+  // "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId",
+  // "userId2", "127.0.0.1", "/admin/realms/master", "error"), false);
 
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "/admin/*", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "*/realms/*", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "*/master", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "/admin/realms/*", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "*/realms/master", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "/admin/*/master", null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, "/ad*/*/master", null, null, null, null).size());
-    // }
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "/admin/*", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "*/realms/*", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "*/master", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "/admin/realms/*", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "*/realms/master", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "/admin/*/master", null, null, null, null).size());
+  //     Assert.assertEquals(5, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // "/ad*/*/master", null, null, null, null).size());
 
-    // @Test
-    // public void clear() {
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 20000, realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId2, OperationType.CREATE, realmId2, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "/admin/*", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "*/realms/*", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "*/master", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "/admin/realms/*", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "*/realms/master", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "/admin/*/master", null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // "/ad*/*/master", null, null, null, null).size());
+  // }
 
-    //     testing().clearAdminEventStore(realmId);
+  // @Test
+  // public void clear() {
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId,
+  // OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 20000, realmId,
+  // OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE,
+  // realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE,
+  // realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId2,
+  // OperationType.CREATE, realmId2, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
 
-    //     Assert.assertEquals(0, testing().getAdminEvents(realmId, null, null, null, null, null, null, null, null, null, null).size());
-    //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null, null, null, null, null, null).size());
-    // }
+  //     testing().clearAdminEventStore(realmId);
 
-    // @Test
-    // public void clearOld() {
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 20000, realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
-    //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     Assert.assertEquals(0, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // null, null, null, null, null).size());
+  //     Assert.assertEquals(1, testing().getAdminEvents(realmId2, null, null, null, null, null,
+  // null, null, null, null, null).size());
+  // }
 
-    //     testing().clearAdminEventStore(realmId, System.currentTimeMillis() - 10000);
+  // @Test
+  // public void clearOld() {
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId,
+  // OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 20000, realmId,
+  // OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE,
+  // realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis(), realmId, OperationType.CREATE,
+  // realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "error"), false);
+  //     testing().onAdminEvent(create(System.currentTimeMillis() - 30000, realmId,
+  // OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master",
+  // "error"), false);
 
-    //     Assert.assertEquals(2, testing().getAdminEvents(realmId, null, null, null, null, null, null, null, null, null, null).size());
-    // }
+  //     testing().clearAdminEventStore(realmId, System.currentTimeMillis() - 10000);
 
-    // @Test
-    // public void handleCustomResourceTypeEvents() {
-    //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId", "userId", "127.0.0.1", "/admin/realms/master", "my-custom-resource", "error"), false);
+  //     Assert.assertEquals(2, testing().getAdminEvents(realmId, null, null, null, null, null,
+  // null, null, null, null, null).size());
+  // }
 
-    //     List<AdminEventRepresentation> adminEvents = testing().getAdminEvents(realmId, null, null, "clientId", null, null, null, null, null, null, null);
-    //     Assert.assertEquals(1, adminEvents.size());
-    //     Assert.assertEquals("my-custom-resource", adminEvents.get(0).getResourceType());
-    // }
+  // @Test
+  // public void handleCustomResourceTypeEvents() {
+  //     testing().onAdminEvent(create(realmId, OperationType.CREATE, realmId, "clientId", "userId",
+  // "127.0.0.1", "/admin/realms/master", "my-custom-resource", "error"), false);
 
-  private AdminEvent create(String realmId, OperationType operation, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, String error) {
-    return create(System.currentTimeMillis(), realmId, operation, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, error);
+  //     List<AdminEventRepresentation> adminEvents = testing().getAdminEvents(realmId, null, null,
+  // "clientId", null, null, null, null, null, null, null);
+  //     Assert.assertEquals(1, adminEvents.size());
+  //     Assert.assertEquals("my-custom-resource", adminEvents.get(0).getResourceType());
+  // }
+
+  private AdminEvent create(
+      String realmId,
+      OperationType operation,
+      String authRealmId,
+      String authClientId,
+      String authUserId,
+      String authIpAddress,
+      String resourcePath,
+      String error) {
+    return create(
+        System.currentTimeMillis(),
+        realmId,
+        operation,
+        authRealmId,
+        authClientId,
+        authUserId,
+        authIpAddress,
+        resourcePath,
+        error);
   }
 
-  private AdminEvent create(String realmId, OperationType operation, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, String resourceType, String error) {
-    return create(System.currentTimeMillis(), realmId, operation, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, resourceType, error);
+  private AdminEvent create(
+      String realmId,
+      OperationType operation,
+      String authRealmId,
+      String authClientId,
+      String authUserId,
+      String authIpAddress,
+      String resourcePath,
+      String resourceType,
+      String error) {
+    return create(
+        System.currentTimeMillis(),
+        realmId,
+        operation,
+        authRealmId,
+        authClientId,
+        authUserId,
+        authIpAddress,
+        resourcePath,
+        resourceType,
+        error);
   }
 
-  private AdminEvent create(Date date, String realmId, OperationType operation, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, String error) {
-    return create(date.getTime(), realmId, operation, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, error);
+  private AdminEvent create(
+      Date date,
+      String realmId,
+      OperationType operation,
+      String authRealmId,
+      String authClientId,
+      String authUserId,
+      String authIpAddress,
+      String resourcePath,
+      String error) {
+    return create(
+        date.getTime(),
+        realmId,
+        operation,
+        authRealmId,
+        authClientId,
+        authUserId,
+        authIpAddress,
+        resourcePath,
+        error);
   }
 
-  private AdminEvent create(long time, String realmId, OperationType operation, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, String error) {
-    return create(time, realmId, operation, authRealmId, authClientId, authUserId, authIpAddress, resourcePath, null, error);
+  private AdminEvent create(
+      long time,
+      String realmId,
+      OperationType operation,
+      String authRealmId,
+      String authClientId,
+      String authUserId,
+      String authIpAddress,
+      String resourcePath,
+      String error) {
+    return create(
+        time,
+        realmId,
+        operation,
+        authRealmId,
+        authClientId,
+        authUserId,
+        authIpAddress,
+        resourcePath,
+        null,
+        error);
   }
 
-  private AdminEvent create(long time, String realmId, OperationType operation, String authRealmId, String authClientId, String authUserId, String authIpAddress, String resourcePath, String resourceType, String error) {
+  private AdminEvent create(
+      long time,
+      String realmId,
+      OperationType operation,
+      String authRealmId,
+      String authClientId,
+      String authUserId,
+      String authIpAddress,
+      String resourcePath,
+      String resourceType,
+      String error) {
     AdminEvent e = new AdminEvent();
     e.setTime(time);
     e.setRealmId(realmId);
@@ -284,5 +388,4 @@ public class AdminEventStoreTest extends KeycloakModelTest {
     e.setError(error);
     return e;
   }
-
 }
