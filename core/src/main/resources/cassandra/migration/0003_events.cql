@@ -28,3 +28,7 @@ CREATE TABLE IF NOT EXISTS admin_events (
     error text,
     PRIMARY KEY ((realm_id), time, id)
 ) WITH CLUSTERING ORDER BY (time DESC);
+
+/* TODO support SASI indexes for resource_path LIKE query in the future?
+CREATE CUSTOM INDEX idx_admin_event_resource_path ON admin_events (resource_path) USING 'org.apache.cassandra.index.sasi.SASIIndex' WITH OPTIONS = {'mode': 'CONTAINS', 'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.StandardAnalyzer', 'case_sensitive': 'false'};
+*/

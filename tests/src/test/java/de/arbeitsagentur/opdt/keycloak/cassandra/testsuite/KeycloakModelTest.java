@@ -595,4 +595,13 @@ public abstract class KeycloakModelTest {
         realm = s.realms().createRealm(name);
         return realm;
     }
+
+  protected List<String> toList(Enum... enumTypes) {
+    List<String> enumList = new ArrayList<>();
+    for (Enum type : enumTypes) {
+      enumList.add(type.toString());
+    }
+    return enumList;
+  }
+
 }

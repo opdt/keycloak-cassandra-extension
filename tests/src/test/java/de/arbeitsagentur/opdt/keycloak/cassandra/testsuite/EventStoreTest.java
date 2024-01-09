@@ -48,13 +48,8 @@ public class EventStoreTest extends KeycloakModelTest {
   private String realmId;
   private String realmId2;
 
-  static void log(String tmpl, Object... args) {
-    System.err.println(String.format(tmpl, args));
-  }
-
   @Override
   public void createEnvironment(KeycloakSession s) {
-    System.err.println("createEnvironment");
     RealmModel realm = s.realms().createRealm("test-id-1", "test1");
     this.realmId = realm.getId();
     realm = s.realms().createRealm("test-id-2", "test2");
@@ -63,7 +58,6 @@ public class EventStoreTest extends KeycloakModelTest {
 
   @Override
   public void cleanEnvironment(KeycloakSession s) {
-    System.err.println("clearEnvironment");
     s.realms().removeRealm(realmId);
     s.realms().removeRealm(realmId2);
   }
@@ -560,16 +554,8 @@ public class EventStoreTest extends KeycloakModelTest {
     details.put("key2", "value2");
 
     e.setDetails(details);
-
-    System.err.println(
-        String.format(
-            "Created event (%s) %d, %s, %s %s %s %s %s",
-            e.getId(), time, event, realmId, clientId, userId, ipAddress, error));
     return e;
   }
-
-  //        Assert.assertEquals(6, queryEvents(events, realmId, null, null, null, d04, null, null,
-  // null, null).size());
 
   private List<Event> queryEvents(
       EventStoreProvider events,
@@ -610,12 +596,5 @@ public class EventStoreTest extends KeycloakModelTest {
     if (maxResults != null) query.maxResults(maxResults);
     return query.getResultStream().collect(Collectors.toList());
   }
-
-  private List<String> toList(Enum... enumTypes) {
-    List<String> enumList = new ArrayList<>();
-    for (Enum type : enumTypes) {
-      enumList.add(type.toString());
-    }
-    return enumList;
-  }
+  
 }

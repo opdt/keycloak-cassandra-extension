@@ -33,10 +33,11 @@ import org.keycloak.util.JsonSerialization;
 public class Converters {
 
   public static EventEntity eventToEntity(Event ev) {
+    String type = ev.getType() != null ? ev.getType().name() : null;
     return EventEntity.builder()
         .id(ev.getId())
         .time(ev.getTime())
-        .type(ev.getType().name())
+        .type(type)
         .realmId(ev.getRealmId())
         .clientId(ev.getClientId())
         .userId(ev.getUserId())
@@ -49,10 +50,11 @@ public class Converters {
   }
 
   public static Event entityToEvent(EventEntity ee) {
+    EventType eventType = ee.getType() != null ? EventType.valueOf(ee.getType()) : null;
     Event ev = new Event();
     ev.setId(ee.getId());
     ev.setTime(ee.getTime());
-    ev.setType(EventType.valueOf(ee.getType()));
+    ev.setType(eventType);
     ev.setRealmId(ee.getRealmId());
     ev.setClientId(ee.getClientId());
     ev.setUserId(ee.getUserId());
@@ -65,20 +67,24 @@ public class Converters {
   }
 
   public static AdminEventEntity adminEventToEntity(AdminEvent ev, boolean includeRepresentation) {
+    String resourceType = ev.getResourceType() != null ? ev.getResourceType().name() : null;
+    String operationType = ev.getOperationType() != null ? ev.getOperationType().name() : null;
     AdminEventEntity e =
         AdminEventEntity.builder()
             .id(ev.getId())
             .time(ev.getTime())
             .realmId(ev.getRealmId())
-            .resourceType(ev.getResourceType().name())
-            .operationType(ev.getOperationType().name())
-            .authRealmId(ev.getAuthDetails().getRealmId())
-            .authClientId(ev.getAuthDetails().getClientId())
-            .authUserId(ev.getAuthDetails().getUserId())
-            .authIpAddress(ev.getAuthDetails().getIpAddress())
+            .resourceType(resourceType)
+            .operationType(operationType)
             .resourcePath(ev.getResourcePath())
             .error(ev.getError())
             .build();
+    if (ev.getAuthDetails() != null) {
+      e.setAuthRealmId(ev.getAuthDetails().getRealmId());
+      e.setAuthClientId(ev.getAuthDetails().getClientId());
+      e.setAuthUserId(ev.getAuthDetails().getUserId());
+      e.setAuthIpAddress(ev.getAuthDetails().getIpAddress());
+    }      
     if (includeRepresentation) {
       e.setRepresentation(ev.getRepresentation());
     }
@@ -86,12 +92,13 @@ public class Converters {
   }
 
   public static AdminEvent entityToAdminEvent(AdminEventEntity ee) {
+    OperationType operationType = ee.getOperationType() != null ? OperationType.valueOf(ee.getOperationType()) : null;
     AdminEvent ev = new AdminEvent();
     ev.setId(ee.getId());
     ev.setTime(ee.getTime());
     ev.setRealmId(ee.getRealmId());
-    ev.setResourceType(ResourceType.valueOf(ee.getResourceType()));
-    ev.setOperationType(OperationType.valueOf(ee.getOperationType()));
+    ev.setResourceTypeAsString(ee.getResourceType());
+    ev.setOperationType(operationType);
     ev.setResourcePath(ee.getResourcePath());
     ev.setRepresentation(ee.getRepresentation());
     ev.setError(ee.getError());

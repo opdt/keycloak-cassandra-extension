@@ -86,7 +86,11 @@ class AdminEventQueryProvider {
     select = field(select, "auth_ip_address", authIpAddress);
 
     // resourcePath
-    select = field(select, "resource_path", resourcePath);
+    if (resourcePath != null) {
+      //TODO enable SASI indexes in future?
+      // select = select.whereColumn("resource_path").like(bindMarker("resource_path"));
+      select = select.whereColumn("resource_path").isEqualTo(bindMarker("resource_path"));
+    }
 
     // fromTime, toTime
     if (fromTime != null) {
@@ -137,14 +141,19 @@ class AdminEventQueryProvider {
     boundStatementBuilder = bind(boundStatementBuilder, "auth_ip_address", authIpAddress);
 
     // resourcePath
-    boundStatementBuilder = bind(boundStatementBuilder, "resource_path", resourcePath);
-
+    if (resourcePath != null) {
+      //TODO enable SASI indexes in future?
+      //String rp = resourcePath.replace('*', '%');
+      String rp = resourcePath;
+      boundStatementBuilder = bind(boundStatementBuilder, "resource_path", rp);
+    }
+    
     // fromTime, toTime
     if (fromTime != null) {
-      boundStatementBuilder = boundStatementBuilder.setLong("from_date", fromDate.getTime());
+      boundStatementBuilder = boundStatementBuilder.setLong("from_time", fromTime.getTime());
     }
     if (toTime != null) {
-      boundStatementBuilder = boundStatementBuilder.setLong("to_date", toDate.getTime());
+      boundStatementBuilder = boundStatementBuilder.setLong("to_time", toTime.getTime());
     }
 
     // TODO range (i.e. use firstResult, maxResults)
