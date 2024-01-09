@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import de.arbeitsagentur.opdt.keycloak.cassandra.event.CassandraEventStoreProvider;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -596,5 +595,4 @@ public class EventStoreTest extends KeycloakModelTest {
     if (maxResults != null) query.maxResults(maxResults);
     return query.getResultStream().collect(Collectors.toList());
   }
-  
 }

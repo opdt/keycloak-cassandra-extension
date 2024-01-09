@@ -27,7 +27,6 @@ import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.AuthDetails;
 import org.keycloak.events.admin.OperationType;
-import org.keycloak.events.admin.ResourceType;
 import org.keycloak.util.JsonSerialization;
 
 public class Converters {
@@ -84,7 +83,7 @@ public class Converters {
       e.setAuthClientId(ev.getAuthDetails().getClientId());
       e.setAuthUserId(ev.getAuthDetails().getUserId());
       e.setAuthIpAddress(ev.getAuthDetails().getIpAddress());
-    }      
+    }
     if (includeRepresentation) {
       e.setRepresentation(ev.getRepresentation());
     }
@@ -92,7 +91,8 @@ public class Converters {
   }
 
   public static AdminEvent entityToAdminEvent(AdminEventEntity ee) {
-    OperationType operationType = ee.getOperationType() != null ? OperationType.valueOf(ee.getOperationType()) : null;
+    OperationType operationType =
+        ee.getOperationType() != null ? OperationType.valueOf(ee.getOperationType()) : null;
     AdminEvent ev = new AdminEvent();
     ev.setId(ee.getId());
     ev.setTime(ee.getTime());

@@ -87,7 +87,7 @@ class AdminEventQueryProvider {
 
     // resourcePath
     if (resourcePath != null) {
-      //TODO enable SASI indexes in future?
+      // TODO enable SASI indexes in future?
       // select = select.whereColumn("resource_path").like(bindMarker("resource_path"));
       select = select.whereColumn("resource_path").isEqualTo(bindMarker("resource_path"));
     }
@@ -142,12 +142,12 @@ class AdminEventQueryProvider {
 
     // resourcePath
     if (resourcePath != null) {
-      //TODO enable SASI indexes in future?
-      //String rp = resourcePath.replace('*', '%');
+      // TODO enable SASI indexes in future?
+      // String rp = resourcePath.replace('*', '%');
       String rp = resourcePath;
       boundStatementBuilder = bind(boundStatementBuilder, "resource_path", rp);
     }
-    
+
     // fromTime, toTime
     if (fromTime != null) {
       boundStatementBuilder = boundStatementBuilder.setLong("from_time", fromTime.getTime());
