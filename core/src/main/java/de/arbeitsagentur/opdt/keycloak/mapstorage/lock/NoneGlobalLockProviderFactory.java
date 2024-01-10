@@ -28,8 +28,7 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 import java.time.Duration;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
@@ -37,9 +36,9 @@ import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_P
  * Identical with "none"-global lock provider from map storage days but without environment dependent activation
  */
 @AutoService(GlobalLockProviderFactory.class)
-public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory, EnvironmentDependentProviderFactory {
+public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory {
 
-    public static final String PROVIDER_ID = "dblock";
+    public static final String PROVIDER_ID = "none";
 
     @Override
     public GlobalLockProvider create(KeycloakSession session) {
@@ -83,10 +82,5 @@ public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory,
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

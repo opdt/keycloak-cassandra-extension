@@ -23,11 +23,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.models.*;
-import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.InvalidationHandler;
 import org.keycloak.storage.DatastoreProvider;
 import org.keycloak.storage.DatastoreProviderFactory;
-
 
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.*;
@@ -35,8 +33,8 @@ import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_P
 
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
-public class CassandraDatastoreProviderFactory implements DatastoreProviderFactory, InvalidationHandler {
-    private static final String PROVIDER_ID = "cassandra";
+public class CacheCassandraDatastoreProviderFactory implements DatastoreProviderFactory, InvalidationHandler {
+    private static final String PROVIDER_ID = "cassandra-cache";
 
     @Override
     public String getId() {
@@ -45,12 +43,12 @@ public class CassandraDatastoreProviderFactory implements DatastoreProviderFacto
 
     @Override
     public DatastoreProvider create(KeycloakSession session) {
-        return createProviderCached(session, DatastoreProvider.class, () -> new CassandraDatastoreProvider(session));
+        return createProviderCached(session, DatastoreProvider.class, () -> new CacheCassandraDatastoreProvider(session));
     }
 
     @Override
     public void init(Config.Scope scope) {
-        log.info("Using cassandra datastore...");
+        log.info("Using cassandra-cache datastore...");
     }
 
     @Override

@@ -92,7 +92,7 @@ import java.util.stream.Collectors;
 
 @JBossLog
 @AutoService(CassandraConnectionProviderFactory.class)
-public class DefaultCassandraConnectionProviderFactory implements CassandraConnectionProviderFactory<CassandraConnectionProvider>, EnvironmentDependentProviderFactory {
+public class DefaultCassandraConnectionProviderFactory implements CassandraConnectionProviderFactory<CassandraConnectionProvider> {
     public static final String PROVIDER_ID = "default";
     private CqlSession cqlSession;
     private CompositeRepository repository;
@@ -194,11 +194,6 @@ public class DefaultCassandraConnectionProviderFactory implements CassandraConne
     @Override
     public String getId() {
         return PROVIDER_ID;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return true;
     }
 
     @Override

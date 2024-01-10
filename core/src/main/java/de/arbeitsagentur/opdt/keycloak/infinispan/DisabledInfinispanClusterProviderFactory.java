@@ -18,45 +18,49 @@ package de.arbeitsagentur.opdt.keycloak.infinispan;
 
 import com.google.auto.service.AutoService;
 import lombok.extern.jbosslog.JBossLog;
-import org.infinispan.Cache;
-import org.infinispan.client.hotrod.RemoteCache;
 import org.keycloak.Config;
-import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
-import org.keycloak.connections.infinispan.InfinispanConnectionProviderFactory;
-import org.keycloak.connections.infinispan.TopologyInfo;
+import org.keycloak.cluster.*;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
-@AutoService(InfinispanConnectionProviderFactory.class)
-public class NullInfinispanConnectionProviderFactory implements InfinispanConnectionProviderFactory, EnvironmentDependentProviderFactory {
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
+@AutoService(ClusterProviderFactory.class)
+public class DisabledInfinispanClusterProviderFactory implements ClusterProviderFactory {
 
     @Override
-    public InfinispanConnectionProvider create(KeycloakSession session) {
-        return createProviderCached(session, InfinispanConnectionProvider.class, () -> new InfinispanConnectionProvider() {
+    public ClusterProvider create(KeycloakSession session) {
+        return createProviderCached(session, ClusterProvider.class, () -> new ClusterProvider() {
             @Override
-            public <K, V> Cache<K, V> getCache(String s) {
+            public int getClusterStartupTime() {
+                return 0;
+            }
+
+            @Override
+            public <T> ExecutionResult<T> executeIfNotExecuted(String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
                 return null;
             }
 
             @Override
-            public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
+            public Future<Boolean> executeIfNotExecutedAsync(String taskKey, int taskTimeoutInSeconds, Callable task) {
                 return null;
             }
 
             @Override
-            public TopologyInfo getTopologyInfo() {
-                return null;
+            public void registerListener(String taskKey, ClusterListener task) {
+
+            }
+
+            @Override
+            public void notify(String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {
+
             }
 
             @Override
@@ -68,7 +72,7 @@ public class NullInfinispanConnectionProviderFactory implements InfinispanConnec
 
     @Override
     public void init(Config.Scope config) {
-        log.info("Infinispan deactivated...");
+        log.info("Infinispan-ClusterProvider deactivated...");
     }
 
     @Override
@@ -88,6 +92,6 @@ public class NullInfinispanConnectionProviderFactory implements InfinispanConnec
 
     @Override
     public String getId() {
-        return "default";
+        return "disabled";
     }
 }

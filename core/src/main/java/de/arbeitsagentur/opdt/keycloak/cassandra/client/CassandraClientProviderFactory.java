@@ -24,12 +24,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(ClientProviderFactory.class)
-public class CassandraClientProviderFactory implements ClientProviderFactory<CassandraClientProvider>, EnvironmentDependentProviderFactory {
+public class CassandraClientProviderFactory implements ClientProviderFactory<CassandraClientProvider> {
     @Override
     public CassandraClientProvider create(KeycloakSession session) {
         CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
@@ -59,10 +59,5 @@ public class CassandraClientProviderFactory implements ClientProviderFactory<Cas
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled();
     }
 }

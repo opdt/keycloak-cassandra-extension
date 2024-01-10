@@ -23,14 +23,13 @@ import org.keycloak.Config;
 import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
 @AutoService(UserSessionProviderFactory.class)
-public class CassandraUserSessionProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
+public class CassandraUserSessionProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider> {
 
     @Override
     public CassandraUserSessionProvider create(KeycloakSession session) {
@@ -55,17 +54,12 @@ public class CassandraUserSessionProviderFactory implements UserSessionProviderF
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 
     @Override

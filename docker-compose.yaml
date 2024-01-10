@@ -29,9 +29,27 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.3 
     volumes:
-      - ${PWD}/core/target/keycloak-cassandra-extension-2.0.5-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
+      - ${PWD}/core/target/keycloak-cassandra-extension-2.1.1-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
     environment:
-      - KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true
+      - KC_SPI_DATASTORE_LEGACY_ENABLED=false
+      - KC_SPI_DATASTORE_PROVIDER=cassandra
+      - KC_SPI_AUTHENTICATION_SESSIONS_INFINISPAN_ENABLED=false
+      - KC_SPI_USER_SESSIONS_INFINISPAN_ENABLED=false
+      - KC_SPI_SINGLE_USE_OBJECT_INFINISPAN_ENABLED=false
+      - KC_SPI_LOGIN_FAILURE_INFINISPAN_ENABLED=false
+      - KC_SPI_AUTHORIZATION_CACHE_INFINISPAN_ENABLED=false
+      - KC_SPI_AUTHORIZATION_CACHE_PROVIDER=disabled
+      - KC_SPI_CLUSTER_INFINISPAN_ENABLED=false
+      - KC_SPI_CLUSTER_QUARKUS_ENABLED=false
+      - KC_SPI_CLUSTER_PROVIDER=disabled
+      - KC_SPI_DEPLOYMENT_STATE_JPA_ENABLED=false
+      - KC_SPI_DEPLOYMENT_STATE_PROVIDER=cassandra
+      - KC_SPI_PUBLIC_KEY_STORAGE_INFINISPAN_ENABLED=false
+      - KC_SPI_PUBLIC_KEY_STORAGE_PROVIDER=cassandra
+      - KC_SPI_GLOBAL_LOCK_DBLOCK_ENABLED=false
+      - KC_SPI_GLOBAL_LOCK_PROVIDER=none
+      - KC_SPI_STICKY_SESSION_ENCODER_INFINISPAN_ENABLED=false
+      - KC_SPI_STICKY_SESSION_ENCODER_PROVIDER=disabled
       - KC_SPI_CONNECTIONS_JPA_LEGACY_ENABLED=false
       - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_PORT=9042
       - KC_SPI_CASSANDRA_CONNECTION_DEFAULT_CONTACT_POINTS=cassandra

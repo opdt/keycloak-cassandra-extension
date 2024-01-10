@@ -24,13 +24,12 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.AuthenticationSessionProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(AuthenticationSessionProviderFactory.class)
-public class CassandraAuthSessionProviderFactory implements AuthenticationSessionProviderFactory<CassandraAuthSessionProvider>, EnvironmentDependentProviderFactory {
+public class CassandraAuthSessionProviderFactory implements AuthenticationSessionProviderFactory<CassandraAuthSessionProvider> {
     public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
 
     public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
@@ -62,16 +61,11 @@ public class CassandraAuthSessionProviderFactory implements AuthenticationSessio
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

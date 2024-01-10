@@ -21,14 +21,12 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.authorization.model.*;
 import org.keycloak.authorization.store.*;
-import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.authorization.CachedStoreFactoryProvider;
 import org.keycloak.models.cache.authorization.CachedStoreProviderFactory;
-import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 
 import java.util.Collections;
@@ -37,14 +35,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @JBossLog
 @AutoService(CachedStoreProviderFactory.class)
-public class NullCachedStoreProviderFactory implements CachedStoreProviderFactory, EnvironmentDependentProviderFactory {
+public class DisabledCachedStoreProviderFactory implements CachedStoreProviderFactory {
     @Override
     public CachedStoreFactoryProvider create(KeycloakSession session) {
         return createProviderCached(session, CachedStoreFactoryProvider.class, () -> new CachedStoreFactoryProvider() {
@@ -332,11 +329,6 @@ public class NullCachedStoreProviderFactory implements CachedStoreProviderFactor
 
     @Override
     public String getId() {
-        return "default";
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+        return "disabled";
     }
 }

@@ -14,19 +14,16 @@ Use version `1.3.2-22.0.1` for Keycloak up until 22.x.x.
 
 - Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/1.1.0-22.0.1/keycloak-cassandra-extension-1.1.0-22.0.1.jar
 - Put the JAR in Keycloak's providers folder
-- Set `KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true` (`kc.community.datastore.cassandra.enabled=true` as system property) or `KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true` (`kc.community.datastore.cassandra.cache.enabled=true` as system property) to enable the extension
+- Set the configuration according to `docker-compose.yaml` - a lot of providers need to be deactivated
+- Use `cassandra` as Datastore-Provider to replace the whole storage with cassandra, or `cassandra-cache` to just replace storage areas (authSessions, userSessions, loginFailures, singleUseObjects)
 - Set the necessary configuration options like cassandra endpoints (see the overview below)
-
-> :warning: **Important information:**
-Since map storage has been removed from Keycloak, using different storage providers for different storage areas (like users, roles) requires you to implement your own `DatastoreProvider`.
-If "cache mode" is active (`KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true`), default providers (jpa) are used for non-cache areas.
 
 The following parameters might be needed in addition to the configuration options of this extension (see below):
 
 | CLI-Parameter                                      | Description                                                                                                            |
 |----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | --features-disabled=authorization                  | Disable authorization (this is essential as otherwise Keycloak tries to use InfinispanStoreFactory at a lot of places) |
-| --spi-connections-jpa-legacy-enabled=false         | Deactivate automatic JPA schema migration                                                                              |
+| --cache=local                                      | Prevent Infinispan-startup to init a cluster                                                                           |
 
 ## Configuration options
 

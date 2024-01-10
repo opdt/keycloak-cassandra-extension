@@ -31,15 +31,14 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(DeploymentStateProviderFactory.class)
-public class MapDeploymentStateProviderFactory implements DeploymentStateProviderFactory, EnvironmentDependentProviderFactory {
+public class MapDeploymentStateProviderFactory implements DeploymentStateProviderFactory {
 
-    public static final String PROVIDER_ID = "jpa";
+    public static final String PROVIDER_ID = "cassandra";
 
     private static final String RESOURCES_VERSION_SEED = "resourcesVersionSeed";
 
@@ -111,10 +110,5 @@ public class MapDeploymentStateProviderFactory implements DeploymentStateProvide
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

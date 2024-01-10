@@ -24,13 +24,12 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.SingleUseObjectProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(SingleUseObjectProviderFactory.class)
-public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider>, EnvironmentDependentProviderFactory {
+public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider> {
 
     @Override
     public CassandraSingleUseObjectProvider create(KeycloakSession session) {
@@ -55,16 +54,11 @@ public class CassandraSingleUseObjectProviderFactory implements SingleUseObjectP
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

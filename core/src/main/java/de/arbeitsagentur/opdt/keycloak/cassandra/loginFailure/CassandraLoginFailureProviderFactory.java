@@ -24,13 +24,12 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.UserLoginFailureProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(UserLoginFailureProviderFactory.class)
-public class CassandraLoginFailureProviderFactory implements UserLoginFailureProviderFactory<CassandraLoginFailureProvider>, EnvironmentDependentProviderFactory {
+public class CassandraLoginFailureProviderFactory implements UserLoginFailureProviderFactory<CassandraLoginFailureProvider> {
     @Override
     public CassandraLoginFailureProvider create(KeycloakSession session) {
         CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
@@ -54,16 +53,11 @@ public class CassandraLoginFailureProviderFactory implements UserLoginFailurePro
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }

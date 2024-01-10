@@ -15,68 +15,51 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
-import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraAuthSessionProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraLoginFailureProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.CassandraSingleUseObjectProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProvider;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProvider;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.Config;
 import org.keycloak.models.*;
-import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.storage.ExportImportManager;
 import org.keycloak.storage.MigrationManager;
 import org.keycloak.storage.datastore.LegacyDatastoreProvider;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 @JBossLog
-public class CassandraDatastoreProvider extends LegacyDatastoreProvider {
+public class CacheCassandraDatastoreProvider extends LegacyDatastoreProvider {
     private final KeycloakSession session;
 
-    public CassandraDatastoreProvider(KeycloakSession session) {
+    public CacheCassandraDatastoreProvider(KeycloakSession session) {
         super(null, session);
         this.session = session;
     }
 
     @Override
     public RealmProvider realms() {
-        return session.getProvider(RealmProvider.class, "cassandra");
+        return session.getProvider(RealmProvider.class);
     }
 
     @Override
     public UserProvider users() {
-        return session.getProvider(UserProvider.class, "cassandra");
+        return session.getProvider(UserProvider.class);
     }
 
     @Override
     public RoleProvider roles() {
-        return session.getProvider(RoleProvider.class, "cassandra");
+        return session.getProvider(RoleProvider.class);
     }
 
     @Override
     public GroupProvider groups() {
-        return session.getProvider(GroupProvider.class, "cassandra");
+        return session.getProvider(GroupProvider.class);
     }
 
     @Override
     public ClientProvider clients() {
-        return session.getProvider(ClientProvider.class, "cassandra");
+        return session.getProvider(ClientProvider.class);
     }
 
     @Override
     public ClientScopeProvider clientScopes() {
-        return session.getProvider(ClientScopeProvider.class, "cassandra");
+        return session.getProvider(ClientScopeProvider.class);
     }
 
     @Override

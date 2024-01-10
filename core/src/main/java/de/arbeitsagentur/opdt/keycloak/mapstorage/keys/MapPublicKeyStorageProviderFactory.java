@@ -30,13 +30,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.FutureTask;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 @AutoService(PublicKeyStorageProviderFactory.class)
-public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProviderFactory<MapPublicKeyStorageProvider>, EnvironmentDependentProviderFactory {
+public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProviderFactory<MapPublicKeyStorageProvider> {
 
     private final Map<String, FutureTask<PublicKeysWrapper>> tasksInProgress = new ConcurrentHashMap<>();
 
@@ -62,16 +61,11 @@ public class MapPublicKeyStorageProviderFactory implements PublicKeyStorageProvi
 
     @Override
     public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
+        return "cassandra";
     }
 
     @Override
     public int order() {
         return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
     }
 }
