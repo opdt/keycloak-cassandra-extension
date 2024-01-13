@@ -50,7 +50,7 @@ public class CassandraEventStoreProviderFactory
 
   @Override
   public String getId() {
-    return "cassandra-event-store";
+    return "cassandra";
   }
 
   @Override

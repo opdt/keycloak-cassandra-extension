@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.event.persistence.entities;
 
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
@@ -28,9 +29,9 @@ import lombok.*;
 @Entity
 @CqlName("admin_events")
 public class AdminEventEntity {
-  @PartitionKey private String id;
-  private long time;
-  private String realmId;
+  @PartitionKey(0) private String realmId;
+  @PartitionKey(1) private String id;
+  @ClusteringColumn private long time;
   private String operationType;
   private String resourceType;
   private String authRealmId;

@@ -152,10 +152,6 @@
                     <runOrder>alphabetical</runOrder>
                     <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
                     <parallelTestsTimeoutInSeconds>360</parallelTestsTimeoutInSeconds>
-		    <environmentVariables>
-                        <KC_SPI_EVENT_STORE_PROVIDER>cassandra-event-store</KC_SPI_EVENT_STORE_PROVIDER>
-                        <KC_SPI_EVENT_STORE_CASSANDRA_EVENT_STORE_ENABLED>true</KC_SPI_EVENT_STORE_CASSANDRA_EVENT_STORE_ENABLED>
-                    </environmentVariables>
                     <systemPropertyVariables>
                         <!-- keycloak.model.parameters lists parameter classes from
                              org.keycloak.model.parameters package and determine enabled providers -->

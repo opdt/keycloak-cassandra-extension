@@ -43,8 +43,6 @@ services:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - JAVA_OPTS_APPEND="-Ddatastax-java-driver.advanced.ssl-engine-factory=none"
-      - KC_SPI_EVENT_STORE_PROVIDER=cassandra-event-store
-      - KC_SPI_EVENT_STORE_CASSANDRA_EVENT_STORE_ENABLED=true
     entrypoint: /opt/keycloak/bin/kc.sh
     command: -v start-dev --cache=local --features-disabled=authorization
     ports:
