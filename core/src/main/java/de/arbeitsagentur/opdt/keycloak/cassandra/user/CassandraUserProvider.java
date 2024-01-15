@@ -363,23 +363,30 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         log.debugv("getUserByUsername realm={0} username={1}", realm, username);
-        return models.values()
+        UserModel modelUser = models.values()
             .stream()
             .filter(model -> model.getRealm()
                 .equals(realm))
             .filter(model -> model.hasUsername(username))
             .map(model -> (UserModel) model)
             .findFirst()
-            .orElseGet(() -> entityToAdapterFunc(realm).apply(isUsernameCaseSensitive(realm)
+            .orElse(null);
+
+        if (modelUser == null) {
+            User userFromDb = isUsernameCaseSensitive(realm)
                 ? userRepository.findUserByUsername(realm.getId(), username)
-                : userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(username)))
-            );
+                : userRepository.findUserByUsernameCaseInsensitive(realm.getId(), KeycloakModelUtils.toLowerCaseSafe(username));
+
+            return userFromDb == null || models.containsKey(userFromDb.getId()) ? null : entityToAdapterFunc(realm).apply(userFromDb);
+        } else {
+            return modelUser;
+        }
     }
 
     @Override
     public UserModel getUserByEmail(RealmModel realm, String email) {
         log.debugv("getUserByEmail realm={0} email={1}", realm, email);
-        return models.values()
+        UserModel modelUser = models.values()
             .stream()
             .filter(model -> model.getRealm()
                 .equals(realm))
@@ -387,7 +394,15 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                 .equals(email))
             .map(model -> (UserModel) model)
             .findFirst()
-            .orElseGet(() -> entityToAdapterFunc(realm).apply(userRepository.findUserByEmail(realm.getId(), email)));
+            .orElse(null);
+
+        if (modelUser == null) {
+            User userFromDb = userRepository.findUserByEmail(realm.getId(), email);
+
+            return userFromDb == null || models.containsKey(userFromDb.getId()) ? null : entityToAdapterFunc(realm).apply(userFromDb);
+        } else {
+            return modelUser;
+        }
     }
 
     @Override

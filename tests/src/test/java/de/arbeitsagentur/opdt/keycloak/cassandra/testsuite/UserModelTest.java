@@ -1180,5 +1180,39 @@ public class UserModelTest extends KeycloakModelTest {
             return null;
         });
     }
+
+    @Test
+    public void testResolveNameConflict() {
+        withRealm(originalRealmId, (session, realm) -> {
+            session.users().addUser(realm, "test1@example.com");
+            session.users().addUser(realm, "test2@example.com");
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user1 = session.users().getUserByUsername(realm, "test1@example.com");
+            UserModel user2 = session.users().getUserByUsername(realm, "test2@example.com");
+
+            user2.setUsername("test2_migrated@example.com");
+            user1.setUsername("test2@example.com");
+            user1.setEmail("test2@example.com");
+
+            return null;
+        });
+
+        withRealm(originalRealmId, (session, realm) -> {
+            UserModel user1 = session.users().getUserByUsername(realm, "test2@example.com");
+            UserModel user2 = session.users().getUserByUsername(realm, "test2_migrated@example.com");
+
+            assertNotNull(user1);
+            assertNotNull(user2);
+
+            session.users().removeUser(realm, user1);
+            session.users().removeUser(realm, user2);
+
+            return null;
+        });
+    }
 }
 
