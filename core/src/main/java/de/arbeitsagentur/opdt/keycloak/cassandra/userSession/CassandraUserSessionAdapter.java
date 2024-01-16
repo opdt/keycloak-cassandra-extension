@@ -21,15 +21,18 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import lombok.EqualsAndHashCode;
+import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import org.keycloak.models.light.LightweightUserAdapter;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setUserSessionExpiration;
 import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
+import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 
 @EqualsAndHashCode(of = "userSessionEntity")
@@ -97,6 +100,17 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
     @Override
     public UserModel getUser() {
+        if (Profile.isFeatureEnabled(Profile.Feature.TRANSIENT_USERS) && userSessionEntity.getNotes().containsKey(SESSION_NOTE_LIGHTWEIGHT_USER)) {
+            LightweightUserAdapter lua = LightweightUserAdapter.fromString(session, realm, userSessionEntity.getNotes().get(SESSION_NOTE_LIGHTWEIGHT_USER));
+            lua.setUpdateHandler(lua1 -> {
+                if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                    setNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
+                }
+            });
+
+            return lua;
+        }
+
         return session.users().getUserById(getRealm(), userSessionEntity.getUserId());
     }
 

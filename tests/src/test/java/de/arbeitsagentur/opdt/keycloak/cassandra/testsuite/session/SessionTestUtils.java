@@ -18,11 +18,13 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 
 import org.junit.Assert;
 import org.keycloak.models.*;
+import org.keycloak.models.light.LightweightUserAdapter;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 public class SessionTestUtils {
     public static void createClients(KeycloakSession s, RealmModel realm) {
@@ -42,6 +44,33 @@ public class SessionTestUtils {
         clientModel.setBaseUrl("http://localhost:8180/auth/realms/master/app/auth");
         clientModel.setRedirectUris(redirects);
         clientModel.setSecret("password");
+    }
+
+    public static UserSessionModel[] createSessionsTransientUser(KeycloakSession session, String realmId) {
+        RealmModel realm = session.realms().getRealm(realmId);
+        UserSessionModel[] sessions = new UserSessionModel[3];
+
+        LightweightUserAdapter lightweightUserAdapter1 = new LightweightUserAdapter(session, null);
+        lightweightUserAdapter1.setUsername("user1");
+
+        sessions[0] = session.sessions().createUserSession(realm, lightweightUserAdapter1, "user1", "127.0.0.1", "form", true, null, null);
+        sessions[0].setNote(SESSION_NOTE_LIGHTWEIGHT_USER, lightweightUserAdapter1.serialize());
+
+        createClientSession(session, realmId, realm.getClientByClientId("test-app"), sessions[0], "http://redirect", "state");
+        createClientSession(session, realmId, realm.getClientByClientId("third-party"), sessions[0], "http://redirect", "state");
+
+        sessions[1] = session.sessions().createUserSession(realm, lightweightUserAdapter1, "user1", "127.0.0.2", "form", true, null, null);
+        sessions[1].setNote(SESSION_NOTE_LIGHTWEIGHT_USER, lightweightUserAdapter1.serialize());
+        createClientSession(session, realmId, realm.getClientByClientId("test-app"), sessions[1], "http://redirect", "state");
+
+        LightweightUserAdapter lightweightUserAdapter2 = new LightweightUserAdapter(session, null);
+        lightweightUserAdapter2.setUsername("user2");
+
+        sessions[2] = session.sessions().createUserSession(realm, lightweightUserAdapter2, "user2", "127.0.0.3", "form", true, null, null);
+        sessions[2].setNote(SESSION_NOTE_LIGHTWEIGHT_USER, lightweightUserAdapter2.serialize());
+        createClientSession(session, realmId, realm.getClientByClientId("test-app"), sessions[2], "http://redirect", "state");
+
+        return sessions;
     }
 
     public static UserSessionModel[] createSessions(KeycloakSession session, String realmId) {
@@ -84,6 +113,31 @@ public class SessionTestUtils {
         Arrays.sort(actual);
 
         assertArrayEquals(expected, actual);
+    }
+
+    public static  void assertSessionLightweightUser(UserSessionModel session, String username, String ipAddress, int started, int lastRefresh, String... clients) {
+        assertEquals(username, session.getUser().getUsername());
+        assertEquals(ipAddress, session.getIpAddress());
+        assertEquals(username, session.getLoginUsername());
+        assertEquals("form", session.getAuthMethod());
+        assertTrue(session.isRememberMe());
+        assertTrue(session.getStarted() >= started - 1 && session.getStarted() <= started + 200);
+        assertTrue(session.getLastSessionRefresh() >= lastRefresh - 1 && session.getLastSessionRefresh() <= lastRefresh + 200);
+
+        String[] actualClients = new String[session.getAuthenticatedClientSessions().size()];
+        int i = 0;
+        for (Map.Entry<String, AuthenticatedClientSessionModel> entry : session.getAuthenticatedClientSessions().entrySet()) {
+            String clientUUID = entry.getKey();
+            AuthenticatedClientSessionModel clientSession = entry.getValue();
+            Assert.assertEquals(clientUUID, clientSession.getClient().getId());
+            actualClients[i] = clientSession.getClient().getClientId();
+            i++;
+        }
+
+        Arrays.sort(clients);
+        Arrays.sort(actualClients);
+
+        assertArrayEquals(clients, actualClients);
     }
 
     public static  void assertSession(UserSessionModel session, UserModel user, String ipAddress, int started, int lastRefresh, String... clients) {

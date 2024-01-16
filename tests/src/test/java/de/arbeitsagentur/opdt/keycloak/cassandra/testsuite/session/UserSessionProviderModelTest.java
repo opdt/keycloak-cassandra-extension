@@ -24,6 +24,7 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.device.DeviceRepresentationProvider;
 import org.keycloak.models.*;
@@ -270,6 +271,20 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
             assertSession(s.sessions().getUserSession(r, sessions[0].getId()), s.users().getUserByUsername(r, "user1"), "127.0.0.1", started, started, "test-app", "third-party");
             assertSession(s.sessions().getUserSession(r, sessions[1].getId()), s.users().getUserByUsername(r, "user1"), "127.0.0.2", started, started, "test-app");
             assertSession(s.sessions().getUserSession(r, sessions[2].getId()), s.users().getUserByUsername(r, "user2"), "127.0.0.3", started, started, "test-app");
+            return null;
+        });
+    }
+
+    @Test
+    public void testCreateSessionsTransientUser() {
+        Profile.init(Profile.ProfileName.DEFAULT, Map.of(Profile.Feature.TRANSIENT_USERS, true, Profile.Feature.AUTHORIZATION, false, Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ, false));
+        int started = Time.currentTime();
+
+        withRealm(realmId, (s, r) -> {
+            UserSessionModel[] sessions = createSessionsTransientUser(s, r.getId());
+            assertSessionLightweightUser(s.sessions().getUserSession(r, sessions[0].getId()), "user1", "127.0.0.1", started, started, "test-app", "third-party");
+            assertSessionLightweightUser(s.sessions().getUserSession(r, sessions[1].getId()), "user1", "127.0.0.2", started, started, "test-app");
+            assertSessionLightweightUser(s.sessions().getUserSession(r, sessions[2].getId()), "user2", "127.0.0.3", started, started, "test-app");
             return null;
         });
     }
