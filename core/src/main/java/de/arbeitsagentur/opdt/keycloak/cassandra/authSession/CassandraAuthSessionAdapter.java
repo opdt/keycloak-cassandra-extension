@@ -18,10 +18,12 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import lombok.RequiredArgsConstructor;
+import org.keycloak.common.Profile;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.light.LightweightUserAdapter;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
@@ -29,6 +31,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
+import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 @RequiredArgsConstructor
 public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
@@ -75,13 +80,46 @@ public class CassandraAuthSessionAdapter implements AuthenticationSessionModel {
 
     @Override
     public UserModel getAuthenticatedUser() {
-        return authenticationSession.getUserId() == null ? null : session.users().getUserById(getRealm(), authenticationSession.getUserId());
+        if (Profile.isFeatureEnabled(Profile.Feature.TRANSIENT_USERS) && getUserSessionNotes().containsKey(SESSION_NOTE_LIGHTWEIGHT_USER)) {
+            LightweightUserAdapter cachedUser = session.getAttribute("authSession.user." + getParentSession().getId(), LightweightUserAdapter.class);
+
+            if (cachedUser != null) {
+                return cachedUser;
+            }
+
+            LightweightUserAdapter lua = LightweightUserAdapter.fromString(session, getParentSession().getRealm(), getUserSessionNotes().get(SESSION_NOTE_LIGHTWEIGHT_USER));
+            session.setAttribute("authSession.user." + getParentSession().getId(), lua);
+            lua.setUpdateHandler(lua1 -> {
+                if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                    setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
+                }
+            });
+
+            return lua;
+        } else {
+            return authenticationSession.getUserId() == null ? null : session.users().getUserById(getRealm(), authenticationSession.getUserId());
+        }
     }
 
     @Override
     public void setAuthenticatedUser(UserModel user) {
-        String userId = (user == null) ? null : user.getId();
-        authenticationSession.setUserId(userId);
+        if (user == null) {
+            authenticationSession.setUserId(null);
+            setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, null);
+        } else {
+            authenticationSession.setUserId(user.getId());
+
+            if (isLightweightUser(user)) {
+                LightweightUserAdapter lua = (LightweightUserAdapter) user;
+                setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua.serialize());
+                lua.setUpdateHandler(lua1 -> {
+                    if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                        setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
+                    }
+                });
+            }
+        }
+
         updated = true;
     }
 
