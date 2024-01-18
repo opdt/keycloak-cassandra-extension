@@ -35,6 +35,8 @@ import org.keycloak.common.profile.PropertiesProfileConfigResolver;
 import org.keycloak.common.util.Time;
 import org.keycloak.component.ComponentFactoryProviderFactory;
 import org.keycloak.component.ComponentFactorySpi;
+import org.keycloak.events.EventListenerProviderFactory;
+import org.keycloak.events.EventStoreProviderFactory;
 import org.keycloak.events.EventStoreSpi;
 import org.keycloak.executors.DefaultExecutorsProviderFactory;
 import org.keycloak.executors.ExecutorsSpi;
@@ -220,6 +222,8 @@ public abstract class KeycloakModelTest {
         .add(DefaultExecutorsProviderFactory.class)
         .add(DeploymentStateProviderFactory.class)
         .add(DatastoreProviderFactory.class)
+        .add(EventListenerProviderFactory.class)
+        .add(EventStoreProviderFactory.class)
         .build();
 
     protected static final List<KeycloakModelParameters> MODEL_PARAMETERS;
@@ -591,4 +595,13 @@ public abstract class KeycloakModelTest {
         realm = s.realms().createRealm(name);
         return realm;
     }
+
+  protected List<String> toList(Enum... enumTypes) {
+    List<String> enumList = new ArrayList<>();
+    for (Enum type : enumTypes) {
+      enumList.add(type.toString());
+    }
+    return enumList;
+  }
+
 }

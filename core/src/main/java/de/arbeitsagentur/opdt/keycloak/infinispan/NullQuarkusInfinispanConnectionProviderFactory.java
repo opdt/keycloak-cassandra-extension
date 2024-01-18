@@ -50,6 +50,11 @@ public class NullQuarkusInfinispanConnectionProviderFactory implements Infinispa
             }
 
             @Override
+            public <K, V> Cache<K, V> getCache(String s, boolean createIfAbsent) {
+                return null;
+            }
+
+            @Override
             public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
                 return null;
             }
