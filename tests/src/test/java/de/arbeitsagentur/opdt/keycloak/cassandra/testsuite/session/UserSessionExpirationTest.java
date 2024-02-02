@@ -125,6 +125,81 @@ public class UserSessionExpirationTest extends KeycloakModelTest {
     }
 
     @Test
+    public void testClientSessionIdleTimeoutOverrideGreaterThanOldValue() {
+
+        // Set low ClientSessionIdleTimeout
+        withRealm(realmId, (session, realm) -> {
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            realm.setClientSessionIdleTimeout(10);
+            return null;
+        });
+
+        String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(3);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        withRealm(realmId, (session, realm) -> {
+            session.sessions().getUserSession(realm, uSId).setNote(CassandraUserSessionAdapter.CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, "5");
+            return null;
+        });
+
+        // Should do nothing, since new override is greater than old override
+        withRealm(realmId, (session, realm) -> {
+            session.sessions().getUserSession(realm, uSId).setNote(CassandraUserSessionAdapter.CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, "7");
+            return null;
+        });
+
+        Time.setOffset(6);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(8);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
+    }
+
+    @Test
+    public void testClientSessionIdleTimeoutOverrideGreaterThanOldRealmValue() {
+
+        // Set low ClientSessionIdleTimeout
+        withRealm(realmId, (session, realm) -> {
+            realm.setSsoSessionIdleTimeout(1800);
+            realm.setSsoSessionMaxLifespan(36000);
+            realm.setClientSessionIdleTimeout(5);
+            return null;
+        });
+
+        String uSId = withRealm(realmId, (session, realm) -> session.sessions().createUserSession(realm, session.users().getUserByUsername(realm, "user1"), "user1", "127.0.0.1", "form", true, null, null).getId());
+
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(3);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        // Should do nothing, since new override is greater than old override
+        withRealm(realmId, (session, realm) -> {
+            session.sessions().getUserSession(realm, uSId).setNote(CassandraUserSessionAdapter.CLIENT_IDLE_TIMEOUT_OVERRIDE_ATTRIBUTE, "7");
+            return null;
+        });
+
+        Time.setOffset(6);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), notNullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(1));
+
+        Time.setOffset(8);
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSession(realm, uSId)), nullValue());
+        assertThat(withRealm(realmId, (session, realm) -> session.sessions().getUserSessionsStream(realm, session.users().getUserByUsername(realm, "user1")).collect(Collectors.toList())), hasSize(0));
+    }
+
+    @Test
     public void testClientSessionIdleTimeoutOverrideTtl() throws InterruptedException {
 
         // Set low ClientSessionIdleTimeout
