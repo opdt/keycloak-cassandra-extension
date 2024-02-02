@@ -79,6 +79,6 @@ public class SessionExpirationData {
     }
 
     private int getEffectiveLifespan(Integer override, int realmLifespan) {
-        return override == null ? realmLifespan : override;
+        return override == null || override > realmLifespan ? realmLifespan : override;
     }
 }

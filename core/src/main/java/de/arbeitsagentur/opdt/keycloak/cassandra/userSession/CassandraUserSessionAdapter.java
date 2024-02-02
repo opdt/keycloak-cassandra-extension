@@ -21,6 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import lombok.EqualsAndHashCode;
+import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
@@ -35,6 +36,7 @@ import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 
+@JBossLog
 @EqualsAndHashCode(of = "userSessionEntity")
 public class CassandraUserSessionAdapter implements UserSessionModel {
     public static final String SESSION_MAX_LIFESPAN_OVERRIDE_ATTRIBUTE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxLifespanOverride";
@@ -193,13 +195,19 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
             return;
         }
 
-        userSessionEntity.getNotes().put(name, value);
-
-        if(SESSION_EXPIRATION_ATTRIBUTES.contains(name)) {
-            restartExpirationWithLifespanOverride();
+        if (SESSION_EXPIRATION_ATTRIBUTES.contains(name)) {
+            String oldOverride = userSessionEntity.getNotes().get(name);
+            if (oldOverride == null || Long.parseLong(value) <= Long.parseLong(oldOverride)) {
+                userSessionEntity.getNotes().put(name, value);
+                restartExpirationWithLifespanOverride();
+                updated = true;
+            } else {
+                log.warnf("Trying to override %s with new value of %s which is greater than the old override-value of %s. This is not allowed.", name, value, oldOverride);
+            }
+        } else {
+            userSessionEntity.getNotes().put(name, value);
+            updated = true;
         }
-
-        updated = true;
     }
 
     private void restartExpirationWithLifespanOverride() {
