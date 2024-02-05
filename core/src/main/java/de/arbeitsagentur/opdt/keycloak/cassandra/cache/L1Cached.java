@@ -23,5 +23,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface L1Cached {
-    String cacheName() default "defaultCache";
+  String cacheName() default "defaultCache";
 }

@@ -20,6 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface AuthSessionMapper {
-    @DaoFactory
-    AuthSessionDao authSessionDao();
+  @DaoFactory
+  AuthSessionDao authSessionDao();
 }

@@ -15,11 +15,10 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities;
 
-import lombok.*;
 import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.*;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -27,25 +26,24 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthenticatedClientSessionValue implements ExpirableEntity {
-    private String id;
-    private String clientId;
-    private Long timestamp;
-    private Long expiration;
+  private String id;
+  private String clientId;
+  private Long timestamp;
+  private Long expiration;
 
-    private String authMethod;
-    private String redirectUri;
-    private String action;
-    private String currentRefreshToken;
-    private Integer currentRefreshTokenUseCount;
-    private boolean offline;
+  private String authMethod;
+  private String redirectUri;
+  private String action;
+  private String currentRefreshToken;
+  private Integer currentRefreshTokenUseCount;
+  private boolean offline;
 
-    @Builder.Default
-    private Map<String, String> notes = new HashMap<>();
+  @Builder.Default private Map<String, String> notes = new HashMap<>();
 
-    public Map<String, String> getNotes() {
-        if (notes == null) {
-            notes = new HashMap<>();
-        }
-        return notes;
+  public Map<String, String> getNotes() {
+    if (notes == null) {
+      notes = new HashMap<>();
     }
+    return notes;
+  }
 }

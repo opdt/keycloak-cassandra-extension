@@ -17,26 +17,26 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
-import lombok.RequiredArgsConstructor;
 
-public class CassandraClientScopeRepository extends TransactionalRepository<ClientScopes, ClientScopeDao> implements ClientScopeRepository {
+public class CassandraClientScopeRepository
+    extends TransactionalRepository<ClientScopes, ClientScopeDao> implements ClientScopeRepository {
 
-    public CassandraClientScopeRepository(ClientScopeDao dao) {
-        super(dao);
+  public CassandraClientScopeRepository(ClientScopeDao dao) {
+    super(dao);
+  }
+
+  @Override
+  public ClientScopes getClientScopesByRealmId(String realmId) {
+    ClientScopes clientScopes = dao.getClientScopesByRealmId(realmId);
+    if (clientScopes == null) {
+      clientScopes = ClientScopes.builder().realmId(realmId).build();
     }
 
-    @Override
-    public ClientScopes getClientScopesByRealmId(String realmId) {
-        ClientScopes clientScopes = dao.getClientScopesByRealmId(realmId);
-        if (clientScopes == null) {
-            clientScopes = ClientScopes.builder().realmId(realmId).build();
-        }
+    return clientScopes;
+  }
 
-        return clientScopes;
-    }
-
-    @Override
-    public void removeClientScopes(String realmId) {
-        dao.deleteAllClientScopes(realmId);
-    }
+  @Override
+  public void removeClientScopes(String realmId) {
+    dao.deleteAllClientScopes(realmId);
+  }
 }

@@ -16,6 +16,11 @@
 
 package de.arbeitsagentur.opdt.keycloak.infinispan;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 import com.google.auto.service.AutoService;
 import lombok.extern.jbosslog.JBossLog;
 import org.infinispan.Cache;
@@ -28,66 +33,60 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
-
 @JBossLog
 @AutoService(InfinispanConnectionProviderFactory.class)
-public class NullQuarkusInfinispanConnectionProviderFactory implements InfinispanConnectionProviderFactory, EnvironmentDependentProviderFactory {
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
+public class NullQuarkusInfinispanConnectionProviderFactory
+    implements InfinispanConnectionProviderFactory, EnvironmentDependentProviderFactory {
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
 
-    @Override
-    public InfinispanConnectionProvider create(KeycloakSession session) {
-        return createProviderCached(session, InfinispanConnectionProvider.class, () -> new InfinispanConnectionProvider() {
-            @Override
-            public <K, V> Cache<K, V> getCache(String s) {
+  @Override
+  public InfinispanConnectionProvider create(KeycloakSession session) {
+    return createProviderCached(
+        session,
+        InfinispanConnectionProvider.class,
+        () ->
+            new InfinispanConnectionProvider() {
+              @Override
+              public <K, V> Cache<K, V> getCache(String s) {
                 return null;
-            }
+              }
 
-            @Override
-            public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
+              @Override
+              public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
                 return null;
-            }
+              }
 
-            @Override
-            public TopologyInfo getTopologyInfo() {
+              @Override
+              public TopologyInfo getTopologyInfo() {
                 return null;
-            }
+              }
 
-            @Override
-            public void close() {
+              @Override
+              public void close() {}
+            });
+  }
 
-            }
-        });
-    }
+  @Override
+  public void init(Config.Scope config) {
+    log.info("Infinispan (quarkus) deactivated...");
+  }
 
-    @Override
-    public void init(Config.Scope config) {
-        log.info("Infinispan (quarkus) deactivated...");
-    }
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
+  @Override
+  public void close() {}
 
-    }
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public String getId() {
-        return "quarkus";
-    }
+  @Override
+  public String getId() {
+    return "quarkus";
+  }
 }

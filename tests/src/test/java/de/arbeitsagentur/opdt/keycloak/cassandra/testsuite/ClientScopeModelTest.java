@@ -16,6 +16,13 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertNull;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.keycloak.common.constants.KerberosConstants;
 import org.keycloak.models.*;
@@ -23,185 +30,253 @@ import org.keycloak.protocol.oidc.OIDCLoginProtocolFactory;
 import org.keycloak.protocol.oidc.mappers.UserPropertyMapper;
 import org.keycloak.protocol.oidc.mappers.UserSessionNoteMapper;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertNull;
 public class ClientScopeModelTest extends KeycloakModelTest {
 
-    private String realmId;
+  private String realmId;
 
+  @Override
+  public void createEnvironment(KeycloakSession s) {
+    RealmModel realm = s.realms().createRealm("realm");
+    this.realmId = realm.getId();
+  }
 
-    @Override
-    public void createEnvironment(KeycloakSession s) {
-        RealmModel realm = s.realms().createRealm("realm");
-        this.realmId = realm.getId();
-    }
+  @Override
+  public void cleanEnvironment(KeycloakSession s) {
+    s.realms().removeRealm(realmId);
+  }
 
-    @Override
-    public void cleanEnvironment(KeycloakSession s) {
-        s.realms().removeRealm(realmId);
-    }
+  @Test
+  public void testBasicAttributes() {
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          ClientScopeModel clientScope =
+              session.clientScopes().addClientScope(realm, "myClientScope1");
 
-    @Test
-    public void testBasicAttributes() {
-        withRealm(realmId, (session, realm) -> {
-            ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");
+          clientScope.setName("Testscope");
+          clientScope.setDescription("Desc");
+          clientScope.setIsDynamicScope(false);
+          clientScope.setProtocol("openid-connect");
+          clientScope.setAttribute("testKey", "testVal");
 
-            clientScope.setName("Testscope");
-            clientScope.setDescription("Desc");
-            clientScope.setIsDynamicScope(false);
-            clientScope.setProtocol("openid-connect");
-            clientScope.setAttribute("testKey", "testVal");
-
-            return null;
+          return null;
         });
 
-        withRealm(realmId, (session, realm) -> {
-            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
-                .map(ClientScopeModel::getId)
-                .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          List<String> clientScopes =
+              session
+                  .clientScopes()
+                  .getClientScopesStream(realm)
+                  .map(ClientScopeModel::getId)
+                  .collect(Collectors.toList());
+          assertThat(clientScopes, hasSize(1));
 
-            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
-            assertThat(clientScope.getName(), is("Testscope"));
-            assertThat(clientScope.getDescription(), is("Desc"));
-            assertThat(clientScope.isDynamicScope(), is(false));
-            assertThat(clientScope.getProtocol(), is("openid-connect"));
-            assertThat(clientScope.getAttribute("testKey"), is("testVal"));
-            assertThat(clientScope.getAttributes().get("testKey"), is("testVal"));
+          ClientScopeModel clientScope =
+              session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+          assertThat(clientScope.getName(), is("Testscope"));
+          assertThat(clientScope.getDescription(), is("Desc"));
+          assertThat(clientScope.isDynamicScope(), is(false));
+          assertThat(clientScope.getProtocol(), is("openid-connect"));
+          assertThat(clientScope.getAttribute("testKey"), is("testVal"));
+          assertThat(clientScope.getAttributes().get("testKey"), is("testVal"));
 
-            clientScope.removeAttribute("testKey");
+          clientScope.removeAttribute("testKey");
 
-            return null;
+          return null;
         });
 
-        withRealm(realmId, (session, realm) -> {
-            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
-                .map(ClientScopeModel::getId)
-                .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          List<String> clientScopes =
+              session
+                  .clientScopes()
+                  .getClientScopesStream(realm)
+                  .map(ClientScopeModel::getId)
+                  .collect(Collectors.toList());
+          assertThat(clientScopes, hasSize(1));
 
-            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
-            assertNull(clientScope.getAttribute("testKey"));
-            assertThat(clientScope.getAttributes().entrySet(), hasSize(1)); // entityVersion
+          ClientScopeModel clientScope =
+              session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+          assertNull(clientScope.getAttribute("testKey"));
+          assertThat(clientScope.getAttributes().entrySet(), hasSize(1)); // entityVersion
 
-            session.clientScopes().removeClientScope(realm, clientScopes.get(0));
+          session.clientScopes().removeClientScope(realm, clientScopes.get(0));
 
-            return null;
+          return null;
         });
-    }
+  }
 
-    @Test
-    public void testProtocolMappers() {
-        ProtocolMapperModel usernameMapper = UserPropertyMapper.createClaimMapper(OIDCLoginProtocolFactory.USERNAME,
+  @Test
+  public void testProtocolMappers() {
+    ProtocolMapperModel usernameMapper =
+        UserPropertyMapper.createClaimMapper(
+            OIDCLoginProtocolFactory.USERNAME,
             "username",
-            "preferred_username", "String",
-            true, true, false);
+            "preferred_username",
+            "String",
+            true,
+            true,
+            false);
 
-        ProtocolMapperModel kerberosMapper = UserSessionNoteMapper.createClaimMapper(KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME,
+    ProtocolMapperModel kerberosMapper =
+        UserSessionNoteMapper.createClaimMapper(
+            KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME,
             KerberosConstants.GSS_DELEGATION_CREDENTIAL,
-            KerberosConstants.GSS_DELEGATION_CREDENTIAL, "String",
-            true, false, false);
+            KerberosConstants.GSS_DELEGATION_CREDENTIAL,
+            "String",
+            true,
+            false,
+            false);
 
-        withRealm(realmId, (session, realm) -> {
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          ClientScopeModel clientScope =
+              session.clientScopes().addClientScope(realm, "myClientScope1");
+          clientScope.addProtocolMapper(usernameMapper);
+          clientScope.addProtocolMapper(kerberosMapper);
 
-            ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");
-            clientScope.addProtocolMapper(usernameMapper);
-            clientScope.addProtocolMapper(kerberosMapper);
-
-            return null;
+          return null;
         });
 
-        withRealm(realmId, (session, realm) -> {
-            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
-                .map(ClientScopeModel::getId)
-                .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          List<String> clientScopes =
+              session
+                  .clientScopes()
+                  .getClientScopesStream(realm)
+                  .map(ClientScopeModel::getId)
+                  .collect(Collectors.toList());
+          assertThat(clientScopes, hasSize(1));
 
-            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+          ClientScopeModel clientScope =
+              session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
 
-            ProtocolMapperModel actualUsernameMapper = clientScope.getProtocolMapperByName("openid-connect", OIDCLoginProtocolFactory.USERNAME);
-            assertThat(actualUsernameMapper, is(usernameMapper));
+          ProtocolMapperModel actualUsernameMapper =
+              clientScope.getProtocolMapperByName(
+                  "openid-connect", OIDCLoginProtocolFactory.USERNAME);
+          assertThat(actualUsernameMapper, is(usernameMapper));
 
-            ProtocolMapperModel actualKerberosMapper = clientScope.getProtocolMapperByName("openid-connect", KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME);
-            assertThat(actualKerberosMapper, is(kerberosMapper));
+          ProtocolMapperModel actualKerberosMapper =
+              clientScope.getProtocolMapperByName(
+                  "openid-connect", KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME);
+          assertThat(actualKerberosMapper, is(kerberosMapper));
 
-            assertThat(clientScope.getProtocolMapperByName("saml", OIDCLoginProtocolFactory.USERNAME), nullValue());
-            assertThat(clientScope.getProtocolMapperById(actualUsernameMapper.getId()), is(usernameMapper));
+          assertThat(
+              clientScope.getProtocolMapperByName("saml", OIDCLoginProtocolFactory.USERNAME),
+              nullValue());
+          assertThat(
+              clientScope.getProtocolMapperById(actualUsernameMapper.getId()), is(usernameMapper));
 
-            ProtocolMapperModel updatedUsernameMapper = UserPropertyMapper.createClaimMapper(OIDCLoginProtocolFactory.USERNAME,
-                "username",
-                "preferred_username_updated", "String",
-                true, true, false);
+          ProtocolMapperModel updatedUsernameMapper =
+              UserPropertyMapper.createClaimMapper(
+                  OIDCLoginProtocolFactory.USERNAME,
+                  "username",
+                  "preferred_username_updated",
+                  "String",
+                  true,
+                  true,
+                  false);
 
-            clientScope.updateProtocolMapper(updatedUsernameMapper);
-            assertThat(clientScope.getProtocolMapperByName("openid-connect", OIDCLoginProtocolFactory.USERNAME), is(updatedUsernameMapper));
+          clientScope.updateProtocolMapper(updatedUsernameMapper);
+          assertThat(
+              clientScope.getProtocolMapperByName(
+                  "openid-connect", OIDCLoginProtocolFactory.USERNAME),
+              is(updatedUsernameMapper));
 
-            clientScope.removeProtocolMapper(updatedUsernameMapper);
+          clientScope.removeProtocolMapper(updatedUsernameMapper);
 
-            return null;
+          return null;
         });
 
-        withRealm(realmId, (session, realm) -> {
-            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
-                .map(ClientScopeModel::getId)
-                .collect(Collectors.toList());
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          List<String> clientScopes =
+              session
+                  .clientScopes()
+                  .getClientScopesStream(realm)
+                  .map(ClientScopeModel::getId)
+                  .collect(Collectors.toList());
 
-            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+          ClientScopeModel clientScope =
+              session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
 
-            assertThat(clientScope.getProtocolMapperByName("openid-connect", OIDCLoginProtocolFactory.USERNAME), nullValue());
-            assertThat(clientScope.getProtocolMapperByName("openid-connect", KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME), is(kerberosMapper));
+          assertThat(
+              clientScope.getProtocolMapperByName(
+                  "openid-connect", OIDCLoginProtocolFactory.USERNAME),
+              nullValue());
+          assertThat(
+              clientScope.getProtocolMapperByName(
+                  "openid-connect", KerberosConstants.GSS_DELEGATION_CREDENTIAL_DISPLAY_NAME),
+              is(kerberosMapper));
 
-            session.clientScopes().removeClientScope(realm, clientScopes.get(0));
-            return null;
+          session.clientScopes().removeClientScope(realm, clientScopes.get(0));
+          return null;
         });
-    }
+  }
 
-    @Test
-    public void testScopeMappings() {
-        ClientModel client = withRealm(realmId, (session, realm) -> session.clients().addClient(realm, "myClient"));
-        RoleModel realmRole = withRealm(realmId, (session, realm) -> realm.addRole("realmRole"));
-        RoleModel clientRole = withRealm(realmId, (session, realm) -> session.roles().addClientRole(client, "clientRole"));
+  @Test
+  public void testScopeMappings() {
+    ClientModel client =
+        withRealm(realmId, (session, realm) -> session.clients().addClient(realm, "myClient"));
+    RoleModel realmRole = withRealm(realmId, (session, realm) -> realm.addRole("realmRole"));
+    RoleModel clientRole =
+        withRealm(realmId, (session, realm) -> session.roles().addClientRole(client, "clientRole"));
 
-        withRealm(realmId, (session, realm) -> {
-            ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          ClientScopeModel clientScope =
+              session.clientScopes().addClientScope(realm, "myClientScope1");
 
-            clientScope.addScopeMapping(realmRole);
-            clientScope.addScopeMapping(clientRole);
+          clientScope.addScopeMapping(realmRole);
+          clientScope.addScopeMapping(clientRole);
 
-            return null;
+          return null;
         });
 
-        withRealm(realmId, (session, realm) -> {
-            List<String> clientScopes = session.clientScopes().getClientScopesStream(realm)
-                .map(ClientScopeModel::getId)
-                .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          List<String> clientScopes =
+              session
+                  .clientScopes()
+                  .getClientScopesStream(realm)
+                  .map(ClientScopeModel::getId)
+                  .collect(Collectors.toList());
+          assertThat(clientScopes, hasSize(1));
 
-            ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
-            List<RoleModel> scopeMappings = clientScope.getScopeMappingsStream().collect(Collectors.toList());
-            assertThat(scopeMappings, hasSize(2));
-            assertThat(scopeMappings.stream().map(RoleModel::getName).collect(Collectors.toList()), containsInAnyOrder("realmRole", "clientRole"));
+          ClientScopeModel clientScope =
+              session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
+          List<RoleModel> scopeMappings =
+              clientScope.getScopeMappingsStream().collect(Collectors.toList());
+          assertThat(scopeMappings, hasSize(2));
+          assertThat(
+              scopeMappings.stream().map(RoleModel::getName).collect(Collectors.toList()),
+              containsInAnyOrder("realmRole", "clientRole"));
 
-            List<RoleModel> realmScopeMappings = clientScope.getRealmScopeMappingsStream().collect(Collectors.toList());
-            assertThat(realmScopeMappings, hasSize(1));
-            assertThat(realmScopeMappings.get(0).getName(), is("realmRole"));
+          List<RoleModel> realmScopeMappings =
+              clientScope.getRealmScopeMappingsStream().collect(Collectors.toList());
+          assertThat(realmScopeMappings, hasSize(1));
+          assertThat(realmScopeMappings.get(0).getName(), is("realmRole"));
 
-            assertThat(clientScope.hasScope(realmRole), is(true));
-            assertThat(clientScope.hasScope(clientRole), is(true));
+          assertThat(clientScope.hasScope(realmRole), is(true));
+          assertThat(clientScope.hasScope(clientRole), is(true));
 
-            clientScope.deleteScopeMapping(realmRole);
-            assertThat(clientScope.hasScope(realmRole), is(false));
-            assertThat(clientScope.getRealmScopeMappingsStream().collect(Collectors.toList()), hasSize(0));
-            assertThat(clientScope.getScopeMappingsStream().collect(Collectors.toList()), hasSize(1));
+          clientScope.deleteScopeMapping(realmRole);
+          assertThat(clientScope.hasScope(realmRole), is(false));
+          assertThat(
+              clientScope.getRealmScopeMappingsStream().collect(Collectors.toList()), hasSize(0));
+          assertThat(clientScope.getScopeMappingsStream().collect(Collectors.toList()), hasSize(1));
 
-            session.clientScopes().removeClientScope(realm, clientScopes.get(0));
+          session.clientScopes().removeClientScope(realm, clientScopes.get(0));
 
-            return null;
+          return null;
         });
-    }
+  }
 }

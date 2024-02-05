@@ -30,15 +30,14 @@ import lombok.*;
 @Entity
 @CqlName("user_search_index")
 public class UserSearchIndex {
-    @PartitionKey(0)
-    private String realmId;
+  @PartitionKey(0)
+  private String realmId;
 
-    @PartitionKey(1)
-    private String name;
+  @PartitionKey(1)
+  private String name;
 
-    @PartitionKey(2)
-    private String value;
+  @PartitionKey(2)
+  private String value;
 
-    @ClusteringColumn
-    private String userId;
+  @ClusteringColumn private String userId;
 }

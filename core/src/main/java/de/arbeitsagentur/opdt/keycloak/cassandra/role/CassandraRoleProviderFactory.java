@@ -16,6 +16,10 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.role;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import org.keycloak.Config;
@@ -24,45 +28,37 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RoleProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
-
 @AutoService(RoleProviderFactory.class)
-public class CassandraRoleProviderFactory implements RoleProviderFactory<CassandraRoleProvider>, EnvironmentDependentProviderFactory {
-    @Override
-    public CassandraRoleProvider create(KeycloakSession session) {
-        CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
-        return new CassandraRoleProvider(session, cassandraConnectionProvider.getRepository());
-    }
+public class CassandraRoleProviderFactory
+    implements RoleProviderFactory<CassandraRoleProvider>, EnvironmentDependentProviderFactory {
+  @Override
+  public CassandraRoleProvider create(KeycloakSession session) {
+    CassandraConnectionProvider cassandraConnectionProvider =
+        createProviderCached(session, CassandraConnectionProvider.class);
+    return new CassandraRoleProvider(session, cassandraConnectionProvider.getRepository());
+  }
 
-    @Override
-    public void init(Config.Scope config) {
+  @Override
+  public void init(Config.Scope config) {}
 
-    }
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
+  @Override
+  public void close() {}
 
-    }
+  @Override
+  public String getId() {
+    return "cassandra";
+  }
 
-    @Override
-    public void close() {
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    }
-
-    @Override
-    public String getId() {
-        return "cassandra";
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled();
-    }
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled();
+  }
 }

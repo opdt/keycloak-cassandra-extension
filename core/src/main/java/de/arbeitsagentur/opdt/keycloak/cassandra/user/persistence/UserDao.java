@@ -16,99 +16,98 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
-
 import java.util.List;
 
 @Dao
 public interface UserDao extends TransactionalDao<User> {
-    @Update
-    void update(FederatedIdentity federatedIdentity);
+  @Update
+  void update(FederatedIdentity federatedIdentity);
 
-    @Update
-    void update(FederatedIdentityToUserMapping identityToUserMapping);
+  @Update
+  void update(FederatedIdentityToUserMapping identityToUserMapping);
 
-    @Insert
-    void insert(RealmToUserMapping realmToUserMapping);
+  @Insert
+  void insert(RealmToUserMapping realmToUserMapping);
 
-    @Query("SELECT COUNT(id) FROM users")
-    long count();
+  @Query("SELECT COUNT(id) FROM users")
+  long count();
 
-    @Select
-    PagingIterable<User> findAll();
+  @Select
+  PagingIterable<User> findAll();
 
-    @Select(customWhereClause = "realm_id = :realmId AND id = :id")
-    User findById(String realmId, String id);
+  @Select(customWhereClause = "realm_id = :realmId AND id = :id")
+  User findById(String realmId, String id);
 
-    @Select(customWhereClause = "realm_id = :realmId AND id IN :ids")
-    PagingIterable<User> findByIds(String realmId, List<String> ids);
+  @Select(customWhereClause = "realm_id = :realmId AND id IN :ids")
+  PagingIterable<User> findByIds(String realmId, List<String> ids);
 
-    @Select(customWhereClause = "user_id = :userId AND identity_provider = :identityProvider")
-    FederatedIdentity findFederatedIdentity(String userId, String identityProvider);
+  @Select(customWhereClause = "user_id = :userId AND identity_provider = :identityProvider")
+  FederatedIdentity findFederatedIdentity(String userId, String identityProvider);
 
-    @Select(
-        customWhereClause =
-            "broker_user_id = :brokerUserId AND identity_provider = :identityProvider")
-    FederatedIdentityToUserMapping findFederatedIdentityByBrokerUserId(
-        String brokerUserId, String identityProvider);
+  @Select(
+      customWhereClause =
+          "broker_user_id = :brokerUserId AND identity_provider = :identityProvider")
+  FederatedIdentityToUserMapping findFederatedIdentityByBrokerUserId(
+      String brokerUserId, String identityProvider);
 
-    @Select(customWhereClause = "user_id = :userId")
-    PagingIterable<FederatedIdentity> findFederatedIdentities(String userId);
+  @Select(customWhereClause = "user_id = :userId")
+  PagingIterable<FederatedIdentity> findFederatedIdentities(String userId);
 
-    @Select(customWhereClause = "realm_id = :realmId")
-    PagingIterable<RealmToUserMapping> findUsersByRealmId(String realmId);
+  @Select(customWhereClause = "realm_id = :realmId")
+  PagingIterable<RealmToUserMapping> findUsersByRealmId(String realmId);
 
-    @Delete
-    boolean delete(FederatedIdentity federatedIdentity);
+  @Delete
+  boolean delete(FederatedIdentity federatedIdentity);
 
-    @Delete
-    boolean delete(FederatedIdentityToUserMapping identityToUserMapping);
+  @Delete
+  boolean delete(FederatedIdentityToUserMapping identityToUserMapping);
 
-    @Delete(entityClass = RealmToUserMapping.class)
-    boolean deleteRealmToUserMapping(String realmId, boolean serviceAccount, String userId);
+  @Delete(entityClass = RealmToUserMapping.class)
+  boolean deleteRealmToUserMapping(String realmId, boolean serviceAccount, String userId);
 
-    @Query("SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId")
-    long countAllUsersByRealmId(String realmId);
+  @Query("SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId")
+  long countAllUsersByRealmId(String realmId);
 
-    @Query(
-        "SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId AND service_account = false")
-    long countNonServiceAccountUsersByRealmId(String realmId);
+  @Query(
+      "SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId AND service_account = false")
+  long countNonServiceAccountUsersByRealmId(String realmId);
 
-    // Search
-    @Insert
-    void insertOrUpdate(UserSearchIndex searchIndex);
+  // Search
+  @Insert
+  void insertOrUpdate(UserSearchIndex searchIndex);
 
-    @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
-    PagingIterable<UserSearchIndex> findUsers(String realmId, String name, String value);
+  @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
+  PagingIterable<UserSearchIndex> findUsers(String realmId, String name, String value);
 
-    @Delete
-    void delete(UserSearchIndex searchIndex);
+  @Delete
+  void delete(UserSearchIndex searchIndex);
 
-    @Delete(entityClass = UserSearchIndex.class)
-    void deleteIndex(String realmId, String name, String value, String userId);
+  @Delete(entityClass = UserSearchIndex.class)
+  void deleteIndex(String realmId, String name, String value, String userId);
 
-    @Insert
-    void insertOrUpdate(UserConsent userConsent);
+  @Insert
+  void insertOrUpdate(UserConsent userConsent);
 
-    @Delete
-    void delete(UserConsent userConsent);
+  @Delete
+  void delete(UserConsent userConsent);
 
-    @Delete(entityClass = UserConsent.class)
-    boolean deleteUserConsent(String realmId, String userId, String clientId);
+  @Delete(entityClass = UserConsent.class)
+  boolean deleteUserConsent(String realmId, String userId, String clientId);
 
-    @Delete(entityClass = UserConsent.class,
-        customWhereClause = "realm_id = :realmId AND user_id = :userId")
-    boolean deleteUserConsentsByUserId(String realmId, String userId);
+  @Delete(
+      entityClass = UserConsent.class,
+      customWhereClause = "realm_id = :realmId AND user_id = :userId")
+  boolean deleteUserConsentsByUserId(String realmId, String userId);
 
-    @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId AND client_id = :clientId")
-    UserConsent findUserConsent(String realmId, String userId, String clientId);
+  @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId AND client_id = :clientId")
+  UserConsent findUserConsent(String realmId, String userId, String clientId);
 
-    @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId")
-    PagingIterable<UserConsent> findUserConsentsByUserId(String realmId, String userId);
+  @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId")
+  PagingIterable<UserConsent> findUserConsentsByUserId(String realmId, String userId);
 
-    @Select(customWhereClause = "realm_id = :realmId")
-    PagingIterable<UserConsent> findUserConsentsByRealmId(String realmId);
+  @Select(customWhereClause = "realm_id = :realmId")
+  PagingIterable<UserConsent> findUserConsentsByRealmId(String realmId);
 }

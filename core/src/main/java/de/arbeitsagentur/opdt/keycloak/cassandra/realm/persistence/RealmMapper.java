@@ -20,6 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface RealmMapper {
-    @DaoFactory
-    RealmDao realmDao();
+  @DaoFactory
+  RealmDao realmDao();
 }

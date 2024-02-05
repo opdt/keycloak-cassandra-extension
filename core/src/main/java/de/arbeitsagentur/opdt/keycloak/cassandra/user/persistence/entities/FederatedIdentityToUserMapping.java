@@ -30,11 +30,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @CqlName("federated_identity_to_user_mapping")
 public class FederatedIdentityToUserMapping {
-    @PartitionKey
-    private String brokerUserId;
+  @PartitionKey private String brokerUserId;
 
-    @PartitionKey(1)
-    private String identityProvider;
+  @PartitionKey(1)
+  private String identityProvider;
 
-    private String userId;
+  private String userId;
 }

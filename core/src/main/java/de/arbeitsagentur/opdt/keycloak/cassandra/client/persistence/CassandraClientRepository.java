@@ -17,32 +17,32 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
-
 import java.util.List;
 
-public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao> implements ClientRepository {
+public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao>
+    implements ClientRepository {
 
-    public CassandraClientRepository(ClientDao dao) {
-        super(dao);
-    }
+  public CassandraClientRepository(ClientDao dao) {
+    super(dao);
+  }
 
-    @Override
-    public void delete(Client client) {
-        dao.delete(client);
-    }
+  @Override
+  public void delete(Client client) {
+    dao.delete(client);
+  }
 
-    @Override
-    public Client getClientById(String realmId, String id) {
-        return dao.getClientById(realmId, id);
-    }
+  @Override
+  public Client getClientById(String realmId, String id) {
+    return dao.getClientById(realmId, id);
+  }
 
-    @Override
-    public long countClientsByRealm(String realmId) {
-        return dao.count();
-    }
+  @Override
+  public long countClientsByRealm(String realmId) {
+    return dao.count();
+  }
 
-    @Override
-    public List<Client> findAllClientsWithRealmId(String realmId) {
-        return dao.findAllClientsWithRealmId(realmId).all();
-    }
+  @Override
+  public List<Client> findAllClientsWithRealmId(String realmId) {
+    return dao.findAllClientsWithRealmId(realmId).all();
+  }
 }

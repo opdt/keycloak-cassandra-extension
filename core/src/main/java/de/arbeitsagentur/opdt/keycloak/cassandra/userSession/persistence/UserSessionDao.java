@@ -21,64 +21,67 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
-
 import java.util.List;
 
 @Dao
 public interface UserSessionDao extends BaseDao {
-    @Update
-    void insertOrUpdate(UserSession session);
+  @Update
+  void insertOrUpdate(UserSession session);
 
-    @Update(ttl = ":ttl")
-    void insertOrUpdate(UserSession session, int ttl);
+  @Update(ttl = ":ttl")
+  void insertOrUpdate(UserSession session, int ttl);
 
-    @Select(customWhereClause = "id = :id")
-    UserSession findById(String id);
+  @Select(customWhereClause = "id = :id")
+  UserSession findById(String id);
 
-    @Select(customWhereClause = "id IN :ids")
-    PagingIterable<UserSession> findByIds(List<String> ids);
+  @Select(customWhereClause = "id IN :ids")
+  PagingIterable<UserSession> findByIds(List<String> ids);
 
-    @Select
-    PagingIterable<UserSession> findAll();
+  @Select
+  PagingIterable<UserSession> findAll();
 
-    @Delete
-    void deleteUserSession(UserSession session);
+  @Delete
+  void deleteUserSession(UserSession session);
 
-    @Delete(entityClass = UserSession.class)
-    void deleteUserSession(String id);
+  @Delete(entityClass = UserSession.class)
+  void deleteUserSession(String id);
 
-    // Attributes
-    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-    @Insert
-    void insert(AttributeToUserSessionMapping mapping);
+  // Attributes
+  // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
+  @Insert
+  void insert(AttributeToUserSessionMapping mapping);
 
-    @Insert(ttl = ":ttl")
-    void insert(AttributeToUserSessionMapping mapping, int ttl);
+  @Insert(ttl = ":ttl")
+  void insert(AttributeToUserSessionMapping mapping, int ttl);
 
-    @Update
-    void insertOrUpdate(UserSessionToAttributeMapping mapping);
+  @Update
+  void insertOrUpdate(UserSessionToAttributeMapping mapping);
 
-    @Update(ttl = ":ttl")
-    void insertOrUpdate(UserSessionToAttributeMapping mapping, int ttl);
+  @Update(ttl = ":ttl")
+  void insertOrUpdate(UserSessionToAttributeMapping mapping, int ttl);
 
-    @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
-    UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
+  @Select(
+      customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
+  UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
 
-    @Select(customWhereClause = "user_session_id = :userSessionId")
-    PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
+  @Select(customWhereClause = "user_session_id = :userSessionId")
+  PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
 
-    @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
-    PagingIterable<AttributeToUserSessionMapping> findByAttribute(String attributeName, String attributeValue);
+  @Select(
+      customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
+  PagingIterable<AttributeToUserSessionMapping> findByAttribute(
+      String attributeName, String attributeValue);
 
-    @Delete
-    boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
+  @Delete
+  boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
 
-    @Delete(entityClass = AttributeToUserSessionMapping.class)
-    boolean deleteAttributeToUserSessionMapping(String attributeName, String attributeValue, String userSessionId);
+  @Delete(entityClass = AttributeToUserSessionMapping.class)
+  boolean deleteAttributeToUserSessionMapping(
+      String attributeName, String attributeValue, String userSessionId);
 
-    @Delete(entityClass = UserSessionToAttributeMapping.class)
-    boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
+  @Delete(entityClass = UserSessionToAttributeMapping.class)
+  boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
 
-    @Delete(entityClass = UserSessionToAttributeMapping.class)
-    boolean deleteAttribute(String userSessionId, String attributeName);
+  @Delete(entityClass = UserSessionToAttributeMapping.class)
+  boolean deleteAttribute(String userSessionId, String attributeName);
 }

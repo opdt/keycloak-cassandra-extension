@@ -16,54 +16,58 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-
 @JBossLog
-public abstract class TransactionalProvider<TEntity extends TransactionalEntity, TModel extends TransactionalModelAdapter> implements Provider {
+public abstract class TransactionalProvider<
+        TEntity extends TransactionalEntity, TModel extends TransactionalModelAdapter>
+    implements Provider {
 
-    protected final KeycloakSession session;
-    protected final Map<String, TModel> models = new ConcurrentHashMap<>();
+  protected final KeycloakSession session;
+  protected final Map<String, TModel> models = new ConcurrentHashMap<>();
 
-    public TransactionalProvider(KeycloakSession session) {
-        this.session = session;
-    }
+  public TransactionalProvider(KeycloakSession session) {
+    this.session = session;
+  }
 
-    protected abstract TModel createNewModel(RealmModel realm, TEntity entity);
+  protected abstract TModel createNewModel(RealmModel realm, TEntity entity);
 
-    protected Function<TEntity, TModel> entityToAdapterFunc(RealmModel realm) {
-        return origEntity -> {
-            if (origEntity == null) {
-                return null;
-            }
+  protected Function<TEntity, TModel> entityToAdapterFunc(RealmModel realm) {
+    return origEntity -> {
+      if (origEntity == null) {
+        return null;
+      }
 
-            TModel existingModel = models.get(origEntity.getId());
-            if (existingModel != null) {
-                log.tracef("Return cached model for id %s", origEntity.getId());
-                return existingModel;
-            }
+      TModel existingModel = models.get(origEntity.getId());
+      if (existingModel != null) {
+        log.tracef("Return cached model for id %s", origEntity.getId());
+        return existingModel;
+      }
 
-            TModel adapter = createNewModel(realm, origEntity);
+      TModel adapter = createNewModel(realm, origEntity);
 
-            session.getTransactionManager().enlistAfterCompletion((CassandraModelTransaction) () -> {
-                log.tracef("Flush model with id %s", adapter.getId());
-                adapter.commit();
-                models.remove(adapter.getId());
-            });
-            models.put(adapter.getId(), adapter);
-            return adapter;
-        };
-    }
+      session
+          .getTransactionManager()
+          .enlistAfterCompletion(
+              (CassandraModelTransaction)
+                  () -> {
+                    log.tracef("Flush model with id %s", adapter.getId());
+                    adapter.commit();
+                    models.remove(adapter.getId());
+                  });
+      models.put(adapter.getId(), adapter);
+      return adapter;
+    };
+  }
 
-    @Override
-    public void close() {
-        models.clear();
-    }
+  @Override
+  public void close() {
+    models.clear();
+  }
 }

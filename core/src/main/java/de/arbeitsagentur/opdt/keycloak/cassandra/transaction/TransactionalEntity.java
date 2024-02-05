@@ -20,15 +20,15 @@ import java.util.List;
 import java.util.Map;
 
 public interface TransactionalEntity {
-    String getId();
+  String getId();
 
-    Long getVersion();
+  Long getVersion();
 
-    void setVersion(Long version);
+  void setVersion(Long version);
 
-    default void incrementVersion() {
-        setVersion(getVersion() + 1L);
-    }
+  default void incrementVersion() {
+    setVersion(getVersion() + 1L);
+  }
 
-    Map<String, List<String>> getAttributes();
+  Map<String, List<String>> getAttributes();
 }

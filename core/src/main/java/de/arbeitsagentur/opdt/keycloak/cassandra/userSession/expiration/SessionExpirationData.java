@@ -25,60 +25,63 @@ import org.keycloak.models.RealmModel;
 @NoArgsConstructor
 @Builder
 public class SessionExpirationData {
-    private RealmModel realm;
-    private Integer maxLifespanOverride;
-    private Integer offlineMaxLifespanOverride;
-    private Integer clientMaxLifespanOverride;
-    private Integer offlineClientMaxLifespanOverride;
-    private Integer idleTimeoutOverride;
-    private Integer offlineIdleTimeoutOverride;
-    private Integer clientIdleTimeoutOverride;
-    private Integer offlineClientIdleTimeoutOverride;
+  private RealmModel realm;
+  private Integer maxLifespanOverride;
+  private Integer offlineMaxLifespanOverride;
+  private Integer clientMaxLifespanOverride;
+  private Integer offlineClientMaxLifespanOverride;
+  private Integer idleTimeoutOverride;
+  private Integer offlineIdleTimeoutOverride;
+  private Integer clientIdleTimeoutOverride;
+  private Integer offlineClientIdleTimeoutOverride;
 
-    public int getOfflineSessionMaxLifespan() {
-        return getEffectiveLifespan(offlineMaxLifespanOverride, realm.getOfflineSessionMaxLifespan());
-    }
+  public int getOfflineSessionMaxLifespan() {
+    return getEffectiveLifespan(offlineMaxLifespanOverride, realm.getOfflineSessionMaxLifespan());
+  }
 
-    public int getSsoSessionMaxLifespan() {
-        return getEffectiveLifespan(maxLifespanOverride, realm.getSsoSessionMaxLifespan());
-    }
+  public int getSsoSessionMaxLifespan() {
+    return getEffectiveLifespan(maxLifespanOverride, realm.getSsoSessionMaxLifespan());
+  }
 
-    public int getSsoSessionMaxLifespanRememberMe() {
-        return realm.getSsoSessionMaxLifespanRememberMe();
-    }
+  public int getSsoSessionMaxLifespanRememberMe() {
+    return realm.getSsoSessionMaxLifespanRememberMe();
+  }
 
-    public int getOfflineSessionIdleTimeout() {
-        return getEffectiveLifespan(offlineIdleTimeoutOverride, realm.getOfflineSessionIdleTimeout());
-    }
+  public int getOfflineSessionIdleTimeout() {
+    return getEffectiveLifespan(offlineIdleTimeoutOverride, realm.getOfflineSessionIdleTimeout());
+  }
 
-    public boolean isOfflineSessionMaxLifespanEnabled() {
-        return realm.isOfflineSessionMaxLifespanEnabled();
-    }
+  public boolean isOfflineSessionMaxLifespanEnabled() {
+    return realm.isOfflineSessionMaxLifespanEnabled();
+  }
 
-    public int getSsoSessionIdleTimeoutRememberMe() {
-        return realm.getSsoSessionIdleTimeoutRememberMe();
-    }
+  public int getSsoSessionIdleTimeoutRememberMe() {
+    return realm.getSsoSessionIdleTimeoutRememberMe();
+  }
 
-    public int getSsoSessionIdleTimeout() {
-        return getEffectiveLifespan(idleTimeoutOverride, realm.getSsoSessionIdleTimeout());
-    }
+  public int getSsoSessionIdleTimeout() {
+    return getEffectiveLifespan(idleTimeoutOverride, realm.getSsoSessionIdleTimeout());
+  }
 
-    public int getClientOfflineSessionMaxLifespan() {
-        return getEffectiveLifespan(offlineClientMaxLifespanOverride, realm.getClientOfflineSessionMaxLifespan());
-    }
+  public int getClientOfflineSessionMaxLifespan() {
+    return getEffectiveLifespan(
+        offlineClientMaxLifespanOverride, realm.getClientOfflineSessionMaxLifespan());
+  }
 
-    public int getClientOfflineSessionIdleTimeout() {
-        return getEffectiveLifespan(offlineClientIdleTimeoutOverride, realm.getClientOfflineSessionIdleTimeout());
-    }
-    public int getClientSessionIdleTimeout() {
-        return getEffectiveLifespan(clientIdleTimeoutOverride, realm.getClientSessionIdleTimeout());
-    }
+  public int getClientOfflineSessionIdleTimeout() {
+    return getEffectiveLifespan(
+        offlineClientIdleTimeoutOverride, realm.getClientOfflineSessionIdleTimeout());
+  }
 
-    public int getClientSessionMaxLifespan() {
-        return getEffectiveLifespan(clientMaxLifespanOverride, realm.getClientSessionMaxLifespan());
-    }
+  public int getClientSessionIdleTimeout() {
+    return getEffectiveLifespan(clientIdleTimeoutOverride, realm.getClientSessionIdleTimeout());
+  }
 
-    private int getEffectiveLifespan(Integer override, int realmLifespan) {
-        return override == null || override > realmLifespan ? realmLifespan : override;
-    }
+  public int getClientSessionMaxLifespan() {
+    return getEffectiveLifespan(clientMaxLifespanOverride, realm.getClientSessionMaxLifespan());
+  }
+
+  private int getEffectiveLifespan(Integer override, int realmLifespan) {
+    return override == null || override > realmLifespan ? realmLifespan : override;
+  }
 }

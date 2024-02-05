@@ -18,12 +18,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
-import lombok.*;
-
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.*;
 
 @EqualsAndHashCode(of = "realmId")
 @Builder
@@ -33,78 +31,79 @@ import java.util.stream.Collectors;
 @Entity
 @CqlName("roles")
 public class Roles implements TransactionalEntity {
-    @PartitionKey
-    private String realmId;
+  @PartitionKey private String realmId;
 
-    private Long version;
+  private Long version;
 
-    @Builder.Default
-    private Set<RoleValue> realmRoles = new HashSet<>();
+  @Builder.Default private Set<RoleValue> realmRoles = new HashSet<>();
 
-    @Builder.Default
-    private Map<String, Set<RoleValue>> clientRoles = new HashMap<>();
+  @Builder.Default private Map<String, Set<RoleValue>> clientRoles = new HashMap<>();
 
-    @Override
-    public String getId() {
-        return realmId;
+  @Override
+  public String getId() {
+    return realmId;
+  }
+
+  public Set<RoleValue> getRealmRoles() {
+    if (realmRoles == null) {
+      realmRoles = new HashSet<>();
     }
+    return realmRoles;
+  }
 
-    public Set<RoleValue> getRealmRoles() {
-        if (realmRoles == null) {
-            realmRoles = new HashSet<>();
-        }
-        return realmRoles;
+  public Map<String, Set<RoleValue>> getClientRoles() {
+    if (clientRoles == null) {
+      clientRoles = new HashMap<>();
     }
+    return clientRoles;
+  }
 
-    public Map<String, Set<RoleValue>> getClientRoles() {
-        if (clientRoles == null) {
-            clientRoles = new HashMap<>();
-        }
-        return clientRoles;
+  public RoleValue getRoleById(String id) {
+    RoleValue realmRole =
+        realmRoles.stream().filter(r -> r.getId().equals(id)).findFirst().orElse(null);
+    if (realmRole == null) {
+      return clientRoles.entrySet().stream()
+          .flatMap(e -> e.getValue().stream().filter(r -> r.getId().equals(id)))
+          .findFirst()
+          .orElse(null);
     }
+    return realmRole;
+  }
 
-    public RoleValue getRoleById(String id) {
-        RoleValue realmRole = realmRoles.stream().filter(r -> r.getId().equals(id)).findFirst().orElse(null);
-        if (realmRole == null) {
-            return clientRoles.entrySet().stream().flatMap(e -> e.getValue().stream().filter(r -> r.getId().equals(id))).findFirst().orElse(null);
-        }
-        return realmRole;
-    }
+  public void addRealmRole(RoleValue role) {
+    realmRoles.add(role);
+  }
 
-    public void addRealmRole(RoleValue role) {
-        realmRoles.add(role);
-    }
+  public List<RoleValue> getRealmRoles(Integer first, Integer max) {
+    return realmRoles.stream()
+        .skip(first == null || first < 0 ? 0 : first)
+        .limit(max == null || max < 0 ? Long.MAX_VALUE : max)
+        .collect(Collectors.toList());
+  }
 
-    public List<RoleValue> getRealmRoles(Integer first, Integer max) {
-        return realmRoles.stream()
-            .skip(first == null || first < 0 ? 0 : first)
-            .limit(max == null || max < 0 ? Long.MAX_VALUE : max)
-            .collect(Collectors.toList());
-    }
+  public boolean removeClientRole(String clientId, String id) {
+    return clientRoles.get(clientId).remove(RoleValue.builder().id(id).build());
+  }
 
-    public boolean removeClientRole(String clientId, String id) {
-        return clientRoles.get(clientId).remove(RoleValue.builder().id(id).build());
-    }
+  public boolean removeRealmRole(String id) {
+    return realmRoles.remove(RoleValue.builder().id(id).build());
+  }
 
-    public boolean removeRealmRole(String id) {
-        return realmRoles.remove(RoleValue.builder().id(id).build());
-    }
+  public void addClientRole(String clientId, RoleValue role) {
+    Set<RoleValue> concreteClientRoles = clientRoles.getOrDefault(clientId, new HashSet<>());
+    concreteClientRoles.add(role);
+    clientRoles.put(clientId, concreteClientRoles);
+  }
 
-    public void addClientRole(String clientId, RoleValue role) {
-        Set<RoleValue> concreteClientRoles = clientRoles.getOrDefault(clientId, new HashSet<>());
-        concreteClientRoles.add(role);
-        clientRoles.put(clientId, concreteClientRoles);
-    }
+  public Collection<RoleValue> getClientRoles(String clientId, Integer first, Integer max) {
+    return clientRoles.getOrDefault(clientId, new HashSet<>()).stream()
+        .skip(first == null || first < 0 ? 0 : first)
+        .limit(max == null || max < 0 ? Long.MAX_VALUE : max)
+        .collect(Collectors.toList());
+  }
 
-    public Collection<RoleValue> getClientRoles(String clientId, Integer first, Integer max) {
-        return clientRoles.getOrDefault(clientId, new HashSet<>()).stream()
-            .skip(first == null || first < 0 ? 0 : first)
-            .limit(max == null || max < 0 ? Long.MAX_VALUE : max)
-            .collect(Collectors.toList());
-    }
-
-    @Override
-    public Map<String, List<String>> getAttributes() {
-        return Collections.emptyMap();
-    }
+  @Override
+  public Map<String, List<String>> getAttributes() {
+    return Collections.emptyMap();
+  }
 }

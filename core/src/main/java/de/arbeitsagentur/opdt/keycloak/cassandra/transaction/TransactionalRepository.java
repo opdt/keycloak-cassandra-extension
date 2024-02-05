@@ -19,26 +19,30 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ModelIllegalStateException;
 
-public abstract class TransactionalRepository<TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> {
-    protected final TDao dao;
+public abstract class TransactionalRepository<
+    TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> {
+  protected final TDao dao;
 
-    public TransactionalRepository(TDao dao) {
-        this.dao = dao;
+  public TransactionalRepository(TDao dao) {
+    this.dao = dao;
+  }
+
+  public void insertOrUpdate(TEntity entity) {
+    if (entity.getVersion() == null) {
+      entity.setVersion(1L);
+      dao.insert(entity);
+    } else {
+      Long currentVersion = entity.getVersion();
+      entity.incrementVersion();
+
+      ResultSet result = dao.update(entity, currentVersion);
+
+      if (!result.wasApplied()) {
+        throw new ModelIllegalStateException(
+            "Entity couldn't be updated because its version "
+                + currentVersion
+                + " doesn't match the version in the database");
+      }
     }
-
-    public void insertOrUpdate(TEntity entity) {
-        if (entity.getVersion() == null) {
-            entity.setVersion(1L);
-            dao.insert(entity);
-        } else {
-            Long currentVersion = entity.getVersion();
-            entity.incrementVersion();
-
-            ResultSet result = dao.update(entity, currentVersion);
-
-            if (!result.wasApplied()) {
-                throw new ModelIllegalStateException("Entity couldn't be updated because its version " + currentVersion + " doesn't match the version in the database");
-            }
-        }
-    }
+  }
 }

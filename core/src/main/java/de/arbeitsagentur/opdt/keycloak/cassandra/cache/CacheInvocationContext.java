@@ -15,27 +15,26 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.cache;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.lang.reflect.Method;
-import java.util.Arrays;
 
 @EqualsAndHashCode
 @Getter
 @RequiredArgsConstructor
 public class CacheInvocationContext {
-    private final Class targetClass;
-    private final String targetMethod;
-    private final Object[] args;
+  private final Class targetClass;
+  private final String targetMethod;
+  private final Object[] args;
 
-    public static CacheInvocationContext create(Object target, Method method, Object[] args) {
-        return new CacheInvocationContext(target.getClass(), method.getName(), args);
-    }
+  public static CacheInvocationContext create(Object target, Method method, Object[] args) {
+    return new CacheInvocationContext(target.getClass(), method.getName(), args);
+  }
 
-    @Override
-    public String toString() {
-        return String.format("%s.%s(%s)", targetClass.getName(), targetMethod, Arrays.toString(args));
-    }
+  @Override
+  public String toString() {
+    return String.format("%s.%s(%s)", targetClass.getName(), targetMethod, Arrays.toString(args));
+  }
 }

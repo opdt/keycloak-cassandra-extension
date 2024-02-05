@@ -20,12 +20,11 @@ import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.*;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -35,25 +34,22 @@ import java.util.Map;
 @Entity
 @CqlName("clients")
 public class Client implements TransactionalEntity {
-    @PartitionKey
-    private String realmId;
+  @PartitionKey private String realmId;
 
-    @ClusteringColumn
-    private String id;
+  @ClusteringColumn private String id;
 
-    private Long version;
+  private Long version;
 
-    @Builder.Default
-    private Map<String, List<String>> attributes = new HashMap<>();
+  @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
 
-    public Map<String, List<String>> getAttributes() {
-        if (attributes == null) {
-            attributes = new HashMap<>();
-        }
-        return attributes;
+  public Map<String, List<String>> getAttributes() {
+    if (attributes == null) {
+      attributes = new HashMap<>();
     }
+    return attributes;
+  }
 
-    public List<String> getAttribute(String name) {
-        return attributes.getOrDefault(name, new ArrayList<>());
-    }
+  public List<String> getAttribute(String name) {
+    return attributes.getOrDefault(name, new ArrayList<>());
+  }
 }

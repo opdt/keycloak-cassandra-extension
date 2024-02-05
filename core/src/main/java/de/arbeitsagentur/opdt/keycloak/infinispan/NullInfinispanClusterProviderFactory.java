@@ -16,88 +16,84 @@
 
 package de.arbeitsagentur.opdt.keycloak.infinispan;
 
-import com.google.auto.service.AutoService;
-import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.Config;
-import org.keycloak.cluster.*;
-import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.provider.EnvironmentDependentProviderFactory;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
+import com.google.auto.service.AutoService;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.Config;
+import org.keycloak.cluster.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.EnvironmentDependentProviderFactory;
+
 @JBossLog
 @AutoService(ClusterProviderFactory.class)
-public class NullInfinispanClusterProviderFactory implements ClusterProviderFactory, EnvironmentDependentProviderFactory {
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
+public class NullInfinispanClusterProviderFactory
+    implements ClusterProviderFactory, EnvironmentDependentProviderFactory {
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
 
-    @Override
-    public ClusterProvider create(KeycloakSession session) {
-        return createProviderCached(session, ClusterProvider.class, () -> new ClusterProvider() {
-            @Override
-            public int getClusterStartupTime() {
+  @Override
+  public ClusterProvider create(KeycloakSession session) {
+    return createProviderCached(
+        session,
+        ClusterProvider.class,
+        () ->
+            new ClusterProvider() {
+              @Override
+              public int getClusterStartupTime() {
                 return 0;
-            }
+              }
 
-            @Override
-            public <T> ExecutionResult<T> executeIfNotExecuted(String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
+              @Override
+              public <T> ExecutionResult<T> executeIfNotExecuted(
+                  String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
                 return null;
-            }
+              }
 
-            @Override
-            public Future<Boolean> executeIfNotExecutedAsync(String taskKey, int taskTimeoutInSeconds, Callable task) {
+              @Override
+              public Future<Boolean> executeIfNotExecutedAsync(
+                  String taskKey, int taskTimeoutInSeconds, Callable task) {
                 return null;
-            }
+              }
 
-            @Override
-            public void registerListener(String taskKey, ClusterListener task) {
+              @Override
+              public void registerListener(String taskKey, ClusterListener task) {}
 
-            }
+              @Override
+              public void notify(
+                  String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {}
 
-            @Override
-            public void notify(String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {
+              @Override
+              public void close() {}
+            });
+  }
 
-            }
+  @Override
+  public void init(Config.Scope config) {
+    log.info("Infinispan-ClusterProvider deactivated...");
+  }
 
-            @Override
-            public void close() {
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-            }
-        });
-    }
+  @Override
+  public void close() {}
 
-    @Override
-    public void init(Config.Scope config) {
-        log.info("Infinispan-ClusterProvider deactivated...");
-    }
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
-
-    }
-
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public String getId() {
-        return "infinispan";
-    }
+  @Override
+  public String getId() {
+    return "infinispan";
+  }
 }

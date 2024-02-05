@@ -19,12 +19,11 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,18 +31,16 @@ import java.util.List;
 @Entity
 @CqlName("user_sessions_to_attributes")
 public class UserSessionToAttributeMapping {
-    @PartitionKey
-    private String userSessionId;
+  @PartitionKey private String userSessionId;
 
-    @ClusteringColumn
-    private String attributeName;
+  @ClusteringColumn private String attributeName;
 
-    private List<String> attributeValues;
+  private List<String> attributeValues;
 
-    public List<String> getAttributeValues() {
-        if (attributeValues == null) {
-            attributeValues = new ArrayList<>();
-        }
-        return attributeValues;
+  public List<String> getAttributeValues() {
+    if (attributeValues == null) {
+      attributeValues = new ArrayList<>();
     }
+    return attributeValues;
+  }
 }

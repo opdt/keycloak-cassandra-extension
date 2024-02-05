@@ -20,5 +20,4 @@ import com.datastax.oss.driver.api.mapper.annotations.DefaultNullSavingStrategy;
 import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 
 @DefaultNullSavingStrategy(NullSavingStrategy.SET_TO_NULL)
-public interface BaseDao {
-}
+public interface BaseDao {}

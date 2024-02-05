@@ -19,12 +19,11 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -33,19 +32,16 @@ import java.time.Instant;
 @Builder
 @CqlName("federated_identities")
 public class FederatedIdentity {
-    @PartitionKey
-    private String userId;
+  @PartitionKey private String userId;
 
-    @ClusteringColumn
-    private String identityProvider;
+  @ClusteringColumn private String identityProvider;
 
-    @CqlName("identity_token") // Token is reserved word in CQL
-    private String token;
+  @CqlName("identity_token") // Token is reserved word in CQL
+  private String token;
 
-    private String brokerUserId;
-    private String realmId;
-    private String brokerUserName;
+  private String brokerUserId;
+  private String realmId;
+  private String brokerUserName;
 
-    @Builder.Default
-    private Instant createdTimestamp = Instant.now();
+  @Builder.Default private Instant createdTimestamp = Instant.now();
 }

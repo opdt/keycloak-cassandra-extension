@@ -62,7 +62,9 @@ This extension supports additional checks to prevent setting username to a value
 
 To enable these checks for a realm, set its attribute `enableCheckForDuplicatesAcrossUsernameAndEmail` to `true` (default when not set: `false`)
 
-## Development
+## Contributing
+
+Before contributing to Keycloak Cassandra, please read our [contributing guidelines](CONTRIBUTING.md).
 
 ### Private image registries
 
