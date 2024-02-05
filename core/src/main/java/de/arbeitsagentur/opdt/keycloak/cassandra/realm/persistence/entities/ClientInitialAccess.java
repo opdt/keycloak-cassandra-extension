@@ -19,8 +19,8 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import lombok.*;
 import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
+import lombok.*;
 
 @EqualsAndHashCode(of = "id")
 @Builder
@@ -30,15 +30,13 @@ import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
 @Entity
 @CqlName("client_initial_accesses")
 public class ClientInitialAccess implements ExpirableEntity {
-    @PartitionKey
-    private String realmId;
+  @PartitionKey private String realmId;
 
-    @ClusteringColumn
-    private String id;
+  @ClusteringColumn private String id;
 
-    private Long timestamp;
-    private Long expiration;
+  private Long timestamp;
+  private Long expiration;
 
-    private Integer count;
-    private Integer remainingCount;
+  private Integer count;
+  private Integer remainingCount;
 }

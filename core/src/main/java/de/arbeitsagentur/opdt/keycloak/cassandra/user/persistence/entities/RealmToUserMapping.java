@@ -31,12 +31,10 @@ import lombok.NoArgsConstructor;
 @Entity
 @CqlName("realms_to_users")
 public class RealmToUserMapping {
-    @PartitionKey
-    private String realmId;
+  @PartitionKey private String realmId;
 
-    @ClusteringColumn
-    private boolean serviceAccount;
+  @ClusteringColumn private boolean serviceAccount;
 
-    @ClusteringColumn(1)
-    private String userId;
+  @ClusteringColumn(1)
+  private String userId;
 }

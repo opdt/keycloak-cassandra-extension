@@ -16,7 +16,6 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
@@ -25,41 +24,41 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
 public interface RealmDao extends TransactionalDao<Realm> {
-    @Select(customWhereClause = "id = :id")
-    Realm getRealmById(String id);
+  @Select(customWhereClause = "id = :id")
+  Realm getRealmById(String id);
 
-    @Select
-    PagingIterable<Realm> findAll();
+  @Select
+  PagingIterable<Realm> findAll();
 
-    @Select(customWhereClause = "name = :name")
-    NameToRealm findByName(String name);
+  @Select(customWhereClause = "name = :name")
+  NameToRealm findByName(String name);
 
-    @Delete(entityClass = NameToRealm.class)
-    void deleteNameToRealm(String name);
+  @Delete(entityClass = NameToRealm.class)
+  void deleteNameToRealm(String name);
 
-    @Update
-    void insertOrUpdate(NameToRealm nameToRealm);
+  @Update
+  void insertOrUpdate(NameToRealm nameToRealm);
 
-    // ClientInitialAccessModel
+  // ClientInitialAccessModel
 
-    @Select(customWhereClause = "realm_id = :realmId AND id = :id")
-    ClientInitialAccess getClientInitialAccessModelById(String realmId, String id);
+  @Select(customWhereClause = "realm_id = :realmId AND id = :id")
+  ClientInitialAccess getClientInitialAccessModelById(String realmId, String id);
 
-    @Select(customWhereClause = "realm_id = :realmId")
-    PagingIterable<ClientInitialAccess> getClientInitialAccesses(String realmId);
+  @Select(customWhereClause = "realm_id = :realmId")
+  PagingIterable<ClientInitialAccess> getClientInitialAccesses(String realmId);
 
-    @Select
-    PagingIterable<ClientInitialAccess> getAllClientInitialAccesses();
+  @Select
+  PagingIterable<ClientInitialAccess> getAllClientInitialAccesses();
 
-    @Update
-    void insertOrUpdate(ClientInitialAccess model);
+  @Update
+  void insertOrUpdate(ClientInitialAccess model);
 
-    @Update(ttl = ":ttl")
-    void insertOrUpdate(ClientInitialAccess model, int ttl);
+  @Update(ttl = ":ttl")
+  void insertOrUpdate(ClientInitialAccess model, int ttl);
 
-    @Delete(entityClass = ClientInitialAccess.class)
-    void deleteClientInitialAccessModel(String realmId, String id);
+  @Delete(entityClass = ClientInitialAccess.class)
+  void deleteClientInitialAccessModel(String realmId, String id);
 
-    @Delete(entityClass = ClientInitialAccess.class)
-    void deleteAllClientInitialAccessModels(String realmId);
+  @Delete(entityClass = ClientInitialAccess.class)
+  void deleteAllClientInitialAccessModels(String realmId);
 }

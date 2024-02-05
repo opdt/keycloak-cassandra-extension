@@ -29,8 +29,7 @@ import lombok.*;
 @Entity
 @CqlName("name_to_realm")
 public class NameToRealm {
-    @PartitionKey
-    private String name;
+  @PartitionKey private String name;
 
-    private String id;
+  private String id;
 }

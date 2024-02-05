@@ -29,15 +29,13 @@ import lombok.*;
 @Entity
 @CqlName("login_failures")
 public class LoginFailure {
-    @PartitionKey
-    private String userId;
+  @PartitionKey private String userId;
 
-    @ClusteringColumn
-    private String id;
+  @ClusteringColumn private String id;
 
-    private String realmId;
-    private Long failedLoginNotBefore;
-    private Integer numFailures;
-    private Long lastFailure;
-    private String lastIpFailure;
+  private String realmId;
+  private Long failedLoginNotBefore;
+  private Integer numFailures;
+  private Long lastFailure;
+  private String lastIpFailure;
 }

@@ -15,202 +15,217 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm;
 
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_BEFORE_REMOVE;
+import static org.keycloak.common.util.StackUtil.getShortStackTrace;
+
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalProvider;
-import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.models.*;
-import org.keycloak.models.utils.KeycloakModelUtils;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_AFTER_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_BEFORE_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
+import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.models.*;
+import org.keycloak.models.utils.KeycloakModelUtils;
 
 @JBossLog
-public class CassandraRealmsProvider extends TransactionalProvider<Realm, CassandraRealmAdapter> implements RealmProvider {
-    private final RealmRepository realmRepository;
+public class CassandraRealmsProvider extends TransactionalProvider<Realm, CassandraRealmAdapter>
+    implements RealmProvider {
+  private final RealmRepository realmRepository;
 
-    public CassandraRealmsProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
-        super(session);
-        this.realmRepository = cassandraRepository;
+  public CassandraRealmsProvider(KeycloakSession session, CompositeRepository cassandraRepository) {
+    super(session);
+    this.realmRepository = cassandraRepository;
+  }
+
+  @Override
+  protected CassandraRealmAdapter createNewModel(RealmModel realm, Realm entity) {
+    return new CassandraRealmAdapter(entity, session, realmRepository);
+  }
+
+  @Override
+  public RealmModel createRealm(String name) {
+    return createRealm(KeycloakModelUtils.generateId(), name);
+  }
+
+  @Override
+  public RealmModel createRealm(String id, String name) {
+    if (getRealmByName(name) != null) {
+      throw new ModelDuplicateException("Realm with given name exists: " + name);
     }
 
-    @Override
-    protected CassandraRealmAdapter createNewModel(RealmModel realm, Realm entity) {
-        return new CassandraRealmAdapter(entity, session, realmRepository);
+    Realm existingRealm = realmRepository.getRealmById(id);
+    if (existingRealm != null) {
+      throw new ModelDuplicateException("Realm exists: " + id);
     }
 
-    @Override
-    public RealmModel createRealm(String name) {
-        return createRealm(KeycloakModelUtils.generateId(), name);
+    log.tracef("createRealm(%s, %s)%s", id, name, getShortStackTrace());
+
+    Realm realm = new Realm(id, name, null, new HashMap<>());
+    realmRepository.createRealm(realm);
+    RealmModel realmModel = entityToAdapterFunc(null).apply(realm);
+    realmModel.setName(name);
+
+    return realmModel;
+  }
+
+  @Override
+  public RealmModel getRealm(String id) {
+    if (id == null) return null;
+
+    log.tracef("getRealm(%s)%s", id, getShortStackTrace());
+
+    Realm realm = realmRepository.getRealmById(id);
+    RealmModel result = entityToAdapterFunc(null).apply(realm);
+
+    if (result != null && log.isTraceEnabled()) {
+      log.tracef(
+          "Loaded realm with id %s, version %s and execution models %s",
+          result.getId(),
+          result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
+          result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
     }
 
-    @Override
-    public RealmModel createRealm(String id, String name) {
-        if (getRealmByName(name) != null) {
-            throw new ModelDuplicateException("Realm with given name exists: " + name);
-        }
+    return result;
+  }
 
-        Realm existingRealm = realmRepository.getRealmById(id);
-        if (existingRealm != null) {
-            throw new ModelDuplicateException("Realm exists: " + id);
-        }
+  @Override
+  public RealmModel getRealmByName(String name) {
+    if (name == null) return null;
 
-        log.tracef("createRealm(%s, %s)%s", id, name, getShortStackTrace());
+    log.tracef("getRealm(%s)%s", name, getShortStackTrace());
 
-        Realm realm = new Realm(id, name, null, new HashMap<>());
-        realmRepository.createRealm(realm);
-        RealmModel realmModel = entityToAdapterFunc(null).apply(realm);
-        realmModel.setName(name);
+    Realm realm = realmRepository.findRealmByName(name);
+    RealmModel result = entityToAdapterFunc(null).apply(realm);
 
-        return realmModel;
+    if (result != null && log.isTraceEnabled()) {
+      log.tracef(
+          "Loaded realm with id %s, version %s and execution models %s",
+          result.getId(),
+          result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
+          result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
     }
 
-    @Override
-    public RealmModel getRealm(String id) {
-        if (id == null) return null;
+    return result;
+  }
 
-        log.tracef("getRealm(%s)%s", id, getShortStackTrace());
+  @Override
+  public Stream<RealmModel> getRealmsStream() {
+    return realmRepository.getAllRealms().stream().map(entityToAdapterFunc(null));
+  }
 
-        Realm realm = realmRepository.getRealmById(id);
-        RealmModel result = entityToAdapterFunc(null).apply(realm);
+  @Override
+  public Stream<RealmModel> getRealmsWithProviderTypeStream(Class<?> type) {
+    return getRealmsStream()
+        .filter(
+            r -> r.getComponentsStream().anyMatch(c -> c.getProviderType().equals(type.getName())));
+  }
 
-        if(result != null && log.isTraceEnabled()) {
-            log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
-                result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
-                result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
-        }
+  @Override
+  public boolean removeRealm(String id) {
+    log.tracef("removeRealm(%s)%s", id, getShortStackTrace());
+    Realm realm = realmRepository.getRealmById(id);
 
-        return result;
+    if (realm == null) return false;
+
+    RealmModel realmModel = getRealm(id);
+    session.invalidate(REALM_BEFORE_REMOVE, realmModel);
+    realmRepository.deleteRealm(realm);
+    ((CassandraRealmAdapter) realmModel).markDeleted();
+    models.remove(id);
+    session.invalidate(REALM_AFTER_REMOVE, realmModel);
+
+    return true;
+  }
+
+  @Override
+  public void removeExpiredClientInitialAccess() {
+    List<ClientInitialAccess> cias = realmRepository.getAllClientInitialAccesses();
+    if (cias != null)
+      cias.stream()
+          .filter(this::checkIfExpired)
+          .collect(Collectors.toSet())
+          .forEach(realmRepository::deleteClientInitialAccess);
+  }
+
+  private boolean checkIfExpired(ClientInitialAccess cia) {
+    return cia.getRemainingCount() < 1 || isExpired(cia, true);
+  }
+
+  @Override
+  public void saveLocalizationText(RealmModel realm, String locale, String key, String text) {
+    if (locale == null || key == null || text == null) return;
+
+    Map<String, String> current = realm.getRealmLocalizationTextsByLocale(locale);
+
+    if (current == null) {
+      current = new HashMap<>();
     }
 
-    @Override
-    public RealmModel getRealmByName(String name) {
-        if (name == null) return null;
+    current.put(key, text);
+    realm.createOrUpdateRealmLocalizationTexts(locale, current);
+  }
 
-        log.tracef("getRealm(%s)%s", name, getShortStackTrace());
+  @Override
+  public void saveLocalizationTexts(RealmModel realm, String locale, Map<String, String> textMap) {
+    if (locale == null || textMap == null) return;
 
-        Realm realm = realmRepository.findRealmByName(name);
-        RealmModel result = entityToAdapterFunc(null).apply(realm);
+    realm.createOrUpdateRealmLocalizationTexts(locale, textMap);
+  }
 
-        if(result != null && log.isTraceEnabled()) {
-            log.tracef("Loaded realm with id %s, version %s and execution models %s", result.getId(),
-                result.getAttribute(CassandraRealmAdapter.ENTITY_VERSION),
-                result.getAttribute(CassandraRealmAdapter.AUTHENTICATION_EXECUTION_MODELS));
-        }
+  @Override
+  public boolean updateLocalizationText(RealmModel realm, String locale, String key, String text) {
+    if (locale == null
+        || key == null
+        || text == null
+        || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return false;
 
-        return result;
+    Map<String, String> realmLocalizationTextsByLocale =
+        realm.getRealmLocalizationTextsByLocale(locale);
+    if (realmLocalizationTextsByLocale == null
+        || !realmLocalizationTextsByLocale.containsKey(key)) {
+      return false;
     }
 
-    @Override
-    public Stream<RealmModel> getRealmsStream() {
-        return realmRepository.getAllRealms().stream().map(entityToAdapterFunc(null));
+    realmLocalizationTextsByLocale.put(key, text);
+    realm.createOrUpdateRealmLocalizationTexts(locale, realmLocalizationTextsByLocale);
+    return true;
+  }
+
+  @Override
+  public boolean deleteLocalizationTextsByLocale(RealmModel realm, String locale) {
+    return realm.removeRealmLocalizationTexts(locale);
+  }
+
+  @Override
+  public boolean deleteLocalizationText(RealmModel realm, String locale, String key) {
+    if (locale == null
+        || key == null
+        || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return false;
+
+    Map<String, String> realmLocalizationTextsByLocale =
+        realm.getRealmLocalizationTextsByLocale(locale);
+    if (realmLocalizationTextsByLocale == null
+        || !realmLocalizationTextsByLocale.containsKey(key)) {
+      return false;
     }
 
-    @Override
-    public Stream<RealmModel> getRealmsWithProviderTypeStream(Class<?> type) {
-        return getRealmsStream()
-            .filter(r -> r.getComponentsStream().anyMatch(c -> c.getProviderType().equals(type.getName())));
-    }
+    realmLocalizationTextsByLocale.remove(key);
+    realm.createOrUpdateRealmLocalizationTexts(locale, realmLocalizationTextsByLocale);
+    return true;
+  }
 
-    @Override
-    public boolean removeRealm(String id) {
-        log.tracef("removeRealm(%s)%s", id, getShortStackTrace());
-        Realm realm = realmRepository.getRealmById(id);
-
-        if (realm == null) return false;
-
-        RealmModel realmModel = getRealm(id);
-        session.invalidate(REALM_BEFORE_REMOVE, realmModel);
-        realmRepository.deleteRealm(realm);
-        ((CassandraRealmAdapter) realmModel).markDeleted();
-        models.remove(id);
-        session.invalidate(REALM_AFTER_REMOVE, realmModel);
-
-        return true;
-    }
-
-    @Override
-    public void removeExpiredClientInitialAccess() {
-        List<ClientInitialAccess> cias = realmRepository.getAllClientInitialAccesses();
-        if (cias != null)
-            cias.stream()
-                .filter(this::checkIfExpired)
-                .collect(Collectors.toSet())
-                .forEach(realmRepository::deleteClientInitialAccess);
-    }
-
-    private boolean checkIfExpired(ClientInitialAccess cia) {
-        return cia.getRemainingCount() < 1 || isExpired(cia, true);
-    }
-
-    @Override
-    public void saveLocalizationText(RealmModel realm, String locale, String key, String text) {
-        if (locale == null || key == null || text == null) return;
-
-        Map<String, String> current = realm.getRealmLocalizationTextsByLocale(locale);
-
-        if (current == null) {
-            current = new HashMap<>();
-        }
-
-        current.put(key, text);
-        realm.createOrUpdateRealmLocalizationTexts(locale, current);
-    }
-
-
-    @Override
-    public void saveLocalizationTexts(RealmModel realm, String locale, Map<String, String> textMap) {
-        if (locale == null || textMap == null) return;
-
-        realm.createOrUpdateRealmLocalizationTexts(locale, textMap);
-    }
-
-    @Override
-    public boolean updateLocalizationText(RealmModel realm, String locale, String key, String text) {
-        if (locale == null || key == null || text == null || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return false;
-
-        Map<String, String> realmLocalizationTextsByLocale = realm.getRealmLocalizationTextsByLocale(locale);
-        if (realmLocalizationTextsByLocale == null || !realmLocalizationTextsByLocale.containsKey(key)) {
-            return false;
-        }
-
-        realmLocalizationTextsByLocale.put(key, text);
-        realm.createOrUpdateRealmLocalizationTexts(locale, realmLocalizationTextsByLocale);
-        return true;
-    }
-
-    @Override
-    public boolean deleteLocalizationTextsByLocale(RealmModel realm, String locale) {
-        return realm.removeRealmLocalizationTexts(locale);
-    }
-
-    @Override
-    public boolean deleteLocalizationText(RealmModel realm, String locale, String key) {
-        if (locale == null || key == null || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return false;
-
-        Map<String, String> realmLocalizationTextsByLocale = realm.getRealmLocalizationTextsByLocale(locale);
-        if (realmLocalizationTextsByLocale == null || !realmLocalizationTextsByLocale.containsKey(key)) {
-            return false;
-        }
-
-        realmLocalizationTextsByLocale.remove(key);
-        realm.createOrUpdateRealmLocalizationTexts(locale, realmLocalizationTextsByLocale);
-        return true;
-    }
-
-    @Override
-    public String getLocalizationTextsById(RealmModel realm, String locale, String key) {
-        if (locale == null || key == null || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return null;
-        return realm.getRealmLocalizationTextsByLocale(locale).get(key);
-    }
+  @Override
+  public String getLocalizationTextsById(RealmModel realm, String locale, String key) {
+    if (locale == null
+        || key == null
+        || (!realm.getRealmLocalizationTextsByLocale(locale).containsKey(key))) return null;
+    return realm.getRealmLocalizationTextsByLocale(locale).get(key);
+  }
 }

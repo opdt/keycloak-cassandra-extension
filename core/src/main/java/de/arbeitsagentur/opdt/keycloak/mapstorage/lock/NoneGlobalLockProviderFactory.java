@@ -15,9 +15,14 @@
  */
 package de.arbeitsagentur.opdt.keycloak.mapstorage.lock;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 import com.google.auto.service.AutoService;
+import java.time.Duration;
 import org.keycloak.Config;
-import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakSessionTaskWithResult;
@@ -26,67 +31,61 @@ import org.keycloak.models.locking.GlobalLockProviderFactory;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import java.time.Duration;
-
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
-
 /**
- * Identical with "none"-global lock provider from map storage days but without environment dependent activation
+ * Identical with "none"-global lock provider from map storage days but without environment
+ * dependent activation
  */
 @AutoService(GlobalLockProviderFactory.class)
-public class NoneGlobalLockProviderFactory implements GlobalLockProviderFactory, EnvironmentDependentProviderFactory {
+public class NoneGlobalLockProviderFactory
+    implements GlobalLockProviderFactory, EnvironmentDependentProviderFactory {
 
-    public static final String PROVIDER_ID = "dblock";
+  public static final String PROVIDER_ID = "dblock";
 
-    @Override
-    public GlobalLockProvider create(KeycloakSession session) {
-        return createProviderCached(session, GlobalLockProvider.class, () -> new GlobalLockProvider() {
-            @Override
-            public void close() {
-            }
+  @Override
+  public GlobalLockProvider create(KeycloakSession session) {
+    return createProviderCached(
+        session,
+        GlobalLockProvider.class,
+        () ->
+            new GlobalLockProvider() {
+              @Override
+              public void close() {}
 
-            @Override
-            public <V> V withLock(String lockName, Duration timeToWaitForLock, KeycloakSessionTaskWithResult<V> task) {
-                return KeycloakModelUtils.runJobInTransactionWithResult(session.getKeycloakSessionFactory(), task);
-            }
+              @Override
+              public <V> V withLock(
+                  String lockName,
+                  Duration timeToWaitForLock,
+                  KeycloakSessionTaskWithResult<V> task) {
+                return KeycloakModelUtils.runJobInTransactionWithResult(
+                    session.getKeycloakSessionFactory(), task);
+              }
 
-            @Override
-            public void forceReleaseAllLocks() {
+              @Override
+              public void forceReleaseAllLocks() {}
+            });
+  }
 
-            }
-        });
-    }
+  @Override
+  public void init(Config.Scope config) {}
 
-    @Override
-    public void init(Config.Scope config) {
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-    }
+  @Override
+  public void close() {}
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
+  @Override
+  public String getId() {
+    return PROVIDER_ID;
+  }
 
-    }
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public String getId() {
-        return PROVIDER_ID;
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
 }

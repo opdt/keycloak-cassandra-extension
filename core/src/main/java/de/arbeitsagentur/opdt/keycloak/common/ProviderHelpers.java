@@ -16,28 +16,29 @@
 
 package de.arbeitsagentur.opdt.keycloak.common;
 
+import java.util.function.Supplier;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.Provider;
 
-import java.util.function.Supplier;
-
 @JBossLog
 public class ProviderHelpers {
-    public static <T extends Provider> T createProviderCached(KeycloakSession session, Class<T> providerClass) {
-        return createProviderCached(session, providerClass, () -> session.getProvider(providerClass));
+  public static <T extends Provider> T createProviderCached(
+      KeycloakSession session, Class<T> providerClass) {
+    return createProviderCached(session, providerClass, () -> session.getProvider(providerClass));
+  }
+
+  public static <T extends Provider> T createProviderCached(
+      KeycloakSession session, Class<T> providerClass, Supplier<T> providerSupplier) {
+    T provider = session.getAttribute(providerClass.getName(), providerClass);
+    if (provider != null) {
+      return provider;
     }
 
-    public static <T extends Provider> T createProviderCached(KeycloakSession session, Class<T> providerClass, Supplier<T> providerSupplier) {
-        T provider = session.getAttribute(providerClass.getName(), providerClass);
-        if (provider != null) {
-            return provider;
-        }
+    log.debugf("Using provider %s", providerClass.getName());
+    provider = providerSupplier.get();
+    session.setAttribute(providerClass.getName(), provider);
 
-        log.debugf("Using provider %s", providerClass.getName());
-        provider = providerSupplier.get();
-        session.setAttribute(providerClass.getName(), provider);
-
-        return provider;
-    }
+    return provider;
+  }
 }

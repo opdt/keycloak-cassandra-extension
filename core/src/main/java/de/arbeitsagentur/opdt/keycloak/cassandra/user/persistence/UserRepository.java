@@ -18,68 +18,68 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.FederatedIdentity;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.UserConsent;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public interface UserRepository {
-    Stream<User> findAllUsers();
+  Stream<User> findAllUsers();
 
-    User findUserById(String realmId, String id);
+  User findUserById(String realmId, String id);
 
-    User findUserByEmail(String realmId, String email);
+  User findUserByEmail(String realmId, String email);
 
-    User findUserByUsername(String realmId, String username);
+  User findUserByUsername(String realmId, String username);
 
-    User findUserByUsernameCaseInsensitive(String realmId, String username);
+  User findUserByUsernameCaseInsensitive(String realmId, String username);
 
-    User findUserByServiceAccountLink(String realmId, String serviceAccountLink);
+  User findUserByServiceAccountLink(String realmId, String serviceAccountLink);
 
-    Stream<User> findUsersByFederationLink(String realmId, String federationLink);
+  Stream<User> findUsersByFederationLink(String realmId, String federationLink);
 
-    Stream<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue);
+  Stream<User> findUsersByIndexedAttribute(
+      String realmId, String attributeName, String attributeValue);
 
-    void deleteUsernameSearchIndex(String realmId, User user);
+  void deleteUsernameSearchIndex(String realmId, User user);
 
-    void deleteEmailSearchIndex(String realmId, User user);
+  void deleteEmailSearchIndex(String realmId, User user);
 
-    void deleteFederationLinkSearchIndex(String realmId, User user);
+  void deleteFederationLinkSearchIndex(String realmId, User user);
 
-    void deleteServiceAccountLinkSearchIndex(String realmId, User user);
+  void deleteServiceAccountLinkSearchIndex(String realmId, User user);
 
-    void deleteAttributeSearchIndex(String realmId, User user, String attrName);
+  void deleteAttributeSearchIndex(String realmId, User user, String attrName);
 
-    void insertOrUpdate(User user);
+  void insertOrUpdate(User user);
 
-    boolean deleteUser(String realmId, String userId);
+  boolean deleteUser(String realmId, String userId);
 
-    void makeUserServiceAccount(User user, String realmId);
+  void makeUserServiceAccount(User user, String realmId);
 
-    FederatedIdentity findFederatedIdentity(String userId, String identityProvider);
+  FederatedIdentity findFederatedIdentity(String userId, String identityProvider);
 
-    FederatedIdentity findFederatedIdentityByBrokerUserId(
-        String brokerUserId, String identityProvider);
+  FederatedIdentity findFederatedIdentityByBrokerUserId(
+      String brokerUserId, String identityProvider);
 
-    List<FederatedIdentity> findFederatedIdentities(String userId);
+  List<FederatedIdentity> findFederatedIdentities(String userId);
 
-    void createOrUpdateFederatedIdentity(FederatedIdentity federatedIdentity);
+  void createOrUpdateFederatedIdentity(FederatedIdentity federatedIdentity);
 
-    boolean deleteFederatedIdentity(String userId, String identityProvider);
+  boolean deleteFederatedIdentity(String userId, String identityProvider);
 
-    Set<String> findUserIdsByRealmId(String realmId, int first, int max);
+  Set<String> findUserIdsByRealmId(String realmId, int first, int max);
 
-    long countUsersByRealmId(String realmId, boolean includeServiceAccounts);
+  long countUsersByRealmId(String realmId, boolean includeServiceAccounts);
 
-    void createOrUpdateUserConsent(UserConsent consent);
+  void createOrUpdateUserConsent(UserConsent consent);
 
-    boolean deleteUserConsent(String realmId, String userId, String clientId);
+  boolean deleteUserConsent(String realmId, String userId, String clientId);
 
-    boolean deleteUserConsentsByUserId(String realmId, String userId);
+  boolean deleteUserConsentsByUserId(String realmId, String userId);
 
-    UserConsent findUserConsent(String realmId, String userId, String clientId);
+  UserConsent findUserConsent(String realmId, String userId, String clientId);
 
-    List<UserConsent> findUserConsentsByUserId(String realmId, String userId);
+  List<UserConsent> findUserConsentsByUserId(String realmId, String userId);
 
-    List<UserConsent>findUserConsentsByRealmId(String realmId);
+  List<UserConsent> findUserConsentsByRealmId(String realmId);
 }

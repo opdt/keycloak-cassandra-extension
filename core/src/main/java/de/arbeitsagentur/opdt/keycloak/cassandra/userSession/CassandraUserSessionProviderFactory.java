@@ -16,6 +16,11 @@
 
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 import com.google.auto.service.AutoService;
 import de.arbeitsagentur.opdt.keycloak.cassandra.connection.CassandraConnectionProvider;
 import lombok.extern.jbosslog.JBossLog;
@@ -23,53 +28,44 @@ import org.keycloak.Config;
 import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
-
 @JBossLog
 @AutoService(UserSessionProviderFactory.class)
-public class CassandraUserSessionProviderFactory implements UserSessionProviderFactory<CassandraUserSessionProvider>, EnvironmentDependentProviderFactory {
+public class CassandraUserSessionProviderFactory
+    implements UserSessionProviderFactory<CassandraUserSessionProvider>,
+        EnvironmentDependentProviderFactory {
 
-    @Override
-    public CassandraUserSessionProvider create(KeycloakSession session) {
-        CassandraConnectionProvider cassandraConnectionProvider = createProviderCached(session, CassandraConnectionProvider.class);
-        return new CassandraUserSessionProvider(session, cassandraConnectionProvider.getRepository());
-    }
+  @Override
+  public CassandraUserSessionProvider create(KeycloakSession session) {
+    CassandraConnectionProvider cassandraConnectionProvider =
+        createProviderCached(session, CassandraConnectionProvider.class);
+    return new CassandraUserSessionProvider(session, cassandraConnectionProvider.getRepository());
+  }
 
-    @Override
-    public void init(Config.Scope config) {
+  @Override
+  public void init(Config.Scope config) {}
 
-    }
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
+  @Override
+  public void close() {}
 
-    }
+  @Override
+  public String getId() {
+    return "infinispan"; // use same name as infinispan provider to override it
+  }
 
-    @Override
-    public void close() {
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    }
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
 
-    @Override
-    public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
-
-    @Override
-    public void loadPersistentSessions(KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {
-
-    }
+  @Override
+  public void loadPersistentSessions(
+      KeycloakSessionFactory sessionFactory, int maxErrors, int sessionsPerSegment) {}
 }

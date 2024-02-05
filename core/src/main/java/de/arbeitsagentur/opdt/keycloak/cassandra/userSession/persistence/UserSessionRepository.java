@@ -18,47 +18,49 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
-import org.keycloak.common.util.MultivaluedHashMap;
-
 import java.util.List;
 import java.util.Set;
+import org.keycloak.common.util.MultivaluedHashMap;
 
 public interface UserSessionRepository {
-    void insert(UserSession session);
+  void insert(UserSession session);
 
-    void update(UserSession session);
+  void update(UserSession session);
 
-    void insert(UserSession session, String correspondingSessionId);
-    void update(UserSession session, String correspondingSessionId);
+  void insert(UserSession session, String correspondingSessionId);
 
-    void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession);
+  void update(UserSession session, String correspondingSessionId);
 
-    UserSession findUserSessionById(String id);
+  void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession);
 
-    List<UserSession> findAll();
+  UserSession findUserSessionById(String id);
 
-    List<UserSession> findUserSessionsByBrokerSession(String brokerSessionId);
+  List<UserSession> findAll();
 
-    List<UserSession> findUserSessionsByUserId(String userId);
+  List<UserSession> findUserSessionsByBrokerSession(String brokerSessionId);
 
-    List<UserSession> findUserSessionsByClientId(String clientId);
+  List<UserSession> findUserSessionsByUserId(String userId);
 
-    List<UserSession> findUserSessionsByBrokerUserId(String brokerUserId);
+  List<UserSession> findUserSessionsByClientId(String clientId);
 
-    void deleteUserSession(UserSession session);
+  List<UserSession> findUserSessionsByBrokerUserId(String brokerUserId);
 
-    void deleteUserSession(String id);
+  void deleteUserSession(UserSession session);
 
-    void deleteCorrespondingUserSession(UserSession session);
+  void deleteUserSession(String id);
 
-    // Attributes
-    Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult);
+  void deleteCorrespondingUserSession(UserSession session);
 
-    List<UserSession> findUserSessionsByAttribute(String name, String value);
+  // Attributes
+  Set<String> findUserSessionIdsByAttribute(
+      String name, String value, int firstResult, int maxResult);
 
-    UserSession findUserSessionByAttribute(String name, String value);
+  List<UserSession> findUserSessionsByAttribute(String name, String value);
 
-    MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
+  UserSession findUserSessionByAttribute(String name, String value);
 
-    UserSessionToAttributeMapping findUserSessionAttribute(String userSessionId, String attributeName);
+  MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
+
+  UserSessionToAttributeMapping findUserSessionAttribute(
+      String userSessionId, String attributeName);
 }

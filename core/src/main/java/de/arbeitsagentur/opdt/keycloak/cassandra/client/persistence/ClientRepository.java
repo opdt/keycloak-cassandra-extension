@@ -16,18 +16,17 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
-
 import java.util.List;
 
 public interface ClientRepository {
 
-    void insertOrUpdate(Client client);
+  void insertOrUpdate(Client client);
 
-    void delete(Client client);
+  void delete(Client client);
 
-    Client getClientById(String realmId, String id);
+  Client getClientById(String realmId, String id);
 
-    long countClientsByRealm(String realmId);
+  long countClientsByRealm(String realmId);
 
-    List<Client> findAllClientsWithRealmId(String realmId);
+  List<Client> findAllClientsWithRealmId(String realmId);
 }

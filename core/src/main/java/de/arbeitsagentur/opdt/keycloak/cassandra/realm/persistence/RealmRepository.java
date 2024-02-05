@@ -17,33 +17,32 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
-
 import java.util.List;
 
 public interface RealmRepository {
-    void insertOrUpdate(Realm realm);
+  void insertOrUpdate(Realm realm);
 
-    Realm getRealmById(String id);
+  Realm getRealmById(String id);
 
-    List<Realm> getAllRealms();
+  List<Realm> getAllRealms();
 
-    void createRealm(Realm realm);
+  void createRealm(Realm realm);
 
-    void deleteRealm(Realm realm);
+  void deleteRealm(Realm realm);
 
-    void insertOrUpdate(ClientInitialAccess model);
+  void insertOrUpdate(ClientInitialAccess model);
 
-    List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId);
+  List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId);
 
-    List<ClientInitialAccess> getAllClientInitialAccesses();
+  List<ClientInitialAccess> getAllClientInitialAccesses();
 
-    ClientInitialAccess getClientInitialAccess(String realmId, String id);
+  ClientInitialAccess getClientInitialAccess(String realmId, String id);
 
-    void deleteClientInitialAccess(ClientInitialAccess access);
+  void deleteClientInitialAccess(ClientInitialAccess access);
 
-    void deleteClientInitialAccess(String realmId, String id);
+  void deleteClientInitialAccess(String realmId, String id);
 
-    Realm findRealmByName(String name);
+  Realm findRealmByName(String name);
 
-    void deleteNameToRealm(String name);
+  void deleteNameToRealm(String name);
 }

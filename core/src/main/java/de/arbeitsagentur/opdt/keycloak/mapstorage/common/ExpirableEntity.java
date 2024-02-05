@@ -17,31 +17,35 @@
 package de.arbeitsagentur.opdt.keycloak.mapstorage.common;
 
 /**
- * This interface provides a way for marking entities that can expire. For example, user sessions are valid only
- * for certain amount of time. After that time the entities can be removed from storage/omitted from query results.
+ * This interface provides a way for marking entities that can expire. For example, user sessions
+ * are valid only for certain amount of time. After that time the entities can be removed from
+ * storage/omitted from query results.
  *
- * Presence of expired entities in the storage should be transparent to layers above the physical one. This can be
- * achieved in more ways. Ideal solution is when expired entities never reach Keycloak codebase, however, this may
- * not be possible for all storage implementations, therefore, we need to double-check entities validity before they
- * reach logical layer, for example, before we turn entity into model.
+ * <p>Presence of expired entities in the storage should be transparent to layers above the physical
+ * one. This can be achieved in more ways. Ideal solution is when expired entities never reach
+ * Keycloak codebase, however, this may not be possible for all storage implementations, therefore,
+ * we need to double-check entities validity before they reach logical layer, for example, before we
+ * turn entity into model.
  *
- * Implementation of actual removal of the entities from the storage is responsibility of each storage individually.
- *
+ * <p>Implementation of actual removal of the entities from the storage is responsibility of each
+ * storage individually.
  */
 public interface ExpirableEntity {
 
-    /**
-     * Returns a point in the time (timestamp in milliseconds since The Epoch) when this entity expires.
-     *
-     * @return a timestamp in milliseconds since The Epoch or {@code null} if this entity never expires
-     *         or expiration is not known.
-     */
-    Long getExpiration();
+  /**
+   * Returns a point in the time (timestamp in milliseconds since The Epoch) when this entity
+   * expires.
+   *
+   * @return a timestamp in milliseconds since The Epoch or {@code null} if this entity never
+   *     expires or expiration is not known.
+   */
+  Long getExpiration();
 
-    /**
-     * Sets a point in the time (timestamp in milliseconds since The Epoch) when this entity expires.
-     *
-     * @param expiration a timestamp in milliseconds since The Epoch or {@code null} if this entity never expires.
-     */
-    void setExpiration(Long expiration);
+  /**
+   * Sets a point in the time (timestamp in milliseconds since The Epoch) when this entity expires.
+   *
+   * @param expiration a timestamp in milliseconds since The Epoch or {@code null} if this entity
+   *     never expires.
+   */
+  void setExpiration(Long expiration);
 }

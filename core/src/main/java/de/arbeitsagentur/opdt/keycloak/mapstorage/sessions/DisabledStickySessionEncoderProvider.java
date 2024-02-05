@@ -17,73 +17,70 @@
 
 package de.arbeitsagentur.opdt.keycloak.mapstorage.sessions;
 
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
+import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
+import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+
 import com.google.auto.service.AutoService;
 import org.keycloak.Config;
-import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.sessions.StickySessionEncoderProvider;
 import org.keycloak.sessions.StickySessionEncoderProviderFactory;
 
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
-
 /**
- * Identical with "disabled"-provider from map storage days but without environment dependent activation
+ * Identical with "disabled"-provider from map storage days but without environment dependent
+ * activation
  */
 @AutoService(StickySessionEncoderProviderFactory.class)
-public class DisabledStickySessionEncoderProvider implements StickySessionEncoderProviderFactory, StickySessionEncoderProvider, EnvironmentDependentProviderFactory {
+public class DisabledStickySessionEncoderProvider
+    implements StickySessionEncoderProviderFactory,
+        StickySessionEncoderProvider,
+        EnvironmentDependentProviderFactory {
 
-    @Override
-    public StickySessionEncoderProvider create(KeycloakSession session) {
-        return createProviderCached(session, StickySessionEncoderProvider.class, () -> this);
-    }
+  @Override
+  public StickySessionEncoderProvider create(KeycloakSession session) {
+    return createProviderCached(session, StickySessionEncoderProvider.class, () -> this);
+  }
 
-    @Override
-    public String encodeSessionId(String sessionId) {
-        return sessionId;
-    }
+  @Override
+  public String encodeSessionId(String sessionId) {
+    return sessionId;
+  }
 
-    @Override
-    public String decodeSessionId(String encodedSessionId) {
-        return encodedSessionId;
-    }
+  @Override
+  public String decodeSessionId(String encodedSessionId) {
+    return encodedSessionId;
+  }
 
-    @Override
-    public boolean shouldAttachRoute() {
-        return false;
-    }
+  @Override
+  public boolean shouldAttachRoute() {
+    return false;
+  }
 
-    @Override
-    public void init(Config.Scope config) {
+  @Override
+  public void init(Config.Scope config) {}
 
-    }
+  @Override
+  public void postInit(KeycloakSessionFactory factory) {}
 
-    @Override
-    public void postInit(KeycloakSessionFactory factory) {
+  @Override
+  public void close() {}
 
-    }
+  @Override
+  public String getId() {
+    return "infinispan"; // use same name as infinispan provider to override it
+  }
 
-    @Override
-    public void close() {
+  @Override
+  public int order() {
+    return PROVIDER_PRIORITY + 1;
+  }
 
-    }
-
-    @Override
-    public String getId() {
-        return "infinispan"; // use same name as infinispan provider to override it
-    }
-
-    @Override
-    public int order() {
-        return PROVIDER_PRIORITY + 1;
-    }
-
-    @Override
-    public boolean isSupported() {
-        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-    }
+  @Override
+  public boolean isSupported() {
+    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
 }

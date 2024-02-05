@@ -18,10 +18,9 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.en
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import lombok.*;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.*;
 
 @EqualsAndHashCode(of = "key")
 @Builder
@@ -31,16 +30,14 @@ import java.util.Map;
 @Entity
 @CqlName("single_use_objects")
 public class SingleUseObject {
-    @PartitionKey
-    private String key;
+  @PartitionKey private String key;
 
-    @Builder.Default
-    private Map<String, String> notes = new HashMap<>();
+  @Builder.Default private Map<String, String> notes = new HashMap<>();
 
-    public Map<String, String> getNotes() {
-        if (notes == null) {
-            notes = new HashMap<>();
-        }
-        return notes;
+  public Map<String, String> getNotes() {
+    if (notes == null) {
+      notes = new HashMap<>();
     }
+    return notes;
+  }
 }

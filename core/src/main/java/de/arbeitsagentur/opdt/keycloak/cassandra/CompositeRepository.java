@@ -27,5 +27,14 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.Sin
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 
-public interface CompositeRepository extends GroupRepository, RoleRepository, UserRepository, RealmRepository, UserSessionRepository, AuthSessionRepository, LoginFailureRepository, SingleUseObjectRepository, ClientRepository, ClientScopeRepository {
-}
+public interface CompositeRepository
+    extends GroupRepository,
+        RoleRepository,
+        UserRepository,
+        RealmRepository,
+        UserSessionRepository,
+        AuthSessionRepository,
+        LoginFailureRepository,
+        SingleUseObjectRepository,
+        ClientRepository,
+        ClientScopeRepository {}
