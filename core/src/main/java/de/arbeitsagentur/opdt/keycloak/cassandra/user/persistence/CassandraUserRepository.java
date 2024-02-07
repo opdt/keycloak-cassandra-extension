@@ -207,12 +207,13 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
               user.getId()));
     }
 
-    if (user.getEmail() != null) {
+    if (user.getEmail() != null && user.getHasEmailChanged()) {
       dao.insertOrUpdate(
           new UserSearchIndex(user.getRealmId(), EMAIL, user.getEmail(), user.getId()));
     }
 
-    if (user.getServiceAccountClientLink() != null) {
+    if (user.getServiceAccountClientLink() != null
+        && user.getHasServiceAccountClientLinkChanged()) {
       dao.insertOrUpdate(
           new UserSearchIndex(
               user.getRealmId(),
@@ -221,7 +222,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
               user.getId()));
     }
 
-    if (user.getFederationLink() != null) {
+    if (user.getFederationLink() != null && user.getHasFederationLinkChanged()) {
       dao.insertOrUpdate(
           new UserSearchIndex(
               user.getRealmId(), FEDERATION_LINK, user.getFederationLink(), user.getId()));
