@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.time.Instant;
@@ -44,11 +45,14 @@ public class User implements TransactionalEntity {
 
   private String username;
   private String email;
+  @Transient private Boolean hasEmailChanged;
   private String firstName;
   private String lastName;
   private String usernameCaseInsensitive;
   private String serviceAccountClientLink;
+  @Transient private Boolean hasServiceAccountClientLinkChanged;
   private String federationLink;
+  @Transient private Boolean hasFederationLinkChanged;
 
   @Builder.Default private Boolean enabled = true;
   @Builder.Default private Boolean emailVerified = false;
@@ -142,5 +146,23 @@ public class User implements TransactionalEntity {
 
   public void removeGroupsMembership(String groupId) {
     this.groupsMembership.remove(groupId);
+  }
+
+  public void setEmail(String email) {
+    this.hasEmailChanged = this.email != null && !this.email.equals(email);
+    this.email = email;
+  }
+
+  public void setServiceAccountClientLink(String serviceAccountClientLink) {
+    this.hasServiceAccountClientLinkChanged =
+        this.serviceAccountClientLink != null
+            && !this.serviceAccountClientLink.equals(serviceAccountClientLink);
+    this.serviceAccountClientLink = serviceAccountClientLink;
+  }
+
+  public void setFederationLink(String federationLink) {
+    this.hasFederationLinkChanged =
+        this.federationLink != null && !this.federationLink.equals(federationLink);
+    this.federationLink = federationLink;
   }
 }
