@@ -1517,8 +1517,6 @@ public class UserModelTest extends KeycloakModelTest {
                 originalRealmId,
                 (session, realm) -> {
                     UserModel user = session.users().addUser(realm, "user");
-                    user.setFirstName("first-name");
-                    user.setLastName("last-name");
                     user.setEmail("email");
 
                     return null;
@@ -1568,7 +1566,33 @@ public class UserModelTest extends KeycloakModelTest {
                 });
     }
 
+    @Test
+    public void thatUnchangedEmailUpdateWorksAsExpected() {
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().addUser(realm, "user");
+                    user.setEmail("email");
 
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    user.setEmail("email");
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    assertThat(user.getEmail(), is("email"));
+                    return null;
+                });
+    }
     @Test
     public void thatServiceAccountClientLinkChangeWorksAsExpected() {
         withRealm(
@@ -1624,7 +1648,33 @@ public class UserModelTest extends KeycloakModelTest {
                 });
     }
 
+    @Test
+    public void thatUnchangedServiceAccountClientLinkUpdateWorksAsExpected() {
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().addUser(realm, "user");
+                    user.setServiceAccountClientLink("link");
 
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    user.setServiceAccountClientLink("link");
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    assertThat(user.getServiceAccountClientLink(), is("link"));
+                    return null;
+                });
+    }
     @Test
     public void thatFederationLinkChangeWorksAsExpected() {
         withRealm(
@@ -1676,6 +1726,35 @@ public class UserModelTest extends KeycloakModelTest {
                 (session, realm) -> {
                     UserModel user = session.users().getUserByUsername(realm, "user");
                     assertThat(user.getFederationLink(), is("link"));
+                    return null;
+                });
+    }
+
+
+    @Test
+    public void thatUnchangedFederationLinkUpdateWorksAsExpected() {
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().addUser(realm, "user");
+                    user.setFederationLink("federationLink");
+
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    user.setFederationLink("federationLink");
+                    return null;
+                });
+
+        withRealm(
+                originalRealmId,
+                (session, realm) -> {
+                    UserModel user = session.users().getUserByUsername(realm, "user");
+                    assertThat(user.getFederationLink(), is("federationLink"));
                     return null;
                 });
     }
