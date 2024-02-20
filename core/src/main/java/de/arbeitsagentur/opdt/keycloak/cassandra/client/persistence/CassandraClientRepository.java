@@ -38,7 +38,9 @@ public class CassandraClientRepository extends TransactionalRepository<Client, C
 
   @Override
   public long countClientsByRealm(String realmId) {
-    return dao.count();
+    return dao.findAllClientsWithRealmId(realmId)
+        .all()
+        .size(); // isn't using count() for Amazon Keyspaces support
   }
 
   @Override

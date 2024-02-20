@@ -25,9 +25,6 @@ public interface ClientDao extends TransactionalDao<Client> {
   @Select(customWhereClause = "realm_id = :realmId AND id = :id")
   Client getClientById(String realmId, String id);
 
-  @Query("SELECT COUNT(id) FROM clients")
-  long count();
-
   @Select(customWhereClause = "realm_id = :realmId")
   PagingIterable<Client> findAllClientsWithRealmId(String realmId);
 }
