@@ -32,9 +32,6 @@ public interface UserDao extends TransactionalDao<User> {
   @Insert
   void insert(RealmToUserMapping realmToUserMapping);
 
-  @Query("SELECT COUNT(id) FROM users")
-  long count();
-
   @Select
   PagingIterable<User> findAll();
 
@@ -68,12 +65,8 @@ public interface UserDao extends TransactionalDao<User> {
   @Delete(entityClass = RealmToUserMapping.class)
   boolean deleteRealmToUserMapping(String realmId, boolean serviceAccount, String userId);
 
-  @Query("SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId")
-  long countAllUsersByRealmId(String realmId);
-
-  @Query(
-      "SELECT count(user_id) FROM realms_to_users WHERE realm_id = :realmId AND service_account = false")
-  long countNonServiceAccountUsersByRealmId(String realmId);
+  @Select(customWhereClause = "realm_id = :realmId AND service_account = false")
+  PagingIterable<RealmToUserMapping> findNonServiceAccountUsersByRealmId(String realmId);
 
   // Search
   @Insert

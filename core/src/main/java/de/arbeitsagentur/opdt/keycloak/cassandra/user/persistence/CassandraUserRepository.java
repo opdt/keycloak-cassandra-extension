@@ -334,10 +334,11 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
 
   @Override
   public long countUsersByRealmId(String realmId, boolean includeServiceAccounts) {
+    // Avoid count()-queries for Amazon Keyspaces support
     if (includeServiceAccounts) {
-      return dao.countAllUsersByRealmId(realmId);
+      return dao.findUsersByRealmId(realmId).all().size();
     } else {
-      return dao.countNonServiceAccountUsersByRealmId(realmId);
+      return dao.findNonServiceAccountUsersByRealmId(realmId).all().size();
     }
   }
 
