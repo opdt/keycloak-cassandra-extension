@@ -17,6 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
@@ -157,7 +158,15 @@ public class DefaultCassandraConnectionProviderFactory
 
     if (scope.getBoolean("createSchema", true)) {
       log.info("Create schema...");
-      createDbIfNotExists(contactPointsList, username, password, localDatacenter, keyspace);
+      ConsistencyLevel migrationConsistencyLevel =
+          DefaultConsistencyLevel.valueOf(scope.get("migrationConsistencyLevel", "ALL"));
+      createDbIfNotExists(
+          contactPointsList,
+          username,
+          password,
+          localDatacenter,
+          keyspace,
+          migrationConsistencyLevel);
     } else {
       log.info("Skipping schema creation...");
     }
@@ -191,7 +200,8 @@ public class DefaultCassandraConnectionProviderFactory
       String username,
       String password,
       String localDatacenter,
-      String keyspace) {
+      String keyspace,
+      ConsistencyLevel migrationConsistencyLevel) {
     try (CqlSession createKeyspaceSession =
         CqlSession.builder()
             .addContactPoints(contactPointsList)
@@ -199,7 +209,7 @@ public class DefaultCassandraConnectionProviderFactory
             .withLocalDatacenter(localDatacenter)
             .withKeyspace(keyspace)
             .build()) {
-      createTables(createKeyspaceSession, keyspace);
+      createTables(createKeyspaceSession, keyspace, migrationConsistencyLevel);
     }
   }
 
@@ -235,10 +245,11 @@ public class DefaultCassandraConnectionProviderFactory
     cqlSession.close();
   }
 
-  private void createTables(CqlSession cqlSession, String keyspace) {
+  private void createTables(
+      CqlSession cqlSession, String keyspace, ConsistencyLevel migrationConsistencyLevel) {
     MigrationConfiguration mgConfig = new MigrationConfiguration().withKeyspaceName(keyspace);
     Database database =
-        new Database(cqlSession, mgConfig).setConsistencyLevel(ConsistencyLevel.ALL);
+        new Database(cqlSession, mgConfig).setConsistencyLevel(migrationConsistencyLevel);
     MigrationTask migration = new MigrationTask(database, new MigrationRepository());
     migration.migrate();
   }
