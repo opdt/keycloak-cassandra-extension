@@ -143,10 +143,23 @@ public class DefaultCassandraConnectionProviderFactory
 
     if (scope.getBoolean("createKeyspace", true)) {
       log.info("Create keyspace (if not exists)...");
-      createDbIfNotExists(
-          contactPointsList, username, password, localDatacenter, keyspace, replicationFactor);
+      try (CqlSession createKeyspaceSession =
+          CqlSession.builder()
+              .addContactPoints(contactPointsList)
+              .withAuthCredentials(username, password)
+              .withLocalDatacenter(localDatacenter)
+              .build()) {
+        createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
+      }
     } else {
-      log.info("Skipping create keyspace, assuming keyspace and tables already exist...");
+      log.info("Skipping create keyspace, assuming keyspace already exists...");
+    }
+
+    if (scope.getBoolean("createSchema", true)) {
+      log.info("Create schema...");
+      createDbIfNotExists(contactPointsList, username, password, localDatacenter, keyspace);
+    } else {
+      log.info("Skipping schema creation...");
     }
 
     cqlSession =
@@ -178,18 +191,7 @@ public class DefaultCassandraConnectionProviderFactory
       String username,
       String password,
       String localDatacenter,
-      String keyspace,
-      int replicationFactor) {
-    try (CqlSession createKeyspaceSession =
-        CqlSession.builder()
-            .addContactPoints(contactPointsList)
-            .withAuthCredentials(username, password)
-            .withLocalDatacenter(localDatacenter)
-            .build()) {
-      createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
-    }
-
-    log.info("Create schema...");
+      String keyspace) {
     try (CqlSession createKeyspaceSession =
         CqlSession.builder()
             .addContactPoints(contactPointsList)

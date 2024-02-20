@@ -1511,252 +1511,253 @@ public class UserModelTest extends KeycloakModelTest {
           return null;
         });
   }
-    @Test
-    public void thatEmailChangeWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setEmail("email");
 
-                    return null;
-                });
+  @Test
+  public void thatEmailChangeWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setEmail("email");
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setEmail("anotheremail");
-                    return null;
-                });
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getEmail(), is("anotheremail"));
-                    return null;
-                });
-    }
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setEmail("anotheremail");
+          return null;
+        });
 
-    @Test
-    public void thatUpdatingNullEmailWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setEmail(null);
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getEmail(), is("anotheremail"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setEmail("email");
-                    return null;
-                });
+  @Test
+  public void thatUpdatingNullEmailWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setEmail(null);
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getEmail(), is("email"));
-                    return null;
-                });
-    }
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setEmail("email");
+          return null;
+        });
 
-    @Test
-    public void thatUnchangedEmailUpdateWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setEmail("email");
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getEmail(), is("email"));
+          return null;
+        });
+  }
 
-                    return null;
-                });
+  @Test
+  public void thatUnchangedEmailUpdateWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setEmail("email");
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setEmail("email");
-                    return null;
-                });
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getEmail(), is("email"));
-                    return null;
-                });
-    }
-    @Test
-    public void thatServiceAccountClientLinkChangeWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setServiceAccountClientLink("link");
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setEmail("email");
+          return null;
+        });
 
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getEmail(), is("email"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setServiceAccountClientLink("anotherlink");
-                    return null;
-                });
+  @Test
+  public void thatServiceAccountClientLinkChangeWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setServiceAccountClientLink("link");
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getServiceAccountClientLink(), is("anotherlink"));
-                    return null;
-                });
-    }
+          return null;
+        });
 
-    @Test
-    public void thatUpdatingNullServiceAccountClientLinkWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setServiceAccountClientLink(null);
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setServiceAccountClientLink("anotherlink");
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setServiceAccountClientLink("link");
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getServiceAccountClientLink(), is("anotherlink"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getServiceAccountClientLink(), is("link"));
-                    return null;
-                });
-    }
+  @Test
+  public void thatUpdatingNullServiceAccountClientLinkWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setServiceAccountClientLink(null);
+          return null;
+        });
 
-    @Test
-    public void thatUnchangedServiceAccountClientLinkUpdateWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setServiceAccountClientLink("link");
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setServiceAccountClientLink("link");
+          return null;
+        });
 
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getServiceAccountClientLink(), is("link"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setServiceAccountClientLink("link");
-                    return null;
-                });
+  @Test
+  public void thatUnchangedServiceAccountClientLinkUpdateWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setServiceAccountClientLink("link");
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getServiceAccountClientLink(), is("link"));
-                    return null;
-                });
-    }
-    @Test
-    public void thatFederationLinkChangeWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setFederationLink("federationLink");
+          return null;
+        });
 
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setServiceAccountClientLink("link");
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setFederationLink("anotherlink");
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getServiceAccountClientLink(), is("link"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getFederationLink(), is("anotherlink"));
-                    return null;
-                });
-    }
+  @Test
+  public void thatFederationLinkChangeWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setFederationLink("federationLink");
 
-    @Test
-    public void thatUpdatingFederationLinkWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setFederationLink(null);
-                    return null;
-                });
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setFederationLink("link");
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setFederationLink("anotherlink");
+          return null;
+        });
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getFederationLink(), is("link"));
-                    return null;
-                });
-    }
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getFederationLink(), is("anotherlink"));
+          return null;
+        });
+  }
 
+  @Test
+  public void thatUpdatingFederationLinkWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setFederationLink(null);
+          return null;
+        });
 
-    @Test
-    public void thatUnchangedFederationLinkUpdateWorksAsExpected() {
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().addUser(realm, "user");
-                    user.setFederationLink("federationLink");
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setFederationLink("link");
+          return null;
+        });
 
-                    return null;
-                });
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getFederationLink(), is("link"));
+          return null;
+        });
+  }
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    user.setFederationLink("federationLink");
-                    return null;
-                });
+  @Test
+  public void thatUnchangedFederationLinkUpdateWorksAsExpected() {
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setFederationLink("federationLink");
 
-        withRealm(
-                originalRealmId,
-                (session, realm) -> {
-                    UserModel user = session.users().getUserByUsername(realm, "user");
-                    assertThat(user.getFederationLink(), is("federationLink"));
-                    return null;
-                });
-    }
+          return null;
+        });
 
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          user.setFederationLink("federationLink");
+          return null;
+        });
+
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getFederationLink(), is("federationLink"));
+          return null;
+        });
+  }
 }
