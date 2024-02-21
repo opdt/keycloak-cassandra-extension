@@ -15,25 +15,54 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientAdapter;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.ClientSearchIndex;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import java.util.List;
 
 public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao>
     implements ClientRepository {
 
+  private static final String CLIENT_ID = "clientId";
+
   public CassandraClientRepository(ClientDao dao) {
     super(dao);
   }
 
   @Override
+  public void insertOrUpdate(Client entity) {
+    dao.insertOrUpdate(
+        new ClientSearchIndex(
+            entity.getRealmId(),
+            CLIENT_ID,
+            entity.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+            entity.getId()));
+    super.insertOrUpdate(entity);
+  }
+
+  @Override
   public void delete(Client client) {
+    dao.deleteIndex(
+        client.getRealmId(),
+        CLIENT_ID,
+        client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+        client.getId());
     dao.delete(client);
   }
 
   @Override
   public Client getClientById(String realmId, String id) {
     return dao.getClientById(realmId, id);
+  }
+
+  public Client findByClientId(String realmId, String clientId) {
+    ClientSearchIndex index = dao.findClient(realmId, CLIENT_ID, clientId);
+    if (index == null) {
+      return null;
+    }
+
+    return dao.getClientById(realmId, index.getClientId());
   }
 
   @Override

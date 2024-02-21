@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
+import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.ClientSearchIndex;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
@@ -27,4 +28,17 @@ public interface ClientDao extends TransactionalDao<Client> {
 
   @Select(customWhereClause = "realm_id = :realmId")
   PagingIterable<Client> findAllClientsWithRealmId(String realmId);
+
+  // Search
+  @Insert
+  void insertOrUpdate(ClientSearchIndex searchIndex);
+
+  @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
+  ClientSearchIndex findClient(String realmId, String name, String value);
+
+  @Delete
+  void delete(ClientSearchIndex searchIndex);
+
+  @Delete(entityClass = ClientSearchIndex.class)
+  void deleteIndex(String realmId, String name, String value, String clientId);
 }

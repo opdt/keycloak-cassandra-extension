@@ -26,6 +26,8 @@ public interface ClientRepository {
 
   Client getClientById(String realmId, String id);
 
+  Client findByClientId(String realmId, String clientId);
+
   long countClientsByRealm(String realmId);
 
   List<Client> findAllClientsWithRealmId(String realmId);

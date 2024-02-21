@@ -539,6 +539,11 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
   }
 
   @L1Cached(cacheName = CLIENT_CACHE)
+  public Client findByClientId(String realmId, String clientId) {
+    return this.clientRepository.findByClientId(realmId, clientId);
+  }
+
+  @L1Cached(cacheName = CLIENT_CACHE)
   public long countClientsByRealm(String realmId) {
     return this.clientRepository.countClientsByRealm(realmId);
   }

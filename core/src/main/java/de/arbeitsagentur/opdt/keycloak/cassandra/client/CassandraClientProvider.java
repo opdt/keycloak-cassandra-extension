@@ -179,6 +179,12 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
 
   @Override
   public ClientModel getClientByClientId(RealmModel realm, String clientId) {
+    Client byClientId = clientRepository.findByClientId(realm.getId(), clientId);
+
+    if (byClientId != null) {
+      return entityToAdapterFunc(realm).apply(byClientId);
+    }
+
     return Stream.concat(
             models.values().stream().filter(m -> m.getRealm().equals(realm)),
             clientRepository.findAllClientsWithRealmId(realm.getId()).stream()
