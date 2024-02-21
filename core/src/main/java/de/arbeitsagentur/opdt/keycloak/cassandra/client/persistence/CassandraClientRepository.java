@@ -32,22 +32,27 @@ public class CassandraClientRepository extends TransactionalRepository<Client, C
 
   @Override
   public void insertOrUpdate(Client entity) {
-    dao.insertOrUpdate(
-        new ClientSearchIndex(
-            entity.getRealmId(),
-            CLIENT_ID,
-            entity.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
-            entity.getId()));
+    if (entity.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
+      dao.insertOrUpdate(
+          new ClientSearchIndex(
+              entity.getRealmId(),
+              CLIENT_ID,
+              entity.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+              entity.getId()));
+    }
+
     super.insertOrUpdate(entity);
   }
 
   @Override
   public void delete(Client client) {
-    dao.deleteIndex(
-        client.getRealmId(),
-        CLIENT_ID,
-        client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
-        client.getId());
+    if (client.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
+      dao.deleteIndex(
+          client.getRealmId(),
+          CLIENT_ID,
+          client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+          client.getId());
+    }
     dao.delete(client);
   }
 
