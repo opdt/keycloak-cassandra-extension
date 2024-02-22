@@ -6,7 +6,7 @@ volumes:
 
 networks:
   keycloak:
-    driver: bridge 
+    driver: bridge
 
 services:
   cassandra:
@@ -27,9 +27,9 @@ services:
       - CASSANDRA_PASSWORD_SEEDER=yes
       - CASSANDRA_PASSWORD=cassandra
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.3 
+    image: quay.io/keycloak/keycloak:23.0.7
     volumes:
-      - ${PWD}/core/target/keycloak-cassandra-extension-2.5.2-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension.jar
+      - ${PWD}/core/target/keycloak-cassandra-extension-2.5.2-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension-2.5.2-23.0-SNAPSHOT.jar
     environment:
       - KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true
       - KC_SPI_CONNECTIONS_JPA_LEGACY_ENABLED=false
