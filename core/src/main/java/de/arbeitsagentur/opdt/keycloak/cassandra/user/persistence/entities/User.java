@@ -45,14 +45,14 @@ public class User implements TransactionalEntity {
 
   private String username;
   private String email;
-  @Transient private Boolean hasEmailChanged;
+  @Transient private Boolean hasEmailChanged = true;
   private String firstName;
   private String lastName;
   private String usernameCaseInsensitive;
   private String serviceAccountClientLink;
-  @Transient private Boolean hasServiceAccountClientLinkChanged;
+  @Transient private Boolean hasServiceAccountClientLinkChanged = true;
   private String federationLink;
-  @Transient private Boolean hasFederationLinkChanged;
+  @Transient private Boolean hasFederationLinkChanged = true;
 
   @Builder.Default private Boolean enabled = true;
   @Builder.Default private Boolean emailVerified = false;
@@ -149,20 +149,18 @@ public class User implements TransactionalEntity {
   }
 
   public void setEmail(String email) {
-    this.hasEmailChanged = this.email != null && !this.email.equals(email);
+    this.hasEmailChanged = !Objects.equals(this.email, email);
     this.email = email;
   }
 
   public void setServiceAccountClientLink(String serviceAccountClientLink) {
     this.hasServiceAccountClientLinkChanged =
-        this.serviceAccountClientLink != null
-            && !this.serviceAccountClientLink.equals(serviceAccountClientLink);
+        !Objects.equals(this.serviceAccountClientLink, serviceAccountClientLink);
     this.serviceAccountClientLink = serviceAccountClientLink;
   }
 
   public void setFederationLink(String federationLink) {
-    this.hasFederationLinkChanged =
-        this.federationLink != null && !this.federationLink.equals(federationLink);
+    this.hasFederationLinkChanged = !Objects.equals(this.federationLink, federationLink);
     this.federationLink = federationLink;
   }
 }
