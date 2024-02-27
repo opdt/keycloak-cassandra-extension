@@ -58,7 +58,7 @@
         <auto-service.version>1.1.1</auto-service.version>
 
         <!-- cassandra -->
-        <cassandra-java-driver.version>4.15.0</cassandra-java-driver.version>
+        <cassandra-java-driver.version>4.17.0</cassandra-java-driver.version>
 
         <!-- SonarCloud -->
         <sonar.organization>opdt</sonar.organization>
