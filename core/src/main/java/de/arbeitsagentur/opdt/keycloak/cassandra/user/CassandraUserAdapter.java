@@ -357,10 +357,12 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
   @Override
   public void setFederationLink(String link) {
-    User userCopy = entity.toBuilder().build();
-    entity.setFederationLink(link);
+    if (!Objects.equals(entity.getFederationLink(), link)) {
+      User userCopy = entity.toBuilder().build();
+      entity.setFederationLink(link);
 
-    markUpdated(() -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), userCopy));
+      markUpdated(() -> userRepository.deleteFederationLinkSearchIndex(realm.getId(), userCopy));
+    }
   }
 
   @Override
@@ -370,10 +372,13 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
   @Override
   public void setServiceAccountClientLink(String clientInternalId) {
-    User userCopy = entity.toBuilder().build();
-    entity.setServiceAccountClientLink(clientInternalId);
+    if (!Objects.equals(entity.getServiceAccountClientLink(), clientInternalId)) {
+      User userCopy = entity.toBuilder().build();
+      entity.setServiceAccountClientLink(clientInternalId);
 
-    markUpdated(() -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
+      markUpdated(
+          () -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
+    }
   }
 
   @Override
