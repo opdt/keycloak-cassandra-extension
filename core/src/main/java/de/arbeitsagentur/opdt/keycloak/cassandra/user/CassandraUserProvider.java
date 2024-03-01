@@ -48,6 +48,21 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
   @Override
   protected CassandraUserAdapter createNewModel(RealmModel realm, User entity) {
+    return createNewModel(realm, entity, () -> {});
+  }
+
+  private CassandraUserAdapter createNewModelWithRollback(RealmModel realm, User entity) {
+    return createNewModel(
+        realm,
+        entity,
+        () -> {
+          userRepository.deleteUser(realm.getId(), entity.getId());
+          models.remove(entity.getId());
+        });
+  }
+
+  private CassandraUserAdapter createNewModel(
+      RealmModel realm, User entity, Runnable rollbackAction) {
     return new CassandraUserAdapter(session, entity, realm, userRepository) {
       @Override
       public boolean checkEmailUniqueness(RealmModel realm, String email) {
@@ -62,6 +77,11 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
       @Override
       public SubjectCredentialManager credentialManager() {
         return new CassandraCredentialManager(session, realm, userRepository, this, entity);
+      }
+
+      @Override
+      public void rollback() {
+        rollbackAction.run();
       }
     };
   }
@@ -106,7 +126,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
             .createdTimestamp(Instant.now())
             .build();
 
-    CassandraUserAdapter userModel = entityToAdapterFunc(realm).apply(user);
+    CassandraUserAdapter userModel =
+        entityToAdapterFunc(realm, this::createNewModelWithRollback).apply(user);
     userModel.setUsername(username);
 
     if (addDefaultRoles) {

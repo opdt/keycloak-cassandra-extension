@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.KeycloakSession;
@@ -39,6 +40,11 @@ public abstract class TransactionalProvider<
   protected abstract TModel createNewModel(RealmModel realm, TEntity entity);
 
   protected Function<TEntity, TModel> entityToAdapterFunc(RealmModel realm) {
+    return entityToAdapterFunc(realm, this::createNewModel);
+  }
+
+  protected Function<TEntity, TModel> entityToAdapterFunc(
+      RealmModel realm, BiFunction<RealmModel, TEntity, TModel> adapterFactory) {
     return origEntity -> {
       if (origEntity == null) {
         return null;
@@ -50,17 +56,27 @@ public abstract class TransactionalProvider<
         return existingModel;
       }
 
-      TModel adapter = createNewModel(realm, origEntity);
+      TModel adapter = adapterFactory.apply(realm, origEntity);
 
       session
           .getTransactionManager()
           .enlistAfterCompletion(
-              (CassandraModelTransaction)
-                  () -> {
-                    log.tracef("Flush model with id %s", adapter.getId());
-                    adapter.commit();
-                    models.remove(adapter.getId());
-                  });
+              new CassandraModelTransaction() {
+                @Override
+                public void commit() {
+                  log.tracef("Flush model with id %s", adapter.getId());
+                  adapter.commit();
+                  models.remove(adapter.getId());
+                }
+
+                @Override
+                public void rollback() {
+                  log.tracef("Rollback model with id %s", adapter.getId());
+                  adapter.rollback();
+                  models.remove(adapter.getId());
+                }
+              });
+
       models.put(adapter.getId(), adapter);
       return adapter;
     };
