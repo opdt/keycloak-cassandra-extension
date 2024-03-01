@@ -31,7 +31,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.models.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.ModelDuplicateException;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.RealmProvider;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 @JBossLog
@@ -46,7 +49,25 @@ public class CassandraRealmsProvider extends TransactionalProvider<Realm, Cassan
 
   @Override
   protected CassandraRealmAdapter createNewModel(RealmModel realm, Realm entity) {
-    return new CassandraRealmAdapter(entity, session, realmRepository);
+    return createNewModel(entity, () -> {});
+  }
+
+  private CassandraRealmAdapter createNewModelWithRollback(RealmModel realm, Realm entity) {
+    return createNewModel(
+        entity,
+        () -> {
+          realmRepository.deleteRealm(entity);
+          models.remove(entity.getId());
+        });
+  }
+
+  private CassandraRealmAdapter createNewModel(Realm entity, Runnable rollbackAction) {
+    return new CassandraRealmAdapter(entity, session, realmRepository) {
+      @Override
+      public void rollback() {
+        rollbackAction.run();
+      }
+    };
   }
 
   @Override
@@ -69,7 +90,8 @@ public class CassandraRealmsProvider extends TransactionalProvider<Realm, Cassan
 
     Realm realm = new Realm(id, name, null, new HashMap<>());
     realmRepository.createRealm(realm);
-    RealmModel realmModel = entityToAdapterFunc(null).apply(realm);
+    RealmModel realmModel =
+        entityToAdapterFunc(null, this::createNewModelWithRollback).apply(realm);
     realmModel.setName(name);
 
     return realmModel;

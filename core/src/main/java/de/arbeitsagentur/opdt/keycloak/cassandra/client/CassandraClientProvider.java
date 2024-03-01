@@ -43,7 +43,30 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
 
   @Override
   protected CassandraClientAdapter createNewModel(RealmModel realm, Client entity) {
-    return new CassandraClientAdapter(entity, session, realm, clientRepository);
+    return createNewModel(realm, entity, () -> {});
+  }
+
+  private CassandraClientAdapter createNewModelWithRollback(RealmModel realm, Client entity) {
+    return createNewModel(
+        realm,
+        entity,
+        () -> {
+          clientRepository.delete(entity);
+          models.remove(entity.getId());
+        });
+  }
+
+  private CassandraClientAdapter createNewModel(
+      RealmModel realm, Client entity, Runnable rollbackTask) {
+    CassandraClientAdapter adapter =
+        new CassandraClientAdapter(entity, session, realm, clientRepository) {
+          @Override
+          public void rollback() {
+            rollbackTask.run();
+          }
+        };
+
+    return adapter;
   }
 
   @Override
@@ -77,7 +100,8 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
     Client client = new Client(realm.getId(), newId, null, new HashMap<>());
     clientRepository.insertOrUpdate(client);
 
-    ClientModel adapter = entityToAdapterFunc(realm).apply(client);
+    ClientModel adapter =
+        entityToAdapterFunc(realm, this::createNewModelWithRollback).apply(client);
     adapter.setClientId(clientId != null ? clientId : client.getId());
     adapter.setEnabled(true);
     adapter.setStandardFlowEnabled(true);

@@ -1008,6 +1008,32 @@ public class UserModelTest extends KeycloakModelTest {
   }
 
   @Test
+  public void testServiceAccountLinkRollback() {
+
+    try {
+      withRealm(
+          originalRealmId,
+          (currentSession, realm) -> {
+            UserModel user1 = currentSession.users().addUser(realm, "user1");
+            ClientModel client = realm.addClient("foo");
+            user1.setServiceAccountClientLink(client.getId());
+
+            throw new RuntimeException("Rollback");
+          });
+    } catch (Exception e) {
+      withRealm(
+          originalRealmId,
+          (currentSession, realm) -> {
+            UserModel user1 = currentSession.users().getUserByUsername(realm, "user1");
+            assertNull(user1);
+            ClientModel client = realm.getClientByClientId("foo");
+            assertNull(client);
+            return null;
+          });
+    }
+  }
+
+  @Test
   public void testServiceAccountLink() throws Exception {
 
     withRealm(
