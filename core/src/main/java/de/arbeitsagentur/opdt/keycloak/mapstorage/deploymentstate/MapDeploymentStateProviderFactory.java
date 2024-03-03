@@ -25,6 +25,7 @@ import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_P
 import com.google.auto.service.AutoService;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
 import org.keycloak.common.Version;
@@ -33,10 +34,13 @@ import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.migration.MigrationModel;
 import org.keycloak.models.*;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 @AutoService(DeploymentStateProviderFactory.class)
 public class MapDeploymentStateProviderFactory
-    implements DeploymentStateProviderFactory, EnvironmentDependentProviderFactory {
+    implements DeploymentStateProviderFactory,
+        EnvironmentDependentProviderFactory,
+        ServerInfoAwareProviderFactory {
 
   public static final String PROVIDER_ID = "jpa";
 
@@ -121,5 +125,10 @@ public class MapDeploymentStateProviderFactory
   @Override
   public boolean isSupported() {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
+
+  @Override
+  public Map<String, String> getOperationalInfo() {
+    return Map.of("implementation", "map (cassandra-extension)");
   }
 }

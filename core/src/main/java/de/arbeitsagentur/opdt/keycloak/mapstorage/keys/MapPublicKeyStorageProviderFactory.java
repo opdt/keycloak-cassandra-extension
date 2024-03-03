@@ -32,11 +32,13 @@ import org.keycloak.keys.PublicKeyStorageProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 @AutoService(PublicKeyStorageProviderFactory.class)
 public class MapPublicKeyStorageProviderFactory
     implements PublicKeyStorageProviderFactory<MapPublicKeyStorageProvider>,
-        EnvironmentDependentProviderFactory {
+        EnvironmentDependentProviderFactory,
+        ServerInfoAwareProviderFactory {
 
   private final Map<String, FutureTask<PublicKeysWrapper>> tasksInProgress =
       new ConcurrentHashMap<>();
@@ -71,5 +73,10 @@ public class MapPublicKeyStorageProviderFactory
   @Override
   public boolean isSupported() {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
+
+  @Override
+  public Map<String, String> getOperationalInfo() {
+    return Map.of("implementation", "map (cassandra-extension)");
   }
 }

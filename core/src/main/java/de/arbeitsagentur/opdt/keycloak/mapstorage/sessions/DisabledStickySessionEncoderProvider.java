@@ -23,10 +23,12 @@ import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProvi
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 import com.google.auto.service.AutoService;
+import java.util.Map;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.keycloak.sessions.StickySessionEncoderProvider;
 import org.keycloak.sessions.StickySessionEncoderProviderFactory;
 
@@ -38,7 +40,8 @@ import org.keycloak.sessions.StickySessionEncoderProviderFactory;
 public class DisabledStickySessionEncoderProvider
     implements StickySessionEncoderProviderFactory,
         StickySessionEncoderProvider,
-        EnvironmentDependentProviderFactory {
+        EnvironmentDependentProviderFactory,
+        ServerInfoAwareProviderFactory {
 
   @Override
   public StickySessionEncoderProvider create(KeycloakSession session) {
@@ -82,5 +85,10 @@ public class DisabledStickySessionEncoderProvider
   @Override
   public boolean isSupported() {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
+
+  @Override
+  public Map<String, String> getOperationalInfo() {
+    return Map.of("implementation", "disabled (cassandra-extension)");
   }
 }

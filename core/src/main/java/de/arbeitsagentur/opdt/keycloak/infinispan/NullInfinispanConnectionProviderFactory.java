@@ -22,6 +22,7 @@ import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProvi
 import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
 
 import com.google.auto.service.AutoService;
+import java.util.Map;
 import lombok.extern.jbosslog.JBossLog;
 import org.infinispan.Cache;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -32,11 +33,14 @@ import org.keycloak.connections.infinispan.TopologyInfo;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 @JBossLog
 @AutoService(InfinispanConnectionProviderFactory.class)
 public class NullInfinispanConnectionProviderFactory
-    implements InfinispanConnectionProviderFactory, EnvironmentDependentProviderFactory {
+    implements InfinispanConnectionProviderFactory,
+        EnvironmentDependentProviderFactory,
+        ServerInfoAwareProviderFactory {
   @Override
   public boolean isSupported() {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
@@ -93,5 +97,10 @@ public class NullInfinispanConnectionProviderFactory
   @Override
   public String getId() {
     return "default";
+  }
+
+  @Override
+  public Map<String, String> getOperationalInfo() {
+    return Map.of("implementation", "deactivated (cassandra-extension)");
   }
 }

@@ -38,12 +38,15 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.authorization.CachedStoreFactoryProvider;
 import org.keycloak.models.cache.authorization.CachedStoreProviderFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 
 @JBossLog
 @AutoService(CachedStoreProviderFactory.class)
 public class NullCachedStoreProviderFactory
-    implements CachedStoreProviderFactory, EnvironmentDependentProviderFactory {
+    implements CachedStoreProviderFactory,
+        EnvironmentDependentProviderFactory,
+        ServerInfoAwareProviderFactory {
   @Override
   public CachedStoreFactoryProvider create(KeycloakSession session) {
     return createProviderCached(
@@ -374,5 +377,10 @@ public class NullCachedStoreProviderFactory
   @Override
   public boolean isSupported() {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+  }
+
+  @Override
+  public Map<String, String> getOperationalInfo() {
+    return Map.of("implementation", "deactivated (cassandra-extension)");
   }
 }
