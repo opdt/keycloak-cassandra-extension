@@ -23,11 +23,11 @@ import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.storage.ExportImportManager;
 import org.keycloak.storage.MigrationManager;
-import org.keycloak.storage.datastore.LegacyDatastoreProvider;
+import org.keycloak.storage.datastore.DefaultDatastoreProvider;
 import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
 @JBossLog
-public class CassandraDatastoreProvider extends LegacyDatastoreProvider {
+public class CassandraDatastoreProvider extends DefaultDatastoreProvider {
   private final KeycloakSession session;
 
   private final Set<Provider> providersToClose = new HashSet<>();

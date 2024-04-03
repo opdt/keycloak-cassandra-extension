@@ -17,7 +17,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ModelIllegalStateException;
+import de.arbeitsagentur.opdt.keycloak.common.ModelIllegalStateException;
 
 public abstract class TransactionalRepository<
     TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> {

@@ -18,7 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setClientSessionExpiration;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;

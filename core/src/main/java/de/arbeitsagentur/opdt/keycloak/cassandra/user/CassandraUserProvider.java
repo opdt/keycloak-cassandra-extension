@@ -15,8 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.user;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter.isUsernameCaseSensitive;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
-import static org.keycloak.models.utils.KeycloakModelUtils.isUsernameCaseSensitive;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalProvider;
@@ -516,7 +516,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                                                   .contains(attributeValue.toLowerCase());
 
                   BiFunction<String, String, Predicate<UserModel>> makeUsernameComparator =
-                      KeycloakModelUtils.isUsernameCaseSensitive(realm)
+                      isUsernameCaseSensitive(realm)
                           ? makeAttributeComparatorIgnoreCase
                           : makeAttributeComparator;
 

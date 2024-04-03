@@ -34,6 +34,9 @@ import org.keycloak.models.utils.RoleUtils;
 @JBossLog
 public abstract class CassandraUserAdapter extends TransactionalModelAdapter<User>
     implements UserModel {
+  public static final Boolean REALM_ATTR_USERNAME_CASE_SENSITIVE_DEFAULT = Boolean.FALSE;
+  public static final String REALM_ATTR_USERNAME_CASE_SENSITIVE =
+      "keycloak.username-search.case-sensitive";
   public static final String NOT_BEFORE = AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "notBefore";
   public static final String REALM_ATTRIBUTE_ENABLE_CHECK_FOR_DUPLICATES_ACROSS_USERNAME_AND_EMAIL =
       "enableCheckForDuplicatesAcrossUsernameAndEmail";
@@ -71,7 +74,7 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
       return false;
     }
 
-    return KeycloakModelUtils.isUsernameCaseSensitive(realm)
+    return isUsernameCaseSensitive(realm)
         ? toCompare.equals(entity.getUsername())
         : KeycloakModelUtils.toLowerCaseSafe(toCompare).equals(entity.getUsernameCaseInsensitive());
   }
@@ -83,14 +86,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
     }
 
     String usernameToCompare =
-        KeycloakModelUtils.isUsernameCaseSensitive(realm)
-            ? username
-            : KeycloakModelUtils.toLowerCaseSafe(username);
+        isUsernameCaseSensitive(realm) ? username : KeycloakModelUtils.toLowerCaseSafe(username);
 
     String currentUsername =
-        KeycloakModelUtils.isUsernameCaseSensitive(realm)
-            ? entity.getUsername()
-            : entity.getUsernameCaseInsensitive();
+        isUsernameCaseSensitive(realm) ? entity.getUsername() : entity.getUsernameCaseInsensitive();
 
     // Do not continue if current username of entity is the requested username
     if (usernameToCompare.equals(currentUsername)) return;
@@ -513,5 +512,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
     }
 
     return false;
+  }
+
+  public static boolean isUsernameCaseSensitive(RealmModel realm) {
+    return realm.getAttribute(
+        REALM_ATTR_USERNAME_CASE_SENSITIVE, REALM_ATTR_USERNAME_CASE_SENSITIVE_DEFAULT);
   }
 }

@@ -1,7 +1,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.group;
 
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.GROUP_AFTER_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.GROUP_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.GROUP_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.GROUP_BEFORE_REMOVE;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.GroupRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.GroupValue;

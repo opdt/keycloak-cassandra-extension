@@ -20,7 +20,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.startsWith;
-import static org.keycloak.utils.LockObjectsForModification.lockUserSessionsForModification;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
 import java.util.concurrent.CountDownLatch;
@@ -95,9 +94,7 @@ public class UserSessionConcurrencyTest extends KeycloakModelTest {
                         ClientModel client =
                             realm.getClientByClientId("client" + (n % CLIENTS_COUNT));
 
-                        UserSessionModel uSession =
-                            lockUserSessionsForModification(
-                                session, () -> session.sessions().getUserSession(realm, uId));
+                        UserSessionModel uSession = session.sessions().getUserSession(realm, uId);
                         AuthenticatedClientSessionModel cSession =
                             uSession.getAuthenticatedClientSessionByClient(client.getId());
                         if (cSession == null) {

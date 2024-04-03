@@ -28,19 +28,19 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.deploymentstate.MapDeploymentStateProviderFactory;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.keys.MapPublicKeyStorageProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.compatibility.HardcodedDeploymentStateProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.compatibility.TransientPublicKeyStorageProviderFactory;
 import java.util.Set;
 import org.keycloak.credential.CredentialSpi;
 import org.keycloak.credential.OTPCredentialProviderFactory;
 import org.keycloak.credential.PasswordCredentialProviderFactory;
 import org.keycloak.credential.hash.PasswordHashSpi;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
+import org.keycloak.credential.hash.Pbkdf2Sha512PasswordHashProviderFactory;
 import org.keycloak.device.DeviceRepresentationProviderFactoryImpl;
 import org.keycloak.device.DeviceRepresentationSpi;
 import org.keycloak.keys.*;
 import org.keycloak.models.*;
-import org.keycloak.models.locking.NoneGlobalLockProviderFactory;
 import org.keycloak.policy.*;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
@@ -49,6 +49,11 @@ import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicySpi;
 import org.keycloak.services.clientregistration.policy.impl.*;
 import org.keycloak.sessions.AuthenticationSessionSpi;
+import org.keycloak.userprofile.DeclarativeUserProfileProviderFactory;
+import org.keycloak.userprofile.UserProfileSpi;
+import org.keycloak.userprofile.validator.*;
+import org.keycloak.validate.ValidatorFactory;
+import org.keycloak.validate.ValidatorSPI;
 
 /**
  * @author hmlnarik
@@ -68,6 +73,8 @@ public class Map extends KeycloakModelParameters {
           .add(PasswordHashSpi.class)
           .add(PasswordPolicySpi.class)
           .add(DeviceRepresentationSpi.class)
+          .add(UserProfileSpi.class)
+          .add(ValidatorSPI.class)
           .build();
 
   static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES =
@@ -78,13 +85,12 @@ public class Map extends KeycloakModelParameters {
           .add(CassandraRealmsProviderFactory.class)
           .add(CassandraRoleProviderFactory.class)
           .add(CassandraAuthSessionProviderFactory.class)
-          .add(MapDeploymentStateProviderFactory.class)
+          .add(HardcodedDeploymentStateProviderFactory.class)
           .add(CassandraUserProviderFactory.class)
           .add(CassandraUserSessionProviderFactory.class)
           .add(CassandraLoginFailureProviderFactory.class)
-          .add(NoneGlobalLockProviderFactory.class)
           .add(SingleUseObjectProviderFactory.class)
-          .add(MapPublicKeyStorageProviderFactory.class)
+          .add(TransientPublicKeyStorageProviderFactory.class)
           .add(DefaultClientPolicyManagerFactory.class)
           .add(GeneratedAesKeyProviderFactory.class)
           .add(GeneratedHmacKeyProviderFactory.class)
@@ -104,11 +110,14 @@ public class Map extends KeycloakModelParameters {
           .add(PasswordCredentialProviderFactory.class)
           .add(DefaultPasswordPolicyManagerProviderFactory.class)
           .add(Pbkdf2Sha256PasswordHashProviderFactory.class)
+          .add(Pbkdf2Sha512PasswordHashProviderFactory.class)
           .add(HashAlgorithmPasswordPolicyProviderFactory.class)
           .add(HashIterationsPasswordPolicyProviderFactory.class)
           .add(HistoryPasswordPolicyProviderFactory.class)
           .add(ForceExpiredPasswordPolicyProviderFactory.class)
           .add(DeviceRepresentationProviderFactoryImpl.class)
+          .add(DeclarativeUserProfileProviderFactory.class)
+          .add(ValidatorFactory.class)
           .build();
 
   public Map() {
@@ -121,6 +130,7 @@ public class Map extends KeycloakModelParameters {
         .defaultProvider("default")
         .spi("password-hashing")
         .provider(Pbkdf2Sha256PasswordHashProviderFactory.ID)
+        .provider(Pbkdf2Sha512PasswordHashProviderFactory.ID)
         .spi("password-policy-manager")
         .defaultProvider("default")
         .spi("password-policy")
@@ -148,6 +158,26 @@ public class Map extends KeycloakModelParameters {
         .provider(ScopeClientRegistrationPolicyFactory.PROVIDER_ID)
         .provider(MaxClientsClientRegistrationPolicyFactory.PROVIDER_ID)
         .spi(DeviceRepresentationSpi.NAME)
-        .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID);
+        .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID)
+        .spi(UserProfileSpi.ID)
+        .defaultProvider(DeclarativeUserProfileProviderFactory.ID)
+        .spi("validator")
+        .provider(BlankAttributeValidator.ID)
+        .provider(AttributeRequiredByMetadataValidator.ID)
+        .provider(ReadOnlyAttributeUnchangedValidator.ID)
+        .provider(DuplicateUsernameValidator.ID)
+        .provider(UsernameHasValueValidator.ID)
+        .provider(UsernameIDNHomographValidator.ID)
+        .provider(UsernameMutationValidator.ID)
+        .provider(DuplicateEmailValidator.ID)
+        .provider(EmailExistsAsUsernameValidator.ID)
+        .provider(RegistrationEmailAsUsernameUsernameValueValidator.ID)
+        .provider(RegistrationUsernameExistsValidator.ID)
+        .provider(RegistrationEmailAsUsernameEmailValueValidator.ID)
+        .provider(BrokeringFederatedUsernameHasValueValidator.ID)
+        .provider(ImmutableAttributeValidator.ID)
+        .provider(UsernameProhibitedCharactersValidator.ID)
+        .provider(PersonNameProhibitedCharactersValidator.ID)
+        .provider(MultiValueValidator.ID);
   }
 }

@@ -15,8 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.role;
 
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.ROLE_AFTER_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.ROLE_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.ROLE_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.ROLE_BEFORE_REMOVE;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.RoleRepository;

@@ -16,7 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setUserSessionExpiration;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.common.ExpirationUtils.isExpired;
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
@@ -24,7 +24,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.SessionE
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
