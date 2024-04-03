@@ -53,7 +53,6 @@ import org.keycloak.events.EventStoreSpi;
 import org.keycloak.executors.DefaultExecutorsProviderFactory;
 import org.keycloak.executors.ExecutorsSpi;
 import org.keycloak.models.*;
-import org.keycloak.models.locking.GlobalLockProviderSpi;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.PostMigrationEvent;
 import org.keycloak.provider.Provider;
@@ -216,7 +215,6 @@ public abstract class KeycloakModelTest {
           .add(ClientScopeSpi.class)
           .add(ClientSpi.class)
           .add(ComponentFactorySpi.class)
-          .add(GlobalLockProviderSpi.class)
           .add(EventStoreSpi.class)
           .add(ExecutorsSpi.class)
           .add(GroupSpi.class)

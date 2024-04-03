@@ -23,7 +23,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

@@ -24,7 +24,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.RealmReposito
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.ClientInitialAccess;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -76,6 +76,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isBruteForceProtected";
   public static final String IS_PERMANENT_LOCKOUT =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "isPermanentLockout";
+  public static final String MAX_TEMPORARY_LOCKOUTS =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxTemporaryLockouts";
   public static final String MAX_FAILURE_WAIT_SECONDS =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "maxFailureWaitSeconds";
   public static final String WAIT_INCREMENT_SECONDS =
@@ -162,6 +164,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "clientAuthenticationFlow";
   public static final String DOCKER_AUTHENTICATION_FLOW =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "dockerAuthenticationFlow";
+  public static final String FIRST_BROKER_LOGIN_FLOW =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "firstBrokerLoginFlow";
   public static final String AUTHENTICATION_FLOWS =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticationFlows";
   public static final String AUTHENTICATION_EXECUTION_MODELS =
@@ -342,6 +346,16 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   @Override
   public void setPermanentLockout(boolean val) {
     setAttribute(IS_PERMANENT_LOCKOUT, val);
+  }
+
+  @Override
+  public int getMaxTemporaryLockouts() {
+    return getAttribute(MAX_TEMPORARY_LOCKOUTS, 0);
+  }
+
+  @Override
+  public void setMaxTemporaryLockouts(int value) {
+    setAttribute(MAX_TEMPORARY_LOCKOUTS, value);
   }
 
   @Override
@@ -899,6 +913,16 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   @Override
   public void setDockerAuthenticationFlow(AuthenticationFlowModel flow) {
     setAttribute(DOCKER_AUTHENTICATION_FLOW, flow.getId());
+  }
+
+  @Override
+  public AuthenticationFlowModel getFirstBrokerLoginFlow() {
+    return getAuthenticationFlowById(getAttribute(FIRST_BROKER_LOGIN_FLOW));
+  }
+
+  @Override
+  public void setFirstBrokerLoginFlow(AuthenticationFlowModel flow) {
+    setAttribute(FIRST_BROKER_LOGIN_FLOW, flow.getId());
   }
 
   @Override

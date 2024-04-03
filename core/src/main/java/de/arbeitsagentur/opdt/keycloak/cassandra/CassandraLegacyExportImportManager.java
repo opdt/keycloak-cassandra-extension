@@ -12,9 +12,9 @@ import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.UserConsentRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.storage.DatastoreProvider;
-import org.keycloak.storage.datastore.LegacyExportImportManager;
+import org.keycloak.storage.datastore.DefaultExportImportManager;
 
-public class CassandraLegacyExportImportManager extends LegacyExportImportManager {
+public class CassandraLegacyExportImportManager extends DefaultExportImportManager {
   private KeycloakSession session;
 
   public CassandraLegacyExportImportManager(KeycloakSession session) {

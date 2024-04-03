@@ -14,12 +14,12 @@
  *  limitations under the License.
  */
 
-package de.arbeitsagentur.opdt.keycloak.infinispan;
+package de.arbeitsagentur.opdt.keycloak.compatibility;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraCacheProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
 import static de.arbeitsagentur.opdt.keycloak.common.ProviderHelpers.createProviderCached;
-import static org.keycloak.userprofile.DeclarativeUserProfileProvider.PROVIDER_PRIORITY;
+import static org.keycloak.userprofile.DeclarativeUserProfileProviderFactory.PROVIDER_PRIORITY;
 
 import com.google.auto.service.AutoService;
 import java.util.Map;

@@ -15,9 +15,9 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.realm;
 
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_AFTER_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.REALM_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.REALM_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.REALM_BEFORE_REMOVE;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;

@@ -17,7 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;

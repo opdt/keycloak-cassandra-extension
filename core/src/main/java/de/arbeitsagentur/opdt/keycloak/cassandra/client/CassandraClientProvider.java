@@ -15,8 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.client;
 
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_AFTER_REMOVE;
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.CLIENT_AFTER_REMOVE;
+import static de.arbeitsagentur.opdt.keycloak.common.MapProviderObjectType.CLIENT_BEFORE_REMOVE;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;

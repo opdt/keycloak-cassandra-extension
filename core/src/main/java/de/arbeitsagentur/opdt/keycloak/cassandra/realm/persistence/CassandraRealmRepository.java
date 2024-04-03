@@ -19,7 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Clie
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.NameToRealm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.List;
 import org.keycloak.common.util.Time;
 

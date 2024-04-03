@@ -19,7 +19,7 @@ import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.SingleUseObjectRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.entities.SingleUseObject;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;

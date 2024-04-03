@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 IT-Systemhaus der Bundesagentur fuer Arbeit
+ * Copyright 2024 IT-Systemhaus der Bundesagentur fuer Arbeit
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package de.arbeitsagentur.opdt.keycloak.mapstorage.common;
+package de.arbeitsagentur.opdt.keycloak.common;
 
 import org.keycloak.models.ModelException;
 

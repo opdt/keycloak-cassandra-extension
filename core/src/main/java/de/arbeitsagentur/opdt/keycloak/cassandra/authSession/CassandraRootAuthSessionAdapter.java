@@ -21,7 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;

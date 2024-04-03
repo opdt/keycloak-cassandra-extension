@@ -20,7 +20,7 @@ import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirableEntity;
+import de.arbeitsagentur.opdt.keycloak.common.ExpirableEntity;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.*;

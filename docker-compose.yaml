@@ -27,9 +27,9 @@ services:
       - CASSANDRA_PASSWORD_SEEDER=yes
       - CASSANDRA_PASSWORD=cassandra
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.7
+    image: quay.io/keycloak/keycloak:24.0.2
     volumes:
-      - ${PWD}/core/target/keycloak-cassandra-extension-2.5.2-23.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension-2.5.2-23.0-SNAPSHOT.jar
+      - ${PWD}/core/target/keycloak-cassandra-extension-2.5.6-24.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-cassandra-extension-2.5.6-24.0-SNAPSHOT.jar
     environment:
       - KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true
       - KC_SPI_CONNECTIONS_JPA_LEGACY_ENABLED=false

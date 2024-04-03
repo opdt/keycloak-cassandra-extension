@@ -16,6 +16,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
+import static de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserAdapter.REALM_ATTR_USERNAME_CASE_SENSITIVE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -1278,7 +1279,7 @@ public class UserModelTest extends KeycloakModelTest {
     withRealm(
         originalRealmId,
         (session, realm) -> {
-          realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
+          realm.setAttribute(REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
 
           UserModel user1 = session.users().addUser(realm, "user-1");
           UserModel user2 = session.users().addUser(realm, "uSeR-1");
@@ -1399,7 +1400,7 @@ public class UserModelTest extends KeycloakModelTest {
     withRealm(
         realm1RealmId,
         (session, realm) -> {
-          realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
+          realm.setAttribute(REALM_ATTR_USERNAME_CASE_SENSITIVE, true);
 
           UserModel user1 = session.users().addUser(realm, "user");
           UserModel user2 = session.users().addUser(realm, "USER");
@@ -1427,7 +1428,7 @@ public class UserModelTest extends KeycloakModelTest {
     withRealm(
         realm2RealmId,
         (session, realm) -> {
-          realm.setAttribute(Constants.REALM_ATTR_USERNAME_CASE_SENSITIVE, false);
+          realm.setAttribute(REALM_ATTR_USERNAME_CASE_SENSITIVE, false);
 
           UserModel user1 = session.users().addUser(realm, "user");
           assertThat(user1, not(nullValue()));

@@ -17,7 +17,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.LoginFailureRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.models.RealmModel;
@@ -64,6 +64,17 @@ public class CassandraLoginFailureAdapter implements UserLoginFailureModel {
   @Override
   public void incrementFailures() {
     entity.setNumFailures(getNumFailures() + 1);
+    loginFailureRepository.insertOrUpdate(entity);
+  }
+
+  @Override
+  public int getNumTemporaryLockouts() {
+    return entity.getNumTemporaryLockouts();
+  }
+
+  @Override
+  public void incrementTemporaryLockouts() {
+    entity.setNumTemporaryLockouts(getNumTemporaryLockouts() + 1);
     loginFailureRepository.insertOrUpdate(entity);
   }
 

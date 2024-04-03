@@ -15,7 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.authSession;
 
-import static de.arbeitsagentur.opdt.keycloak.mapstorage.common.ExpirationUtils.isExpired;
+import static de.arbeitsagentur.opdt.keycloak.common.ExpirationUtils.isExpired;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 import static org.keycloak.models.utils.SessionExpiration.getAuthSessionLifespan;
 
@@ -23,7 +23,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.AuthSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.CassandraModelTransaction;
-import de.arbeitsagentur.opdt.keycloak.mapstorage.common.TimeAdapter;
+import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
