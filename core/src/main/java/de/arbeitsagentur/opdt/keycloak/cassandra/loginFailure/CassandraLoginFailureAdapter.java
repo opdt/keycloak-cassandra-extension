@@ -69,7 +69,7 @@ public class CassandraLoginFailureAdapter implements UserLoginFailureModel {
 
   @Override
   public int getNumTemporaryLockouts() {
-    return entity.getNumTemporaryLockouts();
+    return entity.getNumTemporaryLockouts() == null ? 0 : entity.getNumTemporaryLockouts();
   }
 
   @Override
