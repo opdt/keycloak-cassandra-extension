@@ -42,26 +42,26 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
   private final UserSessionDao dao;
 
   @Override
-  public void insert(UserSession session) {
-    insert(session, null);
-  }
-
-  @Override
   public void update(UserSession session) {
-    update(session, null);
+    insertOrUpdate(session);
   }
 
   @Override
-  public void insert(UserSession session, String correspondingSessionId) {
-    if (correspondingSessionId != null) {
+  public void insert(UserSession session) {
+    insertOrUpdate(session);
+
+    // all these attributes cannot be changed afterwards so they are only set during "insert"
+    if (session.getNotes().containsKey(CORRESPONDING_SESSION_ID)) {
       insertOrUpdate(
           session,
           new UserSessionToAttributeMapping(
-              session.getId(), CORRESPONDING_SESSION_ID, Arrays.asList(correspondingSessionId)));
-      session.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId); // compatibility
+              session.getId(),
+              CORRESPONDING_SESSION_ID,
+              Arrays.asList(session.getNotes().get(CORRESPONDING_SESSION_ID))));
+      session
+          .getNotes()
+          .put(CORRESPONDING_SESSION_ID, session.getNotes().get(CORRESPONDING_SESSION_ID));
     }
-
-    insertOrUpdate(session);
 
     if (session.getUserId() != null) {
       insertOrUpdate(
@@ -83,19 +83,6 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
           new UserSessionToAttributeMapping(
               session.getId(), BROKER_SESSION_ID, Arrays.asList(session.getBrokerSessionId())));
     }
-  }
-
-  @Override
-  public void update(UserSession session, String correspondingSessionId) {
-    if (correspondingSessionId != null) {
-      insertOrUpdate(
-          session,
-          new UserSessionToAttributeMapping(
-              session.getId(), CORRESPONDING_SESSION_ID, Arrays.asList(correspondingSessionId)));
-      session.getNotes().put(CORRESPONDING_SESSION_ID, correspondingSessionId); // compatibility
-    }
-
-    insertOrUpdate(session);
   }
 
   @Override
@@ -148,21 +135,50 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
   @Override
   public void deleteUserSession(UserSession session) {
-    deleteUserSession(session.getId());
+    dao.deleteUserSession(session);
+
+    // Attributes
+    if (session.getOffline() != null && session.getOffline()) {
+      for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(session.getId())) {
+        if (!attribute
+            .getAttributeName()
+            .equals(
+                CORRESPONDING_SESSION_ID)) { // enabled cross-session lookups even after deletion
+          for (String attributeValue : attribute.getAttributeValues()) {
+            dao.deleteAttributeToUserSessionMapping(
+                attribute.getAttributeName(), attributeValue, session.getId());
+          }
+        }
+      }
+
+      dao.findAllAttributes(session.getId()).all().stream()
+          .filter(s -> !s.getAttributeName().equals(CORRESPONDING_SESSION_ID))
+          .forEach(s -> dao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
+    } else {
+      for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(session.getId())) {
+        for (String attributeValue : attribute.getAttributeValues()) {
+          dao.deleteAttributeToUserSessionMapping(
+              attribute.getAttributeName(), attributeValue, session.getId());
+        }
+      }
+
+      dao.findAllAttributes(session.getId())
+          .forEach(s -> dao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
+
+      if (session.getNotes().containsKey(CORRESPONDING_SESSION_ID)) {
+        dao.deleteAttributeToUserSessionMapping(
+            CORRESPONDING_SESSION_ID,
+            session.getId(),
+            session.getNotes().get(CORRESPONDING_SESSION_ID));
+        dao.deleteAttribute(
+            session.getNotes().get(CORRESPONDING_SESSION_ID), CORRESPONDING_SESSION_ID);
+      }
+    }
   }
 
   @Override
   public void deleteUserSession(String id) {
-    dao.deleteUserSession(id);
-
-    // Attributes
-    for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(id)) {
-      for (String attributeValue : attribute.getAttributeValues()) {
-        dao.deleteAttributeToUserSessionMapping(attribute.getAttributeName(), attributeValue, id);
-      }
-    }
-
-    dao.deleteAllUserSessionToAttributeMappings(id);
+    deleteUserSession(findUserSessionById(id));
   }
 
   @Override
@@ -185,12 +201,12 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
   @Override
   public List<UserSession> findUserSessionsByAttribute(String name, String value) {
-    List<String> userIds =
+    List<String> sessionIds =
         dao.findByAttribute(name, value).all().stream()
             .map(AttributeToUserSessionMapping::getUserSessionId)
             .collect(Collectors.toList());
 
-    return dao.findByIds(userIds).all();
+    return dao.findByIds(sessionIds).all();
   }
 
   @Override

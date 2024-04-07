@@ -326,20 +326,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
   @InvalidateCache
-  public void insert(UserSession session, String correspondingSessionId) {
-    this.userSessionRepository.insert(session, correspondingSessionId);
-  }
-
-  @L1Cached(cacheName = USER_SESSION_CACHE)
-  @InvalidateCache
   public void update(UserSession session) {
     this.userSessionRepository.update(session);
-  }
-
-  @L1Cached(cacheName = USER_SESSION_CACHE)
-  @InvalidateCache
-  public void update(UserSession session, String correspondingSessionId) {
-    this.userSessionRepository.update(session, correspondingSessionId);
   }
 
   @L1Cached(cacheName = USER_SESSION_CACHE)

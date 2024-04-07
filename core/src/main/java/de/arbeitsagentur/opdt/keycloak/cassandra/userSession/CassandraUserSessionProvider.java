@@ -455,6 +455,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
       session.getClientSessions().remove(client.getId());
       if (session.getClientSessions().isEmpty()) {
         userSessionRepository.deleteUserSession(session);
+        CassandraUserSessionAdapter model = sessionModels.get(session.getId());
+        if (model != null) {
+          model.markAsDeleted();
+        }
+
         sessionModels.remove(session.getId());
       } else {
         userSessionRepository.update(session);
@@ -473,13 +478,21 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     setUserSessionExpiration(
         offlineUserSession, SessionExpirationData.builder().realm(userSession.getRealm()).build());
 
-    userSessionRepository.insert(offlineUserSession, userSession.getId());
+    CassandraUserSessionAdapter offlineSessionAdapter =
+        entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
+    offlineSessionAdapter.setNote(CORRESPONDING_SESSION_ID, userSession.getId());
+    userSessionRepository.insert(offlineUserSession);
 
     // set a reference for the offline user session to the original online user session
-    UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
-    userSessionRepository.update(userSessionEntity, offlineUserSession.getId());
+    CassandraUserSessionAdapter orgUserSessionAdapter =
+        getUserSession(userSession.getRealm(), userSession.getId());
+    orgUserSessionAdapter.setNote(CORRESPONDING_SESSION_ID, offlineUserSession.getId());
+    userSessionRepository.insert(
+        orgUserSessionAdapter
+            .getUserSessionEntity()); // Hack to set CORRESPONDING_SESSION_ID, which normally is
+    // only set during insert
 
-    return entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
+    return offlineSessionAdapter;
   }
 
   @Override
@@ -489,7 +502,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     return getOfflineUserSessionEntityStream(realm, userSessionId)
         .findFirst()
         .map(entityToAdapterFunc(realm))
-        .orElse(null);
+        .orElse(
+            entityToAdapterFunc(realm)
+                .apply(
+                    userSessionRepository.findUserSessionByAttribute(
+                        CORRESPONDING_SESSION_ID, userSessionId)));
   }
 
   @Override
@@ -501,10 +518,18 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSession.getId());
     if (userSessionEntity.getOffline() != null && userSessionEntity.getOffline()) {
       userSessionRepository.deleteUserSession(userSessionEntity);
+      CassandraUserSessionAdapter model = sessionModels.get(userSessionEntity.getId());
+      if (model != null) {
+        model.markAsDeleted();
+      }
       sessionModels.remove(userSessionEntity.getId());
     } else if (userSessionEntity.hasCorrespondingSession()) {
       String correspondingSessionId = userSessionEntity.getNotes().get(CORRESPONDING_SESSION_ID);
       userSessionRepository.deleteCorrespondingUserSession(userSessionEntity);
+      CassandraUserSessionAdapter model = sessionModels.get(correspondingSessionId);
+      if (model != null) {
+        model.markAsDeleted();
+      }
       sessionModels.remove(correspondingSessionId);
     }
   }
@@ -535,12 +560,12 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
       UserSession userSession = userSessionEntity.get();
       String clientId = clientSession.getClient().getId();
 
-      userSessionRepository.addClientSession(userSession, clientSessionEntity);
+      CassandraUserSessionAdapter userSessionModel = entityToAdapterFunc(realm).apply(userSession);
 
-      UserSessionModel userSessionModel = entityToAdapterFunc(realm).apply(userSession);
-      return userSessionModel == null
-          ? null
-          : userSessionModel.getAuthenticatedClientSessionByClient(clientId);
+      userSessionRepository.addClientSession(
+          userSessionModel.getUserSessionEntity(), clientSessionEntity);
+
+      return userSessionModel.getAuthenticatedClientSessionByClient(clientId);
     }
 
     return null;
@@ -678,7 +703,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
     // first get a user entity by ID
     // check if it's an offline user session
-    UserSession userSessionEntity = userSessionRepository.findUserSessionById(userSessionId);
+    UserSession userSessionEntity = getUserSessionById(userSessionId);
     if (userSessionEntity != null) {
       if (Boolean.TRUE.equals(userSessionEntity.getOffline())) {
         return Stream.of(userSessionEntity);
@@ -691,7 +716,11 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     }
 
     // it's online user session so lookup offline user session by corresponding session id reference
-    String offlineUserSessionId = userSessionEntity.getNotes().get(CORRESPONDING_SESSION_ID);
+    CassandraUserSessionAdapter sessionModel = sessionModels.get(userSessionId);
+    String offlineUserSessionId =
+        sessionModel != null
+            ? sessionModel.getNote(CORRESPONDING_SESSION_ID)
+            : userSessionEntity.getNotes().get(CORRESPONDING_SESSION_ID);
     if (offlineUserSessionId != null) {
       return Stream.of(getUserSessionById(offlineUserSessionId));
     }
