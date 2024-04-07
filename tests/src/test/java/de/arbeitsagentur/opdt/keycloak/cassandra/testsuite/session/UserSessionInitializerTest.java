@@ -155,7 +155,7 @@ public class UserSessionInitializerTest extends KeycloakModelTest {
           ClientModel thirdparty = realm.getClientByClientId("third-party");
 
           assertThat(
-              "Count of offline sesions for client 'third-party'",
+              "Count of offline sessions for client 'third-party'",
               session.sessions().getOfflineSessionsCount(realm, thirdparty),
               is((long) 1));
           List<UserSessionModel> loadedSessions =

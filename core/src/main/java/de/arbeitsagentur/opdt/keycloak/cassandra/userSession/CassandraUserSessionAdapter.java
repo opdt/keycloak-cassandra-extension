@@ -237,7 +237,8 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
             "Trying to override %s with new value of %s which is greater than the old override-value of %s. This is not allowed.",
             name, value, oldOverride);
       }
-    } else {
+    } else if (!userSessionEntity.getNotes().containsKey(name)
+        || !userSessionEntity.getNotes().get(name).equals(value)) {
       userSessionEntity.getNotes().put(name, value);
       updated = true;
     }
@@ -261,8 +262,10 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
   @Override
   public void removeNote(String name) {
-    userSessionEntity.getNotes().remove(name);
-    updated = true;
+    if (userSessionEntity.getNotes().containsKey(name)) {
+      userSessionEntity.getNotes().remove(name);
+      updated = true;
+    }
   }
 
   @Override
@@ -277,8 +280,10 @@ public class CassandraUserSessionAdapter implements UserSessionModel {
 
   @Override
   public void setState(State state) {
-    userSessionEntity.setState(state);
-    updated = true;
+    if (userSessionEntity.getState() == null || !userSessionEntity.getState().equals(state)) {
+      userSessionEntity.setState(state);
+      updated = true;
+    }
   }
 
   @Override

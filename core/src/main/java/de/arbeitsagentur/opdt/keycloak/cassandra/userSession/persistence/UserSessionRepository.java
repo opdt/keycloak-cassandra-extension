@@ -27,10 +27,6 @@ public interface UserSessionRepository {
 
   void update(UserSession session);
 
-  void insert(UserSession session, String correspondingSessionId);
-
-  void update(UserSession session, String correspondingSessionId);
-
   void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession);
 
   UserSession findUserSessionById(String id);

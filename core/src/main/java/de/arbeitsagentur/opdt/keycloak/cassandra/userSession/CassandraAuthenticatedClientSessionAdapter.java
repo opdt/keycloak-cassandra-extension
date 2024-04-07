@@ -97,15 +97,20 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
       return;
     }
 
-    clientSessionEntity.getNotes().put(name, value);
+    if (!clientSessionEntity.getNotes().containsKey(name)
+        || !clientSessionEntity.getNotes().get(name).equals(value)) {
+      clientSessionEntity.getNotes().put(name, value);
 
-    userSession.markAsUpdated();
+      userSession.markAsUpdated();
+    }
   }
 
   @Override
   public void removeNote(String name) {
-    clientSessionEntity.getNotes().remove(name);
-    userSession.markAsUpdated();
+    if (clientSessionEntity.getNotes().containsKey(name)) {
+      clientSessionEntity.getNotes().remove(name);
+      userSession.markAsUpdated();
+    }
   }
 
   @Override
@@ -120,8 +125,11 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
   @Override
   public void setRedirectUri(String uri) {
-    clientSessionEntity.setRedirectUri(uri);
-    userSession.markAsUpdated();
+    if (clientSessionEntity.getRedirectUri() == null
+        || !clientSessionEntity.getRedirectUri().equals(uri)) {
+      clientSessionEntity.setRedirectUri(uri);
+      userSession.markAsUpdated();
+    }
   }
 
   @Override
@@ -141,8 +149,11 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
   @Override
   public void setAction(String action) {
-    clientSessionEntity.setAction(action);
-    userSession.markAsUpdated();
+    if (clientSessionEntity.getAction() == null
+        || !clientSessionEntity.getAction().equals(action)) {
+      clientSessionEntity.setAction(action);
+      userSession.markAsUpdated();
+    }
   }
 
   @Override
@@ -152,7 +163,10 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
   @Override
   public void setProtocol(String method) {
-    clientSessionEntity.setAuthMethod(method);
-    userSession.markAsUpdated();
+    if (clientSessionEntity.getAuthMethod() == null
+        || !clientSessionEntity.getAuthMethod().equals(method)) {
+      clientSessionEntity.setAuthMethod(method);
+      userSession.markAsUpdated();
+    }
   }
 }
