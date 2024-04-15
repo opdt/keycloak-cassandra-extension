@@ -19,6 +19,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.UserRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.User;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.ObjectUtil;
+import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
@@ -207,12 +209,19 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
   @Override
   public Long getCreatedTimestamp() {
-    return entity.getCreatedTimestamp().getEpochSecond() * 1000; // Milliseconds
+    // Calc timestamp as milliseconds
+    return entity.getCreatedTimestamp().getEpochSecond() * 1000
+        + (entity.getCreatedTimestamp().getNano() / 1000000);
   }
 
   @Override
   public void setCreatedTimestamp(Long timestamp) {
-    // NOOP
+    if (timestamp != null && timestamp <= Time.currentTimeMillis()) {
+      entity.setCreatedTimestamp(Instant.ofEpochMilli(timestamp));
+      markUpdated();
+    } else if (timestamp != null && timestamp > Time.currentTimeMillis()) {
+      log.warn("Cannot update created timestamp because it is in the future!");
+    }
   }
 
   @Override
