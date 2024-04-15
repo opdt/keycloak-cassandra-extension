@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.services.managers.ClientManager;
 import org.keycloak.services.managers.RealmManager;
@@ -162,6 +163,39 @@ public class UserModelTest extends KeycloakModelTest {
           assertThat(user.getFirstAttribute("test"), is("bla"));
 
           assertNull(session.users().getUserByUsername(realm, null));
+
+          return null;
+        });
+  }
+
+  @Test
+  public void testOverrideCreationTimestamp() {
+    long newCreationTimestamp = Time.currentTimeMillis() - 42;
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().addUser(realm, "user");
+          user.setCreatedTimestamp(newCreationTimestamp);
+          return null;
+        });
+
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(user.getCreatedTimestamp(), is(newCreationTimestamp));
+
+          user.setCreatedTimestamp(Time.currentTimeMillis() + 42000);
+          return null;
+        });
+
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserByUsername(realm, "user");
+          assertThat(
+              user.getCreatedTimestamp(),
+              is(newCreationTimestamp)); // nothing changed because date in future cannot be set
 
           return null;
         });
