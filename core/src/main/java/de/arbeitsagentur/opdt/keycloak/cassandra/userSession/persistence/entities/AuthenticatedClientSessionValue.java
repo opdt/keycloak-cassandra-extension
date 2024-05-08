@@ -36,6 +36,7 @@ public class AuthenticatedClientSessionValue implements ExpirableEntity {
   private String action;
   private String currentRefreshToken;
   private Integer currentRefreshTokenUseCount;
+  @Builder.Default private Map<String, Long> refreshTokenUses = new HashMap<>();
   private boolean offline;
 
   @Builder.Default private Map<String, String> notes = new HashMap<>();

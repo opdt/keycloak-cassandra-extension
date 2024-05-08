@@ -22,8 +22,12 @@ import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.OAuth2Constants;
+import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 
+@JBossLog
 @EqualsAndHashCode(of = "userSession")
 @AllArgsConstructor
 public abstract class CassandraAuthenticatedClientSessionAdapter
@@ -64,25 +68,79 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
   @Override
   public String getCurrentRefreshToken() {
-    return clientSessionEntity.getCurrentRefreshToken();
+    if (realm.getRefreshTokenMaxReuse() > 0
+        || !session
+            .getContext()
+            .getHttpRequest()
+            .getDecodedFormParameters()
+            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
+      log.debug(
+          "RefreshTokenMaxReuse > 0 / no refresh_token in form-params -> use standard behavior for refresh-token-rotation");
+      return clientSessionEntity.getCurrentRefreshToken();
+    } else {
+      String encodedRefreshToken =
+          session
+              .getContext()
+              .getHttpRequest()
+              .getDecodedFormParameters()
+              .getFirst(OAuth2Constants.REFRESH_TOKEN);
+      return encodedRefreshToken
+          .split("\\.")[
+          2]; // use sig as "refresh token id" to avoid parsing the token more than once
+    }
   }
 
   @Override
   public void setCurrentRefreshToken(String currentRefreshToken) {
-    clientSessionEntity.setCurrentRefreshToken(currentRefreshToken);
-    userSession.markAsUpdated();
+    clientSessionEntity.setCurrentRefreshToken(currentRefreshToken); // for fallback use
   }
 
   @Override
   public int getCurrentRefreshTokenUseCount() {
-    Integer currentRefreshTokenUseCount = clientSessionEntity.getCurrentRefreshTokenUseCount();
-    return currentRefreshTokenUseCount != null ? currentRefreshTokenUseCount : 0;
+    if (realm.getRefreshTokenMaxReuse() > 0
+        || !session
+            .getContext()
+            .getHttpRequest()
+            .getDecodedFormParameters()
+            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
+      log.debug(
+          "RefreshTokenMaxReuse > 0 / no refresh_token in form-params -> use standard behavior for refresh-token-rotation");
+      Integer currentRefreshTokenUseCount = clientSessionEntity.getCurrentRefreshTokenUseCount();
+      return currentRefreshTokenUseCount != null ? currentRefreshTokenUseCount : 0;
+    } else {
+
+      Long lastUse = clientSessionEntity.getRefreshTokenUses().get(getCurrentRefreshToken());
+      if (lastUse == null
+          || lastUse
+              > Time.currentTimeMillis() - realm.getAttribute("refreshTokenReuseInterval", 0L)) {
+        return 0; // do not count refresh
+      }
+      return 1;
+    }
   }
 
   @Override
   public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
-    clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
-    userSession.markAsUpdated();
+    if (realm.getRefreshTokenMaxReuse() > 0
+        || !session
+            .getContext()
+            .getHttpRequest()
+            .getDecodedFormParameters()
+            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
+      clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
+      userSession.markAsUpdated();
+    } else {
+      String currentRefreshToken = getCurrentRefreshToken();
+
+      // We only know two states -> first use sets "lastUse", all other later uses dont have to
+      // change anything
+      if (!clientSessionEntity.getRefreshTokenUses().containsKey(currentRefreshToken)) {
+        clientSessionEntity
+            .getRefreshTokenUses()
+            .put(currentRefreshToken, Time.currentTimeMillis());
+        userSession.markAsUpdated();
+      }
+    }
   }
 
   @Override
