@@ -16,24 +16,33 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.keycloak.common.util.ResteasyProvider;
 
 /**
  * @author <a href="mailto:mkanis@redhat.com">Martin Kanis</a>
  */
-public class ResteasyNullProvider implements ResteasyProvider {
+public class ResteasyTestProvider implements ResteasyProvider {
+  private Map<Class<?>, Object> contextData = new HashMap<>();
 
   @Override
   public <R> R getContextData(Class<R> type) {
-    return null;
+    return (R) contextData.get(type);
   }
 
   @Override
-  public void pushDefaultContextObject(Class type, Object instance) {}
+  public void pushDefaultContextObject(Class type, Object instance) {
+    contextData.put(type, instance);
+  }
 
   @Override
-  public void pushContext(Class type, Object instance) {}
+  public void pushContext(Class type, Object instance) {
+    contextData.put(type, instance);
+  }
 
   @Override
-  public void clearContextData() {}
+  public void clearContextData() {
+    contextData.clear();
+  }
 }

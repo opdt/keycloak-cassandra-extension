@@ -62,6 +62,11 @@ This extension supports additional checks to prevent setting username to a value
 
 To enable these checks for a realm, set its attribute `enableCheckForDuplicatesAcrossUsernameAndEmail` to `true` (default when not set: `false`)
 
+### Multi-Tab Refresh Token Rotation
+There is a long-standing bug inside Keycloak which prevents independent refresh token rotations on multiple tabs, using the same client: https://github.com/keycloak/keycloak/issues/14122
+This extension implements a workaround which is only active when `refreshTokenMaxReuse` is equal to 0. Then the last refresh is tracked per refresh token instead of per client session.
+Additionally, a grace period can be set via `refreshTokenReuseInterval` realm attribute. Refresh token reuses during this grace period are allowed, which can be useful in case of retries / network problems.
+
 ## Contributing
 
 Before contributing to Keycloak Cassandra, please read our [contributing guidelines](CONTRIBUTING.md).
