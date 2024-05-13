@@ -8,7 +8,9 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriInfo;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -95,13 +97,25 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig1"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString(
+                              "{\"jti\": \"id1\", \"otherClaim\": \"bla\"}"
+                                  .getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("sig1", clientSession.getCurrentRefreshToken());
+          clientSession.setCurrentRefreshTokenUseCount(
+              0); // is set by Keycloak initially since token.getId() never matches our sig-based
+                  // token id
+
+          assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
 
           clientSession.setCurrentRefreshTokenUseCount(1);
@@ -114,13 +128,23 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig1"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("sig1", clientSession.getCurrentRefreshToken());
+          clientSession.setCurrentRefreshTokenUseCount(
+              0); // is set by Keycloak initially since token.getId() never matches our sig-based
+                  // token id
+
+          assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
 
           clientSession.setCurrentRefreshTokenUseCount(1);
@@ -134,13 +158,23 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig1"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("sig1", clientSession.getCurrentRefreshToken());
+          clientSession.setCurrentRefreshTokenUseCount(
+              0); // is set by Keycloak initially since token.getId() never matches our sig-based
+                  // token id
+
+          assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
 
           return null;
@@ -151,13 +185,23 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig2"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id2\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("sig2", clientSession.getCurrentRefreshToken());
+          clientSession.setCurrentRefreshTokenUseCount(
+              0); // is set by Keycloak initially since token.getId() never matches our sig-based
+                  // token id
+
+          assertEquals("id2", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
 
           return null;
@@ -206,7 +250,13 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig1"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
@@ -225,7 +275,13 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig1"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
@@ -242,7 +298,13 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(HttpRequest.class, createHttpRequest("header.body.sig2"));
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id2\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
