@@ -17,10 +17,16 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setClientSessionExpiration;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.OAuth2Constants;
@@ -84,9 +90,16 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
               .getHttpRequest()
               .getDecodedFormParameters()
               .getFirst(OAuth2Constants.REFRESH_TOKEN);
-      return encodedRefreshToken
-          .split("\\.")[
-          2]; // use sig as "refresh token id" to avoid parsing the token more than once
+      String tokenBodyEncoded = encodedRefreshToken.split("\\.")[1];
+      String tokenBody = new String(Base64.getDecoder().decode(tokenBodyEncoded));
+
+      try {
+        RefreshTokenRepresentation refreshTokenRepresentation =
+            CassandraJsonSerialization.readValue(tokenBody, new TypeReference<>() {});
+        return refreshTokenRepresentation.getJti();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -134,7 +147,8 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
       // We only know two states -> first use sets "lastUse", all other later uses dont have to
       // change anything
-      if (!clientSessionEntity.getRefreshTokenUses().containsKey(currentRefreshToken)) {
+      if (currentRefreshTokenUseCount > 0
+          && !clientSessionEntity.getRefreshTokenUses().containsKey(currentRefreshToken)) {
         clientSessionEntity
             .getRefreshTokenUses()
             .put(currentRefreshToken, Time.currentTimeMillis());
@@ -226,5 +240,11 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
       clientSessionEntity.setAuthMethod(method);
       userSession.markAsUpdated();
     }
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private static class RefreshTokenRepresentation {
+    private String jti;
   }
 }
