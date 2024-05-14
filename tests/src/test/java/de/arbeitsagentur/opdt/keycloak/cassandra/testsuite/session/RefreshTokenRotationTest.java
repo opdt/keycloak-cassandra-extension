@@ -113,7 +113,7 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
 
           clientSession.setCurrentRefreshTokenUseCount(
               0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
+          // token id
 
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
@@ -142,7 +142,7 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
 
           clientSession.setCurrentRefreshTokenUseCount(
               0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
+          // token id
 
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
@@ -172,7 +172,7 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
 
           clientSession.setCurrentRefreshTokenUseCount(
               0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
+          // token id
 
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
@@ -199,7 +199,7 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
 
           clientSession.setCurrentRefreshTokenUseCount(
               0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
+          // token id
 
           assertEquals("id2", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());

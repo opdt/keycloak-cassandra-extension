@@ -379,7 +379,8 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
 
   @Override
   public void grantToAllUsers(RealmModel realm, RoleModel role) {
-    searchForUserStream(realm, "").forEach(u -> u.grantRole(role));
+    searchForUserStream(realm, Map.of(UserModel.EXACT, "false", UserModel.SEARCH, ""))
+        .forEach(u -> u.grantRole(role));
   }
 
   @Override
@@ -443,6 +444,12 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
   }
 
   @Override
+  public Stream<UserModel> searchForUserStream(RealmModel realm, String search) {
+    return searchForUserStream(
+        realm, Map.of(UserModel.EXACT, "false", UserModel.SEARCH, search), null, null);
+  }
+
+  @Override
   public Stream<UserModel> searchForUserStream(
       RealmModel realm, String search, Integer firstResult, Integer maxResults) {
     log.tracef(
@@ -463,7 +470,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
     int first = firstResult == null || firstResult < 0 ? 0 : firstResult;
     int resultCount = maxResults == null || maxResults < 0 ? Integer.MAX_VALUE : maxResults;
 
-    boolean isExactSearch = Boolean.parseBoolean(params.getOrDefault(UserModel.EXACT, "false"));
+    boolean isExactSearch = Boolean.parseBoolean(params.getOrDefault(UserModel.EXACT, "true"));
 
     if (params.containsKey(UserModel.USERNAME) && isExactSearch) {
       return Stream.ofNullable(getUserByUsername(realm, params.get(UserModel.USERNAME)));

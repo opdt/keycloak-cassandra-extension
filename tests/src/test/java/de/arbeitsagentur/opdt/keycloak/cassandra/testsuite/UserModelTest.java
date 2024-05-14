@@ -777,7 +777,8 @@ public class UserModelTest extends KeycloakModelTest {
           List<UserModel> users =
               currentSession
                   .users()
-                  .searchForUserStream(realm, "user1", 0, 7)
+                  .searchForUserStream(
+                      realm, Map.of(UserModel.EXACT, "false", UserModel.SEARCH, "user1"), 0, 7)
                   .collect(Collectors.toList());
           Assert.assertThat(users, hasSize(1));
           Assert.assertThat(users, contains(user1));
@@ -793,7 +794,7 @@ public class UserModelTest extends KeycloakModelTest {
           List<UserModel> users =
               currentSession
                   .users()
-                  .searchForUserStream(realm, (String) null, null, null)
+                  .searchForUserStream(realm, Map.of(UserModel.EXACT, "false"), null, null)
                   .collect(Collectors.toList());
           Assert.assertThat(users, hasSize(2));
           Assert.assertThat(users, containsInAnyOrder(user1, user2));
@@ -809,7 +810,8 @@ public class UserModelTest extends KeycloakModelTest {
           List<UserModel> users =
               currentSession
                   .users()
-                  .searchForUserStream(realm, "", 0, 7)
+                  .searchForUserStream(
+                      realm, Map.of(UserModel.EXACT, "false", UserModel.SEARCH, ""), 0, 7)
                   .collect(Collectors.toList());
           Assert.assertThat(users, hasSize(2));
           Assert.assertThat(users, containsInAnyOrder(user1, user2));
@@ -933,6 +935,7 @@ public class UserModelTest extends KeycloakModelTest {
 
           Map<String, String> params = new HashMap<>();
           params.put(UserModel.IDP_USER_ID, "fakeIDPValue");
+          params.put(UserModel.EXACT, "false");
           List<UserModel> users =
               currentSession
                   .users()
@@ -950,6 +953,7 @@ public class UserModelTest extends KeycloakModelTest {
 
           Map<String, String> params = new HashMap<>();
           params.put(UserModel.IDP_ALIAS, "fakeIDPAlias");
+          params.put(UserModel.EXACT, "false");
           List<UserModel> users =
               currentSession
                   .users()
@@ -967,6 +971,7 @@ public class UserModelTest extends KeycloakModelTest {
           params.put(UserModel.USERNAME, "user1");
           params.put(UserModel.INCLUDE_SERVICE_ACCOUNT, "true");
           params.put(UserModel.IDP_ALIAS, "fakeIDPAlias");
+          params.put(UserModel.EXACT, "false");
           List<UserModel> users =
               currentSession
                   .users()
@@ -1337,7 +1342,8 @@ public class UserModelTest extends KeycloakModelTest {
           List<UserModel> foundUsers =
               session
                   .users()
-                  .searchForUserStream(realm, Map.of(UserModel.USERNAME, "user-1"))
+                  .searchForUserStream(
+                      realm, Map.of(UserModel.EXACT, "false", UserModel.USERNAME, "user-1"))
                   .collect(Collectors.toList());
 
           assertThat(foundUsers, hasSize(1));

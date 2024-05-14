@@ -49,6 +49,9 @@ Due to Cassandras query first nature, users can only be looked up by specific fi
 - `keycloak.session.realm.users.query.include_service_account` to include service accounts
 - `email` for an email search
 
+`keycloak.session.realm.users.query.exact` has `true` als default value (Vanilla Keycloak uses `false` as default value).
+Non-exact queries might suffer from a big performance hit, since Cassandra is not efficient when iterating over big tables and doesnt support full-text search out-of-the-box.
+
 `UserProvider::searchForUserByUserAttributeStream` by default iterates all users in the entire database to filter for the requested attribute in-memory.
 For efficient searches, attributes can be defined as **indexed attributes** by prefixing their name with **indexed.**, e.g. **indexed.businessKey**
 
