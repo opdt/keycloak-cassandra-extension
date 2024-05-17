@@ -25,6 +25,9 @@ import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,6 +35,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
+import org.keycloak.models.utils.SessionExpirationUtils;
 
 @JBossLog
 @EqualsAndHashCode(of = "userSession")
@@ -42,6 +46,10 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
   protected RealmModel realm;
   protected CassandraUserSessionAdapter userSession;
   protected AuthenticatedClientSessionValue clientSessionEntity;
+
+  public AuthenticatedClientSessionValue getClientSessionEntity() {
+    return clientSessionEntity;
+  }
 
   @Override
   public String getId() {
@@ -154,6 +162,25 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
             .put(currentRefreshToken, Time.currentTimeMillis());
         userSession.markAsUpdated();
       }
+
+      // Clean up too old use trackers for tokens which are already expired
+      long idleTimestamp =
+          SessionExpirationUtils.calculateClientSessionIdleTimestamp(
+              userSession.isOffline(),
+              isUserSessionRememberMe(),
+              TimeUnit.SECONDS.toMillis(getTimestamp()),
+              realm,
+              getClient());
+      long effectiveIdleTime = idleTimestamp - Time.currentTimeMillis();
+      Set<Map.Entry<String, Long>> idsToRemove =
+          clientSessionEntity.getRefreshTokenUses().entrySet().stream()
+              .filter(e -> e.getValue() < Time.currentTimeMillis() - effectiveIdleTime)
+              .collect(Collectors.toSet());
+      idsToRemove.forEach(
+          e -> {
+            clientSessionEntity.getRefreshTokenUses().remove(e.getKey());
+            userSession.markAsUpdated();
+          });
     }
   }
 

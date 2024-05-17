@@ -1,9 +1,9 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
+import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraAuthenticatedClientSessionAdapter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -111,10 +111,6 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          clientSession.setCurrentRefreshTokenUseCount(
-              0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
-
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
 
@@ -139,10 +135,6 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
-
-          clientSession.setCurrentRefreshTokenUseCount(
-              0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
 
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
@@ -170,10 +162,6 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          clientSession.setCurrentRefreshTokenUseCount(
-              0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
-
           assertEquals("id1", clientSession.getCurrentRefreshToken());
           assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
 
@@ -197,12 +185,40 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          clientSession.setCurrentRefreshTokenUseCount(
-              0); // is set by Keycloak initially since token.getId() never matches our sig-based
-                  // token id
-
           assertEquals("id2", clientSession.getCurrentRefreshToken());
           assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
+
+          clientSession.setCurrentRefreshTokenUseCount(1);
+
+          return null;
+        });
+
+    // Should clear last use tracking after idle time has expired
+    Time.setOffset(
+        1001 - 101); // subtract the last refresh time, since otherwise the whole session will be
+    // gone
+    withRealm(
+        realmId,
+        (session, realm) -> {
+          UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
+
+          ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
+          CassandraAuthenticatedClientSessionAdapter clientSession =
+              (CassandraAuthenticatedClientSessionAdapter)
+                  userSession.getAuthenticatedClientSessionByClient(testClient.getId());
+
+          // Cleanup is triggered by correct refresh
+          Resteasy.pushContext(
+              HttpRequest.class,
+              createHttpRequest(
+                  "header."
+                      + Base64.getEncoder()
+                          .encodeToString("{\"jti\": \"id3\"}".getBytes(StandardCharsets.UTF_8))
+                      + ".sig"));
+          clientSession.setCurrentRefreshTokenUseCount(1);
+
+          assertFalse(
+              clientSession.getClientSessionEntity().getRefreshTokenUses().containsKey("id1"));
 
           return null;
         });
