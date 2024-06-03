@@ -381,11 +381,9 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
   @Override
   public void setServiceAccountClientLink(String clientInternalId) {
     if (!Objects.equals(entity.getServiceAccountClientLink(), clientInternalId)) {
-      User userCopy = entity.toBuilder().build();
       entity.setServiceAccountClientLink(clientInternalId);
 
-      markUpdated(
-          () -> userRepository.deleteServiceAccountLinkSearchIndex(realm.getId(), userCopy));
+      markUpdated();
     }
   }
 
