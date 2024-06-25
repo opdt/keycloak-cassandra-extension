@@ -28,7 +28,7 @@ jobs:
           server-password: MAVEN_PASSWORD
       - name: Publish package
         run: |
-          mvn --no-transfer-progress --batch-mode -Dgpg.passphrase=${{ secrets.gpg_passphrase }} clean deploy
+          mvn --no-transfer-progress --batch-mode -Dgpg.passphrase="${{ secrets.gpg_passphrase }}" clean deploy
         env:
           MAVEN_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.NEXUS_TOKEN }}
