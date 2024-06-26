@@ -5,14 +5,11 @@
 # Cassandra storage extension for Keycloak
 
 Uses Apache Cassandra to store and retrieve entities of all storage areas except authorization and events.
-Requires Keycloak >= 23.0.0.
-
-> :warning: Keycloak 23 support is still early stages and mostly untested.
-Use version `1.3.2-22.0.1` for Keycloak up until 22.x.x.
+Requires Keycloak >= 25.0.0 (older versions may be supported by older versions of this extension).
 
 ## How to use
 
-- Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/1.1.0-22.0.1/keycloak-cassandra-extension-1.1.0-22.0.1.jar
+- Download the JAR from Maven Central: https://repo1.maven.org/maven2/de/arbeitsagentur/opdt/keycloak-cassandra-extension/xxx/keycloak-cassandra-extension-xxx.jar
 - Put the JAR in Keycloak's providers folder
 - Set `KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED=true` (`kc.community.datastore.cassandra.enabled=true` as system property) or `KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true` (`kc.community.datastore.cassandra.cache.enabled=true` as system property) to enable the extension
 - Set the necessary configuration options like cassandra endpoints (see the overview below)
@@ -63,9 +60,7 @@ This extension supports additional checks to prevent setting username to a value
 To enable these checks for a realm, set its attribute `enableCheckForDuplicatesAcrossUsernameAndEmail` to `true` (default when not set: `false`)
 
 ### Multi-Tab Refresh Token Rotation
-There is a long-standing bug inside Keycloak which prevents independent refresh token rotations on multiple tabs, using the same client: https://github.com/keycloak/keycloak/issues/14122
-This extension implements a workaround which is only active when `refreshTokenMaxReuse` is equal to 0. Then the last refresh is tracked per refresh token instead of per client session.
-Additionally, a grace period can be set via `refreshTokenReuseInterval` realm attribute. Refresh token reuses during this grace period are allowed, which can be useful in case of retries / network problems.
+This extension adds support for a grace period when checking for reuses. It can be set via `refreshTokenReuseInterval` realm attribute. Refresh token reuses during this grace period are allowed, which can be useful in case of retries / network problems.
 
 ## Contributing
 

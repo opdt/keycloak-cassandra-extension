@@ -15,6 +15,7 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import de.arbeitsagentur.opdt.keycloak.common.ExpirableEntity;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true) // ignore old "refreshTokenUses"
 public class AuthenticatedClientSessionValue implements ExpirableEntity {
   private String id;
   private String clientId;
@@ -36,7 +38,6 @@ public class AuthenticatedClientSessionValue implements ExpirableEntity {
   private String action;
   private String currentRefreshToken;
   private Integer currentRefreshTokenUseCount;
-  @Builder.Default private Map<String, Long> refreshTokenUses = new HashMap<>();
   private boolean offline;
 
   @Builder.Default private Map<String, String> notes = new HashMap<>();

@@ -182,6 +182,22 @@ public class CassandraClientProvider extends TransactionalProvider<Client, Cassa
   }
 
   @Override
+  public void addClientScopeToAllClients(
+      RealmModel realmModel, ClientScopeModel clientScopeModel, boolean defaultClientScope) {
+    log.tracef(
+        "addClientScopeToAllClients(%s, %s, %b)%s",
+        realmModel, clientScopeModel, defaultClientScope, getShortStackTrace());
+
+    clientRepository
+        .findAllClientsWithRealmId(realmModel.getId())
+        .forEach(
+            client -> {
+              ClientModel clientModel = entityToAdapterFunc(realmModel).apply(client);
+              clientModel.addClientScope(clientScopeModel, defaultClientScope);
+            });
+  }
+
+  @Override
   public Map<ClientModel, Set<String>> getAllRedirectUrisOfEnabledClients(RealmModel realm) {
     return Stream.concat(
             models.values().stream().filter(m -> m.getRealm().equals(realm)),

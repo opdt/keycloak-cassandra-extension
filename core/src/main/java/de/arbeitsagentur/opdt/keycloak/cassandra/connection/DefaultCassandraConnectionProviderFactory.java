@@ -222,7 +222,7 @@ public class DefaultCassandraConnectionProviderFactory
   }
 
   @Override
-  public boolean isSupported() {
+  public boolean isSupported(Config.Scope config) {
     return true;
   }
 

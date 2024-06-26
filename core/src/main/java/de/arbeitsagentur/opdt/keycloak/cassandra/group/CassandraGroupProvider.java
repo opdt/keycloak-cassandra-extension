@@ -263,6 +263,11 @@ public class CassandraGroupProvider implements GroupProvider {
           }
 
           @Override
+          public GroupModel getGroup() {
+            return group;
+          }
+
+          @Override
           public String getNewPath() {
             return newPath;
           }

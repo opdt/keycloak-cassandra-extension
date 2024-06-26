@@ -146,6 +146,11 @@ public class Config implements ConfigProvider {
     return getConfig().get(spiName + ".provider");
   }
 
+  @Override
+  public String getDefaultProvider(String spiName) {
+    return getConfig().get(spiName + ".provider.default");
+  }
+
   public Map<String, String> getConfig() {
     return useGlobalConfigurationFunc.getAsBoolean() ? defaultProperties : properties.get();
   }

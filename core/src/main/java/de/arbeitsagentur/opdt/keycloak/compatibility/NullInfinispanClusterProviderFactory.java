@@ -40,7 +40,7 @@ public class NullInfinispanClusterProviderFactory
         EnvironmentDependentProviderFactory,
         ServerInfoAwareProviderFactory {
   @Override
-  public boolean isSupported() {
+  public boolean isSupported(Config.Scope config) {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
   }
 

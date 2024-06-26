@@ -3,22 +3,8 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.session;
 import static org.junit.Assert.*;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraAuthenticatedClientSessionAdapter;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.UriInfo;
-import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
-import java.util.Base64;
-import java.util.Map;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.keycloak.OAuth2Constants;
-import org.keycloak.common.util.Resteasy;
 import org.keycloak.common.util.Time;
-import org.keycloak.http.FormPartValue;
-import org.keycloak.http.HttpRequest;
 import org.keycloak.models.*;
 
 public class RefreshTokenRotationTest extends KeycloakModelTest {
@@ -97,24 +83,14 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString(
-                              "{\"jti\": \"id1\", \"otherClaim\": \"bla\"}"
-                                  .getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("id1", clientSession.getCurrentRefreshToken());
-          assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
+          assertEquals(0, clientSession.getRefreshTokenUseCount("id1"));
 
-          clientSession.setCurrentRefreshTokenUseCount(1);
+          clientSession.setRefreshTokenUseCount("id1", 1);
 
           return null;
         });
@@ -124,22 +100,14 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("id1", clientSession.getCurrentRefreshToken());
-          assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
+          assertEquals(0, clientSession.getRefreshTokenUseCount("id1"));
 
-          clientSession.setCurrentRefreshTokenUseCount(1);
+          clientSession.setRefreshTokenUseCount("id1", 1);
 
           return null;
         });
@@ -150,20 +118,12 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("id1", clientSession.getCurrentRefreshToken());
-          assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
+          assertEquals(1, clientSession.getRefreshTokenUseCount("id1"));
 
           return null;
         });
@@ -173,198 +133,16 @@ public class RefreshTokenRotationTest extends KeycloakModelTest {
         realmId,
         (session, realm) -> {
           UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id2\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
 
           ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
           AuthenticatedClientSessionModel clientSession =
               userSession.getAuthenticatedClientSessionByClient(testClient.getId());
 
-          assertEquals("id2", clientSession.getCurrentRefreshToken());
-          assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
+          assertEquals(0, clientSession.getRefreshTokenUseCount("id2"));
 
-          clientSession.setCurrentRefreshTokenUseCount(1);
-
-          return null;
-        });
-
-    // Should clear last use tracking after idle time has expired
-    Time.setOffset(
-        1001 - 101); // subtract the last refresh time, since otherwise the whole session will be
-    // gone
-    withRealm(
-        realmId,
-        (session, realm) -> {
-          UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-
-          ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
-          CassandraAuthenticatedClientSessionAdapter clientSession =
-              (CassandraAuthenticatedClientSessionAdapter)
-                  userSession.getAuthenticatedClientSessionByClient(testClient.getId());
-
-          // Cleanup is triggered by correct refresh
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id3\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
-          clientSession.setCurrentRefreshTokenUseCount(1);
-
-          assertFalse(
-              clientSession.getClientSessionEntity().getRefreshTokenUses().containsKey("id1"));
+          clientSession.setRefreshTokenUseCount("id2", 1);
 
           return null;
         });
-  }
-
-  @Test
-  public void testRefreshTokenRotationOldBehavior() {
-    withRealm(
-        realmId,
-        (session, realm) -> {
-          realm.setSsoSessionIdleTimeout(1800);
-          realm.setSsoSessionMaxLifespan(36000);
-          realm.setClientSessionIdleTimeout(1000);
-
-          realm.setAttribute("refreshTokenReuseInterval", 100);
-          realm.setRefreshTokenMaxReuse(1); // Reuse > 0 triggers old behavior
-          return null;
-        });
-
-    String uSId =
-        withRealm(
-            realmId,
-            (session, realm) -> {
-              UserSessionModel userSession =
-                  session
-                      .sessions()
-                      .createUserSession(
-                          realm,
-                          session.users().getUserByUsername(realm, "user1"),
-                          "user1",
-                          "127.0.0.1",
-                          "form",
-                          true,
-                          null,
-                          null);
-
-              ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
-              session.sessions().createClientSession(realm, testClient, userSession);
-
-              return userSession.getId();
-            });
-
-    // Refresh 1
-    withRealm(
-        realmId,
-        (session, realm) -> {
-          UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
-
-          ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
-          AuthenticatedClientSessionModel clientSession =
-              userSession.getAuthenticatedClientSessionByClient(testClient.getId());
-
-          assertNull(clientSession.getCurrentRefreshToken());
-          assertEquals(0, clientSession.getCurrentRefreshTokenUseCount());
-
-          clientSession.setCurrentRefreshToken("currentToken");
-          clientSession.setCurrentRefreshTokenUseCount(1);
-
-          return null;
-        });
-
-    withRealm(
-        realmId,
-        (session, realm) -> {
-          UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id1\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
-
-          ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
-          AuthenticatedClientSessionModel clientSession =
-              userSession.getAuthenticatedClientSessionByClient(testClient.getId());
-
-          assertEquals("currentToken", clientSession.getCurrentRefreshToken());
-          assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
-
-          return null;
-        });
-
-    // Refresh Tab 2
-    withRealm(
-        realmId,
-        (session, realm) -> {
-          UserSessionModel userSession = session.sessions().getUserSession(realm, uSId);
-          Resteasy.pushContext(
-              HttpRequest.class,
-              createHttpRequest(
-                  "header."
-                      + Base64.getEncoder()
-                          .encodeToString("{\"jti\": \"id2\"}".getBytes(StandardCharsets.UTF_8))
-                      + ".sig"));
-
-          ClientModel testClient = session.clients().getClientByClientId(realm, "testClient");
-          AuthenticatedClientSessionModel clientSession =
-              userSession.getAuthenticatedClientSessionByClient(testClient.getId());
-
-          assertEquals("currentToken", clientSession.getCurrentRefreshToken());
-          assertEquals(1, clientSession.getCurrentRefreshTokenUseCount());
-
-          return null;
-        });
-  }
-
-  @NotNull
-  private static HttpRequest createHttpRequest(String refreshToken) {
-    return new HttpRequest() {
-      @Override
-      public String getHttpMethod() {
-        return null;
-      }
-
-      @Override
-      public MultivaluedMap<String, String> getDecodedFormParameters() {
-        return new MultivaluedHashMap<>(Map.of(OAuth2Constants.REFRESH_TOKEN, refreshToken));
-      }
-
-      @Override
-      public MultivaluedMap<String, FormPartValue> getMultiPartFormParameters() {
-        return null;
-      }
-
-      @Override
-      public HttpHeaders getHttpHeaders() {
-        return null;
-      }
-
-      @Override
-      public X509Certificate[] getClientCertificateChain() {
-        return new X509Certificate[0];
-      }
-
-      @Override
-      public UriInfo getUri() {
-        return null;
-      }
-    };
   }
 }

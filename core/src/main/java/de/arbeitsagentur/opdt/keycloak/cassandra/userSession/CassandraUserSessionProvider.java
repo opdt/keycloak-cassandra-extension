@@ -582,21 +582,6 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
   }
 
   @Override
-  public UserSessionModel getOfflineUserSessionByBrokerSessionId(
-      RealmModel realm, String brokerSessionId) {
-    log.tracef(
-        "getOfflineUserSessionByBrokerSessionId(%s, %s)%s",
-        realm, brokerSessionId, getShortStackTrace());
-
-    return userSessionRepository.findUserSessionsByBrokerSession(brokerSessionId).stream()
-        .filter(s -> s.getRealmId().equals(realm.getId()))
-        .filter(s -> s.getOffline() != null && s.getOffline())
-        .map(entityToAdapterFunc(realm))
-        .findFirst()
-        .orElse(null);
-  }
-
-  @Override
   public Stream<UserSessionModel> getOfflineUserSessionByBrokerUserIdStream(
       RealmModel realm, String brokerUserId) {
     log.tracef(
