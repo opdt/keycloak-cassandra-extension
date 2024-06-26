@@ -26,6 +26,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProviderFa
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.Config;
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelParameters;
+import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.NullDeviceRepresentationProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.CassandraUserProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.CassandraUserSessionProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.compatibility.HardcodedDeploymentStateProviderFactory;
@@ -37,7 +38,6 @@ import org.keycloak.credential.PasswordCredentialProviderFactory;
 import org.keycloak.credential.hash.PasswordHashSpi;
 import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
 import org.keycloak.credential.hash.Pbkdf2Sha512PasswordHashProviderFactory;
-import org.keycloak.device.DeviceRepresentationProviderFactoryImpl;
 import org.keycloak.device.DeviceRepresentationSpi;
 import org.keycloak.keys.*;
 import org.keycloak.models.*;
@@ -115,7 +115,7 @@ public class Map extends KeycloakModelParameters {
           .add(HashIterationsPasswordPolicyProviderFactory.class)
           .add(HistoryPasswordPolicyProviderFactory.class)
           .add(ForceExpiredPasswordPolicyProviderFactory.class)
-          .add(DeviceRepresentationProviderFactoryImpl.class)
+          .add(NullDeviceRepresentationProviderFactory.class)
           .add(DeclarativeUserProfileProviderFactory.class)
           .add(ValidatorFactory.class)
           .build();
@@ -158,7 +158,7 @@ public class Map extends KeycloakModelParameters {
         .provider(ScopeClientRegistrationPolicyFactory.PROVIDER_ID)
         .provider(MaxClientsClientRegistrationPolicyFactory.PROVIDER_ID)
         .spi(DeviceRepresentationSpi.NAME)
-        .defaultProvider(DeviceRepresentationProviderFactoryImpl.PROVIDER_ID)
+        .defaultProvider(NullDeviceRepresentationProviderFactory.PROVIDER_ID)
         .spi(UserProfileSpi.ID)
         .defaultProvider(DeclarativeUserProfileProviderFactory.ID)
         .spi("validator")

@@ -234,7 +234,7 @@ public class ExportImportManagerTest extends KeycloakModelTest {
               session.getProvider(DatastoreProvider.class).getExportImportManager();
           exportImportManager.exportRealm(
               realm,
-              new ExportOptions(true, true, true, false),
+              new ExportOptions(true, true, true, false, false),
               new ExportAdapter() {
                 @Override
                 public void setType(String s) {

@@ -59,7 +59,10 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.ProviderManager;
 import org.keycloak.provider.Spi;
+import org.keycloak.quarkus.runtime.integration.resteasy.QuarkusKeycloakContext;
 import org.keycloak.services.DefaultComponentFactoryProviderFactory;
+import org.keycloak.services.DefaultKeycloakContext;
+import org.keycloak.services.DefaultKeycloakSession;
 import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.keycloak.storage.DatastoreProviderFactory;
 import org.keycloak.storage.DatastoreSpi;
@@ -313,6 +316,17 @@ public abstract class KeycloakModelTest {
 
     DefaultKeycloakSessionFactory res =
         new DefaultKeycloakSessionFactory() {
+          @Override
+          public KeycloakSession create() {
+            return new DefaultKeycloakSession(this) {
+              @Override
+              protected DefaultKeycloakContext createKeycloakContext(
+                  KeycloakSession keycloakSession) {
+                return new QuarkusKeycloakContext(this);
+              }
+            };
+          }
+
           @Override
           public void init() {
             Profile.configure(new PropertiesProfileConfigResolver(System.getProperties()));

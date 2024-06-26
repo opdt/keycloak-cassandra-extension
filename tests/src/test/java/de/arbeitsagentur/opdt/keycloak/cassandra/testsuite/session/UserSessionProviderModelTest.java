@@ -1071,7 +1071,8 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
               newlyLoadedSession.setNote("key3", "value3");
 
               UserSessionModel currentSession = s.sessions().getUserSession(realm, session.getId());
-              assertThat(currentSession.getNotes().entrySet(), hasSize(3));
+              assertThat(currentSession.getNotes().entrySet(), hasSize(4));
+              assertTrue(currentSession.getNotes().containsKey("KC_DEVICE_NOTE"));
               assertThat(currentSession.getNotes().get("key1"), equalTo("value1"));
               assertThat(currentSession.getNotes().get("key2"), equalTo("value2"));
               assertThat(currentSession.getNotes().get("key3"), equalTo("value3"));
@@ -1088,7 +1089,8 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
           session.setNote("key4", "value4");
 
           UserSessionModel currentSession = s.sessions().getUserSession(realm, sessionId);
-          assertThat(currentSession.getNotes().entrySet(), hasSize(4));
+          assertThat(currentSession.getNotes().entrySet(), hasSize(5));
+          assertTrue(currentSession.getNotes().containsKey("KC_DEVICE_NOTE"));
           assertThat(currentSession.getNotes().get("key1"), equalTo("value1"));
           assertThat(currentSession.getNotes().get("key2"), equalTo("value2"));
           assertThat(currentSession.getNotes().get("key3"), equalTo("value3"));
@@ -1119,7 +1121,8 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
           clientSession.getUserSession().setNote("key3", "value3");
 
           UserSessionModel currentSession = s.sessions().getUserSession(realm, session.getId());
-          assertThat(currentSession.getNotes().entrySet(), hasSize(3));
+          assertThat(currentSession.getNotes().entrySet(), hasSize(4));
+          assertTrue(currentSession.getNotes().containsKey("KC_DEVICE_NOTE"));
           assertThat(currentSession.getNotes().get("key1"), equalTo("value1"));
           assertThat(currentSession.getNotes().get("key2"), equalTo("value2"));
           assertThat(currentSession.getNotes().get("key3"), equalTo("value3"));
@@ -1188,11 +1191,6 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
                       "brokerSession",
                       "brokerUserId");
           s.sessions().createOfflineUserSession(session);
-
-          UserSessionModel currentSession =
-              s.sessions().getOfflineUserSessionByBrokerSessionId(realm, "brokerSession");
-          assertThat(currentSession.getBrokerSessionId(), is("brokerSession"));
-          assertThat(currentSession.getBrokerUserId(), is("brokerUserId"));
 
           List<UserSessionModel> brokerSessions =
               s.sessions()

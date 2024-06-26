@@ -58,7 +58,7 @@ public class CassandraRoleProviderFactory
   }
 
   @Override
-  public boolean isSupported() {
+  public boolean isSupported(Config.Scope config) {
     return isCassandraProfileEnabled();
   }
 }

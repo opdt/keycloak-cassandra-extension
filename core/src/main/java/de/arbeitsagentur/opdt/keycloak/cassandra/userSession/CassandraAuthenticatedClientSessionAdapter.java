@@ -17,31 +17,22 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession;
 
 import static de.arbeitsagentur.opdt.keycloak.cassandra.userSession.expiration.CassandraSessionExpiration.setClientSessionExpiration;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.type.TypeReference;
-import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
-import java.io.IOException;
-import java.util.Base64;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.jbosslog.JBossLog;
-import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
-import org.keycloak.models.utils.SessionExpirationUtils;
 
 @JBossLog
 @EqualsAndHashCode(of = "userSession")
 @AllArgsConstructor
 public abstract class CassandraAuthenticatedClientSessionAdapter
     implements AuthenticatedClientSessionModel {
+  private static final String REFRESH_TOKEN_LAST_USE_PREFIX = "refreshTokenLastUsePrefix";
+
   protected KeycloakSession session;
   protected RealmModel realm;
   protected CassandraUserSessionAdapter userSession;
@@ -81,107 +72,31 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
   }
 
   @Override
-  public String getCurrentRefreshToken() {
-    if (realm.getRefreshTokenMaxReuse() > 0
-        || !session
-            .getContext()
-            .getHttpRequest()
-            .getDecodedFormParameters()
-            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
-      log.debug(
-          "RefreshTokenMaxReuse > 0 / no refresh_token in form-params -> use standard behavior for refresh-token-rotation");
-      return clientSessionEntity.getCurrentRefreshToken();
-    } else {
-      String encodedRefreshToken =
-          session
-              .getContext()
-              .getHttpRequest()
-              .getDecodedFormParameters()
-              .getFirst(OAuth2Constants.REFRESH_TOKEN);
-      String tokenBodyEncoded = encodedRefreshToken.split("\\.")[1];
-      String tokenBody = new String(Base64.getDecoder().decode(tokenBodyEncoded));
+  public int getRefreshTokenUseCount(String reuseId) {
+    String currentCount = getNote(REFRESH_TOKEN_USE_PREFIX + reuseId);
 
-      try {
-        RefreshTokenRepresentation refreshTokenRepresentation =
-            CassandraJsonSerialization.readValue(tokenBody, new TypeReference<>() {});
-        return refreshTokenRepresentation.getJti();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    if (currentCount == null) {
+      return 0;
     }
+
+    String lastUseTimestampString = getNote(REFRESH_TOKEN_LAST_USE_PREFIX + reuseId);
+    if (lastUseTimestampString == null) {
+      return Integer.parseInt(currentCount);
+    }
+
+    long lastUseTimestamp = Long.parseLong(lastUseTimestampString);
+    if (lastUseTimestamp
+        > Time.currentTimeMillis() - realm.getAttribute("refreshTokenReuseInterval", 0L)) {
+      return Math.max(0, Integer.parseInt(currentCount) - 1); // do not count refresh
+    }
+
+    return Integer.parseInt(currentCount);
   }
 
   @Override
-  public void setCurrentRefreshToken(String currentRefreshToken) {
-    clientSessionEntity.setCurrentRefreshToken(currentRefreshToken); // for fallback use
-  }
-
-  @Override
-  public int getCurrentRefreshTokenUseCount() {
-    if (realm.getRefreshTokenMaxReuse() > 0
-        || !session
-            .getContext()
-            .getHttpRequest()
-            .getDecodedFormParameters()
-            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
-      log.debug(
-          "RefreshTokenMaxReuse > 0 / no refresh_token in form-params -> use standard behavior for refresh-token-rotation");
-      Integer currentRefreshTokenUseCount = clientSessionEntity.getCurrentRefreshTokenUseCount();
-      return currentRefreshTokenUseCount != null ? currentRefreshTokenUseCount : 0;
-    } else {
-
-      Long lastUse = clientSessionEntity.getRefreshTokenUses().get(getCurrentRefreshToken());
-      if (lastUse == null
-          || lastUse
-              > Time.currentTimeMillis() - realm.getAttribute("refreshTokenReuseInterval", 0L)) {
-        return 0; // do not count refresh
-      }
-      return 1;
-    }
-  }
-
-  @Override
-  public void setCurrentRefreshTokenUseCount(int currentRefreshTokenUseCount) {
-    if (realm.getRefreshTokenMaxReuse() > 0
-        || !session
-            .getContext()
-            .getHttpRequest()
-            .getDecodedFormParameters()
-            .containsKey(OAuth2Constants.REFRESH_TOKEN)) {
-      clientSessionEntity.setCurrentRefreshTokenUseCount(currentRefreshTokenUseCount);
-      userSession.markAsUpdated();
-    } else {
-      String currentRefreshToken = getCurrentRefreshToken();
-
-      // We only know two states -> first use sets "lastUse", all other later uses dont have to
-      // change anything
-      if (currentRefreshTokenUseCount > 0
-          && !clientSessionEntity.getRefreshTokenUses().containsKey(currentRefreshToken)) {
-        clientSessionEntity
-            .getRefreshTokenUses()
-            .put(currentRefreshToken, Time.currentTimeMillis());
-        userSession.markAsUpdated();
-      }
-
-      // Clean up too old use trackers for tokens which are already expired
-      long idleTimestamp =
-          SessionExpirationUtils.calculateClientSessionIdleTimestamp(
-              userSession.isOffline(),
-              isUserSessionRememberMe(),
-              TimeUnit.SECONDS.toMillis(getTimestamp()),
-              realm,
-              getClient());
-      long effectiveIdleTime = idleTimestamp - Time.currentTimeMillis();
-      Set<Map.Entry<String, Long>> idsToRemove =
-          clientSessionEntity.getRefreshTokenUses().entrySet().stream()
-              .filter(e -> e.getValue() < Time.currentTimeMillis() - effectiveIdleTime)
-              .collect(Collectors.toSet());
-      idsToRemove.forEach(
-          e -> {
-            clientSessionEntity.getRefreshTokenUses().remove(e.getKey());
-            userSession.markAsUpdated();
-          });
-    }
+  public void setRefreshTokenUseCount(String reuseId, int count) {
+    setNote(REFRESH_TOKEN_LAST_USE_PREFIX + reuseId, String.valueOf(Time.currentTimeMillis()));
+    setNote(REFRESH_TOKEN_USE_PREFIX + reuseId, String.valueOf(count));
   }
 
   @Override
@@ -267,11 +182,5 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
       clientSessionEntity.setAuthMethod(method);
       userSession.markAsUpdated();
     }
-  }
-
-  @Data
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class RefreshTokenRepresentation {
-    private String jti;
   }
 }

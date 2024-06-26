@@ -122,7 +122,7 @@ public class HardcodedDeploymentStateProviderFactory
   }
 
   @Override
-  public boolean isSupported() {
+  public boolean isSupported(Config.Scope config) {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
   }
 

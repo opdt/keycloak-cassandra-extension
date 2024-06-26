@@ -172,6 +172,8 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticationExecutionModels";
   public static final String AUTHENTICATOR_CONFIG_MODELS =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "authenticatorConfigModels";
+  public static final String REQUIRED_ACTION_CONFIG_MODELS =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "requiredActionConfigModels";
   public static final String REQUIRED_ACTION_PROVIDER_MODELS =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "requiredActionProviderModels";
   public static final String IDENTITY_PROVIDERS =
@@ -207,6 +209,9 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "defaultLocale";
   public static final String LOCALIZATION_TEXTS =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "localizationTexts";
+
+  public static final String IS_ORGANIZATIONS_ENABLED =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "organizationsEnabled";
 
   @EqualsAndHashCode.Exclude private final KeycloakSession session;
 
@@ -326,6 +331,16 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   @Override
   public void setUserManagedAccessAllowed(boolean userManagedAccessAllowed) {
     setAttribute(IS_USER_MANAGED_ACCESS_ALLOWED, userManagedAccessAllowed);
+  }
+
+  @Override
+  public boolean isOrganizationsEnabled() {
+    return getAttribute(IS_ORGANIZATIONS_ENABLED, false);
+  }
+
+  @Override
+  public void setOrganizationsEnabled(boolean organizationsEnabled) {
+    setAttribute(IS_ORGANIZATIONS_ENABLED, organizationsEnabled);
   }
 
   @Override
@@ -1126,6 +1141,53 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
         .filter(e -> Objects.equals(e.getAlias(), alias))
         .findFirst()
         .orElse(null);
+  }
+
+  @Override
+  public RequiredActionConfigModel getRequiredActionConfigById(String id) {
+    return getDeserializedAttributes(REQUIRED_ACTION_CONFIG_MODELS, RequiredActionConfigModel.class)
+        .stream()
+        .filter(e -> e.getId().equals(id))
+        .findFirst()
+        .orElse(null);
+  }
+
+  @Override
+  public RequiredActionConfigModel getRequiredActionConfigByAlias(String alias) {
+    return getDeserializedAttributes(REQUIRED_ACTION_CONFIG_MODELS, RequiredActionConfigModel.class)
+        .stream()
+        .filter(e -> e.getAlias().equals(alias))
+        .findFirst()
+        .orElse(null);
+  }
+
+  @Override
+  public void removeRequiredActionProviderConfig(RequiredActionConfigModel model) {
+    List<RequiredActionConfigModel> withoutModel =
+        getDeserializedAttributes(REQUIRED_ACTION_CONFIG_MODELS, RequiredActionConfigModel.class)
+            .stream()
+            .filter(e -> !e.getId().equals(model.getId()))
+            .collect(Collectors.toList());
+
+    setSerializedAttributeValues(REQUIRED_ACTION_CONFIG_MODELS, withoutModel);
+  }
+
+  @Override
+  public void updateRequiredActionConfig(RequiredActionConfigModel model) {
+    List<RequiredActionConfigModel> withoutModel =
+        getDeserializedAttributes(REQUIRED_ACTION_CONFIG_MODELS, RequiredActionConfigModel.class)
+            .stream()
+            .filter(e -> !e.getId().equals(model.getId()))
+            .collect(Collectors.toList());
+
+    withoutModel.add(model);
+    setSerializedAttributeValues(REQUIRED_ACTION_CONFIG_MODELS, withoutModel);
+  }
+
+  @Override
+  public Stream<RequiredActionConfigModel> getRequiredActionConfigsStream() {
+    return getDeserializedAttributes(REQUIRED_ACTION_CONFIG_MODELS, RequiredActionConfigModel.class)
+        .stream();
   }
 
   @Override

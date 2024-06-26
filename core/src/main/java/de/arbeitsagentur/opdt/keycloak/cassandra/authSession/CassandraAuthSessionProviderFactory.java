@@ -71,7 +71,7 @@ public class CassandraAuthSessionProviderFactory
   }
 
   @Override
-  public boolean isSupported() {
+  public boolean isSupported(Config.Scope config) {
     return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
   }
 }
