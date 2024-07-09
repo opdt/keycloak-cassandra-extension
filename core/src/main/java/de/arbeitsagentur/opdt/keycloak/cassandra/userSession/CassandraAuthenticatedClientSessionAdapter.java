@@ -95,8 +95,16 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
 
   @Override
   public void setRefreshTokenUseCount(String reuseId, int count) {
-    setNote(REFRESH_TOKEN_LAST_USE_PREFIX + reuseId, String.valueOf(Time.currentTimeMillis()));
-    setNote(REFRESH_TOKEN_USE_PREFIX + reuseId, String.valueOf(count));
+    String currentCountStr = getNote(REFRESH_TOKEN_USE_PREFIX + reuseId);
+    int currentCount =
+        currentCountStr == null || currentCountStr.isEmpty()
+            ? 0
+            : Integer.parseInt(currentCountStr);
+
+    if (count > currentCount) {
+      setNote(REFRESH_TOKEN_LAST_USE_PREFIX + reuseId, String.valueOf(Time.currentTimeMillis()));
+      setNote(REFRESH_TOKEN_USE_PREFIX + reuseId, String.valueOf(count));
+    }
   }
 
   @Override
