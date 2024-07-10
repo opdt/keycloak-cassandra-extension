@@ -101,7 +101,7 @@ public abstract class CassandraAuthenticatedClientSessionAdapter
             ? 0
             : Integer.parseInt(currentCountStr);
 
-    if (count > currentCount) {
+    if (count != currentCount) {
       setNote(REFRESH_TOKEN_LAST_USE_PREFIX + reuseId, String.valueOf(Time.currentTimeMillis()));
       setNote(REFRESH_TOKEN_USE_PREFIX + reuseId, String.valueOf(count));
     }
