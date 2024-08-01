@@ -504,6 +504,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     log.tracef("getOfflineUserSession(%s, %s)%s", realm, userSessionId, getShortStackTrace());
 
     return getOfflineUserSessionEntityStream(realm, userSessionId)
+        .filter(Objects::nonNull)
         .findFirst()
         .map(entityToAdapterFunc(realm))
         .orElse(
@@ -711,7 +712,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
             ? sessionModel.getNote(CORRESPONDING_SESSION_ID)
             : userSessionEntity.getNotes().get(CORRESPONDING_SESSION_ID);
     if (offlineUserSessionId != null) {
-      return Stream.of(getUserSessionById(offlineUserSessionId));
+      return Stream.ofNullable(getUserSessionById(offlineUserSessionId));
     }
 
     return Stream.empty();
