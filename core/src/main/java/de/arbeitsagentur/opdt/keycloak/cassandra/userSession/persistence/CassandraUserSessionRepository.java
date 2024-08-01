@@ -138,7 +138,7 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     if (session == null) {
       return;
     }
-    
+
     dao.deleteUserSession(session);
 
     // Attributes
