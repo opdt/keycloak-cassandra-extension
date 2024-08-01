@@ -471,6 +471,10 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
   public UserSessionModel createOfflineUserSession(UserSessionModel userSession) {
     log.tracef("createOfflineUserSession(%s)%s", userSession, getShortStackTrace());
 
+    if (userSession.getNote(CORRESPONDING_SESSION_ID) != null) {
+      return getUserSession(userSession.getRealm(), userSession.getNote(CORRESPONDING_SESSION_ID));
+    }
+
     UserSession offlineUserSession = createUserSessionEntityInstance(userSession, true);
     long currentTime = Time.currentTimeMillis();
     offlineUserSession.setTimestamp(currentTime);
