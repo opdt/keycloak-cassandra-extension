@@ -135,6 +135,10 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
   @Override
   public void deleteUserSession(UserSession session) {
+    if (session == null) {
+      return;
+    }
+    
     dao.deleteUserSession(session);
 
     // Attributes
