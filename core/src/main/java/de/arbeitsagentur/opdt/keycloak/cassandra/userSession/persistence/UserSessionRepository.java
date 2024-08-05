@@ -53,7 +53,7 @@ public interface UserSessionRepository {
 
   List<UserSession> findUserSessionsByAttribute(String name, String value);
 
-  UserSession findUserSessionByAttribute(String name, String value);
+  UserSession findFirstUserSessionByAttribute(String name, String value);
 
   MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId);
 

@@ -397,8 +397,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
   }
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
-  public UserSession findUserSessionByAttribute(String name, String value) {
-    return this.userSessionRepository.findUserSessionByAttribute(name, value);
+  public UserSession findFirstUserSessionByAttribute(String name, String value) {
+    return this.userSessionRepository.findFirstUserSessionByAttribute(name, value);
   }
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
