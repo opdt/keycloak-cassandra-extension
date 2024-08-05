@@ -510,7 +510,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         .orElse(
             entityToAdapterFunc(realm)
                 .apply(
-                    userSessionRepository.findUserSessionByAttribute(
+                    userSessionRepository.findFirstUserSessionByAttribute(
                         CORRESPONDING_SESSION_ID, userSessionId)));
   }
 

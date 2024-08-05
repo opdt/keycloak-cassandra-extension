@@ -24,15 +24,14 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.common.util.Time;
 
+@JBossLog
 @RequiredArgsConstructor
 public class CassandraUserSessionRepository implements UserSessionRepository {
   private static final String CLIENT_IDS = "clientIds";
@@ -214,19 +213,18 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
   }
 
   @Override
-  public UserSession findUserSessionByAttribute(String name, String value) {
+  public UserSession findFirstUserSessionByAttribute(String name, String value) {
     List<UserSession> userSessions = findUserSessionsByAttribute(name, value);
 
     if (userSessions.size() > 1) {
-      throw new IllegalStateException(
-          "Found more than one userSession with attributeName " + name + " and value " + value);
-    }
-
-    if (userSessions.isEmpty()) {
+      log.warnf(
+          "Found more than one userSession with attributeName '%s' and value '%s'. Using newest one.",
+          name, value);
+    } else if (userSessions.isEmpty()) {
       return null;
     }
 
-    return userSessions.get(0);
+    return userSessions.stream().max(Comparator.comparing(UserSession::getTimestamp)).orElse(null);
   }
 
   @Override
