@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import lombok.Setter;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.models.RealmModel;
 
 @Setter
 public class ManagedCompositeCassandraRepository implements CompositeRepository {
@@ -320,8 +321,8 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
   @InvalidateCache
-  public void insert(UserSession session) {
-    this.userSessionRepository.insert(session);
+  public void insert(RealmModel realmModel, UserSession session) {
+    this.userSessionRepository.insert(realmModel, session);
   }
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
@@ -332,8 +333,9 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
   @InvalidateCache
-  public void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession) {
-    this.userSessionRepository.addClientSession(session, clientSession);
+  public void addClientSession(
+      RealmModel realm, UserSession session, AuthenticatedClientSessionValue clientSession) {
+    this.userSessionRepository.addClientSession(realm, session, clientSession);
   }
 
   @L1Cached(cacheName = USER_SESSION_CACHE)
