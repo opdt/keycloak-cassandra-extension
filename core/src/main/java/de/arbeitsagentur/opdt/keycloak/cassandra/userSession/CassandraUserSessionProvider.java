@@ -144,7 +144,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     setClientSessionExpiration(
         entity, SessionExpirationData.builder().realm(realm).build(), client);
 
-    userSessionRepository.addClientSession(userSessionEntity, entity);
+    userSessionRepository.addClientSession(realm, userSessionEntity, entity);
 
     return userSession.getAuthenticatedClientSessionByClient(client.getId());
   }
@@ -231,7 +231,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
       if (id != null && userSessionRepository.findUserSessionById(id) != null) {
         throw new ModelDuplicateException("User session exists: " + id);
       }
-      userSessionRepository.insert(entity);
+      userSessionRepository.insert(realm, entity);
     }
 
     CassandraUserSessionAdapter userSession = entityToAdapterFunc(realm).apply(entity);
@@ -485,13 +485,14 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
     CassandraUserSessionAdapter offlineSessionAdapter =
         entityToAdapterFunc(userSession.getRealm()).apply(offlineUserSession);
     offlineSessionAdapter.setNote(CORRESPONDING_SESSION_ID, userSession.getId());
-    userSessionRepository.insert(offlineUserSession);
+    userSessionRepository.insert(userSession.getRealm(), offlineUserSession);
 
     // set a reference for the offline user session to the original online user session
     CassandraUserSessionAdapter orgUserSessionAdapter =
         getUserSession(userSession.getRealm(), userSession.getId());
     orgUserSessionAdapter.setNote(CORRESPONDING_SESSION_ID, offlineUserSession.getId());
     userSessionRepository.insert(
+        userSession.getRealm(),
         orgUserSessionAdapter
             .getUserSessionEntity()); // Hack to set CORRESPONDING_SESSION_ID, which normally is
     // only set during insert
@@ -568,7 +569,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
       CassandraUserSessionAdapter userSessionModel = entityToAdapterFunc(realm).apply(userSession);
 
       userSessionRepository.addClientSession(
-          userSessionModel.getUserSessionEntity(), clientSessionEntity);
+          realm, userSessionModel.getUserSessionEntity(), clientSessionEntity);
 
       return userSessionModel.getAuthenticatedClientSessionByClient(clientId);
     }
@@ -662,8 +663,9 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
                 // from DB will have correct value
                 clientSession.setTimestamp(userSessionEntity.getLastSessionRefresh());
 
-                userSessionRepository.insert(userSessionEntity);
-                userSessionRepository.addClientSession(userSessionEntity, clientSession);
+                RealmModel realm = session.realms().getRealm(userSessionEntity.getRealmId());
+                userSessionRepository.insert(realm, userSessionEntity);
+                userSessionRepository.addClientSession(realm, userSessionEntity, clientSession);
 
                 CassandraUserSessionAdapter adapter =
                     entityToAdapterFunc(pus.getRealm()).apply(userSessionEntity);
@@ -672,7 +674,10 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
               return userSessionEntity;
             })
-        .forEach(userSessionRepository::insert);
+        .forEach(
+            userSession ->
+                userSessionRepository.insert(
+                    session.realms().getRealm(userSession.getRealmId()), userSession));
   }
 
   @Override

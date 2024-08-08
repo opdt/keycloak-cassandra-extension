@@ -21,13 +21,15 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entitie
 import java.util.List;
 import java.util.Set;
 import org.keycloak.common.util.MultivaluedHashMap;
+import org.keycloak.models.RealmModel;
 
 public interface UserSessionRepository {
-  void insert(UserSession session);
+  void insert(RealmModel realmModel, UserSession session);
 
   void update(UserSession session);
 
-  void addClientSession(UserSession session, AuthenticatedClientSessionValue clientSession);
+  void addClientSession(
+      RealmModel realmModel, UserSession session, AuthenticatedClientSessionValue clientSession);
 
   UserSession findUserSessionById(String id);
 
