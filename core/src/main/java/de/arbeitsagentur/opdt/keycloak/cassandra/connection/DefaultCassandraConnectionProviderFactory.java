@@ -18,7 +18,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
-import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.internal.core.type.codec.extras.enums.EnumNameCodec;
@@ -74,6 +73,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSes
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.UserSessionRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import java.lang.reflect.Proxy;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -137,16 +137,16 @@ public class DefaultCassandraConnectionProviderFactory
     String password = scope.get("password");
     int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
 
-    List<EndPoint> contactPointsList =
+    List<InetSocketAddress> contactPointsList =
         Arrays.stream(contactPoints.split(","))
-            .map(cp -> new IpChangeResilientEndPoint(cp, port))
+            .map(cp -> InetSocketAddress.createUnresolved(cp, port))
             .collect(Collectors.toList());
 
     if (scope.getBoolean("createKeyspace", true)) {
       log.info("Create keyspace (if not exists)...");
       try (CqlSession createKeyspaceSession =
           CqlSession.builder()
-              .addContactEndPoints(contactPointsList)
+              .addContactPoints(contactPointsList)
               .withAuthCredentials(username, password)
               .withLocalDatacenter(localDatacenter)
               .build()) {
@@ -173,7 +173,7 @@ public class DefaultCassandraConnectionProviderFactory
 
     cqlSession =
         CqlSession.builder()
-            .addContactEndPoints(contactPointsList)
+            .addContactPoints(contactPointsList)
             .withAuthCredentials(username, password)
             .withLocalDatacenter(localDatacenter)
             .withKeyspace(keyspace)
@@ -196,7 +196,7 @@ public class DefaultCassandraConnectionProviderFactory
   }
 
   private void createDbIfNotExists(
-      List<EndPoint> contactPointsList,
+      List<InetSocketAddress> contactPointsList,
       String username,
       String password,
       String localDatacenter,
@@ -204,7 +204,7 @@ public class DefaultCassandraConnectionProviderFactory
       ConsistencyLevel migrationConsistencyLevel) {
     try (CqlSession createKeyspaceSession =
         CqlSession.builder()
-            .addContactEndPoints(contactPointsList)
+            .addContactPoints(contactPointsList)
             .withAuthCredentials(username, password)
             .withLocalDatacenter(localDatacenter)
             .withKeyspace(keyspace)
