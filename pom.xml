@@ -58,7 +58,7 @@
         <auto-service.version>1.1.1</auto-service.version>
 
         <!-- cassandra -->
-        <cassandra-java-driver.version>4.17.0</cassandra-java-driver.version>
+        <cassandra-java-driver.version>4.18.1</cassandra-java-driver.version>
 
         <!-- SonarCloud -->
         <sonar.organization>opdt</sonar.organization>
@@ -121,17 +121,17 @@
 
             <!-- Datastax Cassandra -->
             <dependency>
-                <groupId>com.datastax.oss</groupId>
+                <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-core</artifactId>
                 <version>${cassandra-java-driver.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.datastax.oss</groupId>
+                <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-mapper-runtime</artifactId>
                 <version>${cassandra-java-driver.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.datastax.oss</groupId>
+                <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-query-builder</artifactId>
                 <version>${cassandra-java-driver.version}</version>
             </dependency>
@@ -179,7 +179,7 @@
                                 <version>${auto-service.version}</version>
                             </path>
                             <path>
-                                <groupId>com.datastax.oss</groupId>
+                                <groupId>org.apache.cassandra</groupId>
                                 <artifactId>java-driver-mapper-processor</artifactId>
                                 <version>${cassandra-java-driver.version}</version>
                             </path>
