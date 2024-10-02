@@ -16,7 +16,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-metrics-micrometer</artifactId>
             <version>${cassandra-java-driver.version}</version>
         </dependency>

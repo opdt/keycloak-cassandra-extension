@@ -70,15 +70,15 @@
 
         <!-- Datastax Cassandra -->
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-mapper-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-query-builder</artifactId>
         </dependency>
 
@@ -110,7 +110,7 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>com.datastax.oss:*</include>
+                                    <include>org.apache.cassandra:*</include>
                                     <include>com.typesafe:*</include>
                                     <include>org.cognitor.cassandra:cassandra-migration</include>
                                 </includes>
