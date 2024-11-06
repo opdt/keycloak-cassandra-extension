@@ -21,6 +21,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.CassandraAuthSessio
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.CassandraClientProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.CassandraGroupProviderFactory;
+import de.arbeitsagentur.opdt.keycloak.cassandra.identityProvider.CassandraIdentityProviderStorageProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.CassandraLoginFailureProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.CassandraRealmsProviderFactory;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.CassandraRoleProviderFactory;
@@ -75,6 +76,7 @@ public class Map extends KeycloakModelParameters {
           .add(DeviceRepresentationSpi.class)
           .add(UserProfileSpi.class)
           .add(ValidatorSPI.class)
+          .add(IdentityProviderStorageSpi.class)
           .build();
 
   static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES =
@@ -89,6 +91,7 @@ public class Map extends KeycloakModelParameters {
           .add(CassandraUserProviderFactory.class)
           .add(CassandraUserSessionProviderFactory.class)
           .add(CassandraLoginFailureProviderFactory.class)
+          .add(CassandraIdentityProviderStorageProviderFactory.class)
           .add(SingleUseObjectProviderFactory.class)
           .add(TransientPublicKeyStorageProviderFactory.class)
           .add(DefaultClientPolicyManagerFactory.class)

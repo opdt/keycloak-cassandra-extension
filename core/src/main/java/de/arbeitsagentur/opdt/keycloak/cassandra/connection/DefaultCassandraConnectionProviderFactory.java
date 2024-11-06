@@ -84,6 +84,7 @@ import org.cognitor.cassandra.migration.MigrationConfiguration;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.keycloak.Config;
+import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.UserSessionModel;
@@ -178,6 +179,7 @@ public class DefaultCassandraConnectionProviderFactory
             .withLocalDatacenter(localDatacenter)
             .withKeyspace(keyspace)
             .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
+            .addTypeCodecs(new EnumNameCodec<>(GroupModel.Type.class))
             .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
             .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
             .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))

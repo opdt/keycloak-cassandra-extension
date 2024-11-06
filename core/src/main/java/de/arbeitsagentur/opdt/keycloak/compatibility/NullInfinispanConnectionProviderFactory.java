@@ -23,9 +23,12 @@ import static org.keycloak.userprofile.DeclarativeUserProfileProviderFactory.PRO
 
 import com.google.auto.service.AutoService;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
 import lombok.extern.jbosslog.JBossLog;
 import org.infinispan.Cache;
 import org.infinispan.client.hotrod.RemoteCache;
+import org.infinispan.util.concurrent.BlockingManager;
 import org.keycloak.Config;
 import org.keycloak.connections.infinispan.InfinispanConnectionProvider;
 import org.keycloak.connections.infinispan.InfinispanConnectionProviderFactory;
@@ -70,6 +73,21 @@ public class NullInfinispanConnectionProviderFactory
 
               @Override
               public TopologyInfo getTopologyInfo() {
+                return null;
+              }
+
+              @Override
+              public CompletionStage<Void> migrateToProtoStream() {
+                return null;
+              }
+
+              @Override
+              public ScheduledExecutorService getScheduledExecutor() {
+                return null;
+              }
+
+              @Override
+              public BlockingManager getBlockingManager() {
                 return null;
               }
 

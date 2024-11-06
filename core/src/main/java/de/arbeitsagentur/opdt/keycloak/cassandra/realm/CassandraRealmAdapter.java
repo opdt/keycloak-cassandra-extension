@@ -25,7 +25,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Clie
 import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Realm;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -41,6 +40,7 @@ import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.ComponentUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.representations.idm.RealmRepresentation;
 
 @EqualsAndHashCode(callSuper = true)
 @JBossLog
@@ -213,6 +213,9 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   public static final String IS_ORGANIZATIONS_ENABLED =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "organizationsEnabled";
 
+  public static final String BRUTE_FORCE_STRATEGY =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "bruteForceStrategy";
+
   @EqualsAndHashCode.Exclude private final KeycloakSession session;
 
   @EqualsAndHashCode.Exclude private final RealmRepository realmRepository;
@@ -371,6 +374,19 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   @Override
   public void setMaxTemporaryLockouts(int value) {
     setAttribute(MAX_TEMPORARY_LOCKOUTS, value);
+  }
+
+  @Override
+  public RealmRepresentation.BruteForceStrategy getBruteForceStrategy() {
+    String strategy = getAttribute(BRUTE_FORCE_STRATEGY);
+    return strategy == null
+        ? RealmRepresentation.BruteForceStrategy.MULTIPLE
+        : RealmRepresentation.BruteForceStrategy.valueOf(strategy);
+  }
+
+  @Override
+  public void setBruteForceStrategy(RealmRepresentation.BruteForceStrategy val) {
+    setAttribute(BRUTE_FORCE_STRATEGY, val == null ? null : val.name());
   }
 
   @Override
@@ -1864,16 +1880,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   private void setSerializedAttributeValues(String name, List<?> values) {
     List<String> attributeValues =
         values.stream()
-            .map(
-                value -> {
-                  try {
-                    return CassandraJsonSerialization.writeValueAsString(value);
-                  } catch (IOException e) {
-                    log.errorf(
-                        "Cannot serialize %s (realm: %s, name: %s)", value, entity.getId(), name);
-                    throw new RuntimeException(e);
-                  }
-                })
+            .map(CassandraJsonSerialization::writeValueAsString)
             .collect(Collectors.toCollection(ArrayList::new));
 
     entity.getAttributes().put(name, attributeValues);
@@ -1895,16 +1902,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     }
 
     return values.stream()
-        .map(
-            value -> {
-              try {
-                return CassandraJsonSerialization.readValue(value, type);
-              } catch (IOException e) {
-                log.errorf(
-                    "Cannot deserialize %s (realm: %s, name: %s)", value, entity.getId(), name);
-                throw new RuntimeException(e);
-              }
-            })
+        .map(value -> CassandraJsonSerialization.readValue(value, type))
         .collect(Collectors.toCollection(ArrayList::new));
   }
 
@@ -1912,17 +1910,7 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
     List<String> values = entity.getAttribute(name);
 
     return values.stream()
-        .map(
-            value -> {
-              try {
-                return CassandraJsonSerialization.readValue(value, type);
-              } catch (IOException e) {
-                log.errorf(
-                    "Cannot deserialize %s (realm: %s, name: %s, type: %s)",
-                    value, entity.getId(), name, type.getName());
-                throw new RuntimeException(e);
-              }
-            })
+        .map(value -> CassandraJsonSerialization.readValue(value, type))
         .collect(Collectors.toCollection(ArrayList::new));
   }
 

@@ -15,11 +15,8 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
-import java.util.HashSet;
-import java.util.Set;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.models.*;
-import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.keycloak.storage.ExportImportManager;
 import org.keycloak.storage.MigrationManager;
@@ -29,8 +26,6 @@ import org.keycloak.storage.federated.UserFederatedStorageProvider;
 @JBossLog
 public class CassandraDatastoreProvider extends DefaultDatastoreProvider {
   private final KeycloakSession session;
-
-  private final Set<Provider> providersToClose = new HashSet<>();
 
   public CassandraDatastoreProvider(KeycloakSession session) {
     super(null, session);
@@ -85,6 +80,11 @@ public class CassandraDatastoreProvider extends DefaultDatastoreProvider {
   @Override
   public UserSessionProvider userSessions() {
     return session.getProvider(UserSessionProvider.class);
+  }
+
+  @Override
+  public IdentityProviderStorageProvider identityProviders() {
+    return session.getProvider(IdentityProviderStorageProvider.class);
   }
 
   @Override

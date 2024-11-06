@@ -5,7 +5,7 @@
 # Cassandra storage extension for Keycloak
 
 Uses Apache Cassandra to store and retrieve entities of all storage areas except authorization and events.
-Requires Keycloak >= 25.0.0 (older versions may be supported by older versions of this extension).
+Requires Keycloak >= 26.0.0 (older versions may be supported by older versions of this extension).
 
 ## How to use
 
@@ -38,6 +38,10 @@ The following parameters might be needed in addition to the configuration option
 | --spi-cassandra-connection-default-replication-factor | Replication factor used if the extension creates the keyspace with simple strategy      |
 
 ## Deviations from standard storage providers
+
+### Organizations
+
+Keycloak Organizations are currently *not* supported and have to be turned off.
 
 ### User Lookup
 Due to Cassandras query first nature, users can only be looked up by specific fields.

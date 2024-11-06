@@ -22,7 +22,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.ClientRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Client;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalModelAdapter;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.function.Function;
@@ -773,16 +772,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client>
     List<String> attributeValues =
         values.stream()
             .filter(Objects::nonNull)
-            .map(
-                value -> {
-                  try {
-                    return CassandraJsonSerialization.writeValueAsString(value);
-                  } catch (IOException e) {
-                    log.errorf(
-                        "Cannot serialize %s (realm: %s, name: %s)", value, entity.getId(), name);
-                    throw new RuntimeException(e);
-                  }
-                })
+            .map(CassandraJsonSerialization::writeValueAsString)
             .collect(Collectors.toCollection(ArrayList::new));
 
     entity.getAttributes().put(name, attributeValues);
@@ -800,16 +790,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client>
     }
 
     return values.stream()
-        .map(
-            value -> {
-              try {
-                return CassandraJsonSerialization.readValue(value, type);
-              } catch (IOException e) {
-                log.errorf(
-                    "Cannot deserialize %s (realm: %s, name: %s)", value, entity.getId(), name);
-                throw new RuntimeException(e);
-              }
-            })
+        .map(value -> CassandraJsonSerialization.readValue(value, type))
         .filter(Objects::nonNull)
         .collect(Collectors.toCollection(ArrayList::new));
   }
@@ -822,17 +803,7 @@ public class CassandraClientAdapter extends TransactionalModelAdapter<Client>
     }
 
     return values.stream()
-        .map(
-            value -> {
-              try {
-                return CassandraJsonSerialization.readValue(value, type);
-              } catch (IOException e) {
-                log.errorf(
-                    "Cannot deserialize %s (realm: %s, name: %s, type: %s)",
-                    value, entity.getId(), name, type.getName());
-                throw new RuntimeException(e);
-              }
-            })
+        .map(value -> CassandraJsonSerialization.readValue(value, type))
         .filter(Objects::nonNull)
         .collect(Collectors.toCollection(ArrayList::new));
   }

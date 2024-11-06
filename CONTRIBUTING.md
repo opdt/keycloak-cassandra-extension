@@ -4,7 +4,7 @@ Keycloak Cassandra is a datastore and caching extension for Keycloak, the Open S
 
 ## Building and working with the codebase
 
-To build the codebase you need an installed JDK of at least version 17 and Maven.
+To build the codebase you need an installed JDK of at least version 21 and Maven.
 The tests use the Testcontainers-framework to start a local Apache Cassandra database instance. For this to work, you need Docker installed on your system as well.
 
 ## Contributing to Keycloak Cassandra

@@ -71,6 +71,12 @@ public class CassandraGroupProvider implements GroupProvider {
 
   @Override
   public GroupModel createGroup(RealmModel realm, String id, String name, GroupModel toParent) {
+    return createGroup(realm, id, GroupModel.Type.REALM, name, toParent);
+  }
+
+  @Override
+  public GroupModel createGroup(
+      RealmModel realm, String id, GroupModel.Type type, String name, GroupModel toParent) {
     log.debugv(
         "createGroup(%s, %s, %s, %s)",
         realm.getId(), id, name, toParent == null ? "null" : toParent.getId());
@@ -90,6 +96,7 @@ public class CassandraGroupProvider implements GroupProvider {
             .id(id == null ? KeycloakModelUtils.generateId() : id)
             .name(name)
             .parentId(toParent == null ? null : toParent.getId())
+            .type(type)
             .build();
 
     groups.addRealmGroup(group);
