@@ -21,11 +21,14 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalReposi
 import de.arbeitsagentur.opdt.keycloak.cassandra.user.persistence.entities.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import lombok.extern.jbosslog.JBossLog;
 
+@JBossLog
 public class CassandraUserRepository extends TransactionalRepository<User, UserDao>
     implements UserRepository {
   private static final String USERNAME = "username";
@@ -54,13 +57,22 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    UserSearchIndex user =
-        dao.findUsers(realmId, EMAIL, email).all().stream().findFirst().orElse(null);
-    if (user == null) {
+    List<User> users =
+        dao.findUsers(realmId, EMAIL, email).all().stream()
+            .map(idx -> findUserById(realmId, idx.getUserId()))
+            .filter(Objects::nonNull)
+            .toList();
+
+    if (users.size() > 1) {
+      log.warn("Found multiple users with email: " + email);
       return null;
     }
 
-    return findUserById(realmId, user.getUserId());
+    if (users.isEmpty()) {
+      return null;
+    }
+
+    return users.get(0);
   }
 
   @Override
@@ -69,13 +81,22 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    UserSearchIndex user =
-        dao.findUsers(realmId, USERNAME, username).all().stream().findFirst().orElse(null);
-    if (user == null) {
+    List<User> users =
+        dao.findUsers(realmId, USERNAME, username).all().stream()
+            .map(idx -> findUserById(realmId, idx.getUserId()))
+            .filter(Objects::nonNull)
+            .toList();
+
+    if (users.size() > 1) {
+      log.warn("Found multiple users with username: " + username);
       return null;
     }
 
-    return findUserById(realmId, user.getUserId());
+    if (users.isEmpty()) {
+      return null;
+    }
+
+    return users.get(0);
   }
 
   @Override
@@ -84,16 +105,22 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    UserSearchIndex user =
+    List<User> users =
         dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream()
-            .findFirst()
-            .orElse(null);
+            .map(idx -> findUserById(realmId, idx.getUserId()))
+            .filter(Objects::nonNull)
+            .toList();
 
-    if (user == null) {
+    if (users.size() > 1) {
+      log.warn("Found multiple users with username (case insensitive): " + username);
       return null;
     }
 
-    return findUserById(realmId, user.getUserId());
+    if (users.isEmpty()) {
+      return null;
+    }
+
+    return users.get(0);
   }
 
   @Override
