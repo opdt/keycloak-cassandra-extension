@@ -18,14 +18,14 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'adopt'
 
       - name: Run tests
         run: mvn test
 
       - name: Create Jacoco report
-        run: mvn -f ./core org.jacoco:jacoco-maven-plugin:0.8.8:report -Djacoco.dataFile="$(readlink -f ./tests/target/jacoco.exec)"
+        run: mvn -f ./core org.jacoco:jacoco-maven-plugin:report -Djacoco.dataFile="$(readlink -f ./tests/target/jacoco.exec)"
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v3

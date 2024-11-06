@@ -72,7 +72,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    return users.get(0);
+    return users.getFirst();
   }
 
   @Override
@@ -96,7 +96,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    return users.get(0);
+    return users.getFirst();
   }
 
   @Override
@@ -120,7 +120,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
       return null;
     }
 
-    return users.get(0);
+    return users.getFirst();
   }
 
   @Override

@@ -21,7 +21,6 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CassandraJsonSerialization;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.ClientScopeRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopeValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -261,17 +260,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
   private void setSerializedAttributeValues(String name, List<?> values) {
     List<String> attributeValues =
         values.stream()
-            .map(
-                value -> {
-                  try {
-                    return CassandraJsonSerialization.writeValueAsString(value);
-                  } catch (IOException e) {
-                    log.errorf(
-                        "Cannot serialize %s (realm: %s, name: %s)",
-                        value, clientScopeEntity.getId(), name);
-                    throw new RuntimeException(e);
-                  }
-                })
+            .map(CassandraJsonSerialization::writeValueAsString)
             .collect(Collectors.toList());
 
     clientScopeEntity.getAttributes().put(name, attributeValues);
@@ -282,17 +271,7 @@ public class CassandraClientScopeAdapter implements ClientScopeModel {
     List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
 
     return values.stream()
-        .map(
-            value -> {
-              try {
-                return CassandraJsonSerialization.readValue(value, type);
-              } catch (IOException e) {
-                log.errorf(
-                    "Cannot deserialize %s (realm: %s, name: %s, type: %s)",
-                    value, clientScopeEntity.getId(), name, type.getName());
-                throw new RuntimeException(e);
-              }
-            })
+        .map(value -> CassandraJsonSerialization.readValue(value, type))
         .collect(Collectors.toCollection(ArrayList::new));
   }
 }

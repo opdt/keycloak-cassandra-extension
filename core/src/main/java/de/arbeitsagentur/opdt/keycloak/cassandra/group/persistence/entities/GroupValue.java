@@ -1,7 +1,9 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import java.util.*;
 import lombok.*;
+import org.keycloak.models.GroupModel;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,8 +15,14 @@ public class GroupValue {
   private String name;
   private String parentId;
   private String realmId;
+  @Builder.Default private GroupModel.Type type = GroupModel.Type.REALM;
   @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
   @Builder.Default private Set<String> grantedRoles = new HashSet<>();
+
+  @JsonSetter("type")
+  public void setType(GroupModel.Type type) {
+    this.type = type == null ? GroupModel.Type.REALM : type;
+  }
 
   public Map<String, List<String>> getAttributes() {
     if (attributes == null) {

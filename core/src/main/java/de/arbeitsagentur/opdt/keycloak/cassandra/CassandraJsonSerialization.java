@@ -37,15 +37,27 @@ public class CassandraJsonSerialization {
     return mapper;
   }
 
-  public static String writeValueAsString(Object obj) throws IOException {
-    return mapper.writeValueAsString(obj);
+  public static String writeValueAsString(Object obj) {
+    try {
+      return mapper.writeValueAsString(obj);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public static <T> T readValue(String bytes, Class<T> type) throws IOException {
-    return mapper.readValue(bytes, type);
+  public static <T> T readValue(String bytes, Class<T> type) {
+    try {
+      return mapper.readValue(bytes, type);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public static <T> T readValue(String string, TypeReference<T> type) throws IOException {
-    return mapper.readValue(string, type);
+  public static <T> T readValue(String string, TypeReference<T> type) {
+    try {
+      return mapper.readValue(string, type);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
