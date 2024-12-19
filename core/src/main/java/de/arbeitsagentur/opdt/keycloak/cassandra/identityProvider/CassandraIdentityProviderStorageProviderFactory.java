@@ -1,7 +1,6 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.identityProvider;
 
 import static de.arbeitsagentur.opdt.keycloak.common.CommunityProfiles.isCassandraProfileEnabled;
-import static org.keycloak.userprofile.DeclarativeUserProfileProviderFactory.PROVIDER_PRIORITY;
 
 import com.google.auto.service.AutoService;
 import org.keycloak.Config;
@@ -38,6 +37,6 @@ public class CassandraIdentityProviderStorageProviderFactory
 
   @Override
   public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    return 11;
+  } // Infinispan-Order + 1
 }
