@@ -95,6 +95,15 @@ public interface UserDao extends TransactionalDao<User> {
       customWhereClause = "realm_id = :realmId AND user_id = :userId")
   boolean deleteUserConsentsByUserId(String realmId, String userId);
 
+  @Delete(entityClass = FederatedIdentity.class, customWhereClause = "user_id = :userId")
+  boolean deleteFederatedIdentitiesByUserId(String userId);
+
+  @Delete(entityClass = FederatedIdentityToUserMapping.class)
+  boolean deleteFederatedIdentityToUserMapping(String brokerUserId, String identityProvider);
+
+  @Delete(entityClass = FederatedIdentity.class)
+  boolean deleteFederatedIdentity(String userId, String identityProvider);
+
   @Select(customWhereClause = "realm_id = :realmId AND user_id = :userId AND client_id = :clientId")
   UserConsent findUserConsent(String realmId, String userId, String clientId);
 

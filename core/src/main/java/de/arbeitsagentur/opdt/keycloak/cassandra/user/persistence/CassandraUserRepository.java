@@ -385,6 +385,16 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
   }
 
   @Override
+  public boolean deleteFederatedIdentitiesByUserId(String userId) {
+    for (FederatedIdentity identity : dao.findFederatedIdentities(userId)) {
+      dao.deleteFederatedIdentityToUserMapping(
+          identity.getBrokerUserId(), identity.getIdentityProvider());
+    }
+
+    return dao.deleteFederatedIdentitiesByUserId(userId);
+  }
+
+  @Override
   public UserConsent findUserConsent(String realmId, String userId, String clientId) {
     return dao.findUserConsent(realmId, userId, clientId);
   }
