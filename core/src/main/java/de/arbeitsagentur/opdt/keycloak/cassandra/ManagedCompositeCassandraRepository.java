@@ -216,6 +216,13 @@ public class ManagedCompositeCassandraRepository implements CompositeRepository 
     return this.userRepository.deleteUserConsentsByUserId(realmId, userId);
   }
 
+  @L1Cached(cacheName = USER_CACHE)
+  @InvalidateCache
+  @Override
+  public boolean deleteFederatedIdentitiesByUserId(String userId) {
+    return userRepository.deleteFederatedIdentitiesByUserId(userId);
+  }
+
   @L1Cached(cacheName = USER_CONSENT_CACHE)
   public UserConsent findUserConsent(String realmId, String userId, String clientId) {
     return this.userRepository.findUserConsent(realmId, userId, clientId);

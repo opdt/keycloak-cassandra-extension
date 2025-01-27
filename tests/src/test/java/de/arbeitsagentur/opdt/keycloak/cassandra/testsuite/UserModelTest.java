@@ -1821,4 +1821,78 @@ public class UserModelTest extends KeycloakModelTest {
           return null;
         });
   }
+
+  @Test
+  public void testDeleteUserWithMultipleFederatedIdentities() {
+    String userId =
+        withRealm(
+            originalRealmId,
+            (session, realm) -> {
+              UserModel user = session.users().addUser(realm, "testUser");
+
+              // Add multiple federated identities
+              FederatedIdentityModel identity1 =
+                  new FederatedIdentityModel("provider1", "brokerUserId1", "brokerUsername1");
+              FederatedIdentityModel identity2 =
+                  new FederatedIdentityModel("provider2", "brokerUserId2", "brokerUsername2");
+              FederatedIdentityModel identity3 =
+                  new FederatedIdentityModel("provider3", "brokerUserId3", "brokerUsername3");
+
+              session.users().addFederatedIdentity(realm, user, identity1);
+              session.users().addFederatedIdentity(realm, user, identity2);
+              session.users().addFederatedIdentity(realm, user, identity3);
+
+              return user.getId();
+            });
+
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          UserModel user = session.users().getUserById(realm, userId);
+          assertThat(user, notNullValue());
+
+          // Verify federated identities are present
+          List<FederatedIdentityModel> federatedIdentities =
+              session.users().getFederatedIdentitiesStream(realm, user).toList();
+          assertThat(federatedIdentities, hasSize(3));
+
+          // Delete the user
+          assertTrue(session.users().removeUser(realm, user));
+
+          return null;
+        });
+
+    withRealm(
+        originalRealmId,
+        (session, realm) -> {
+          // Verify user is deleted
+          UserModel deletedUser = session.users().getUserById(realm, userId);
+          assertThat(deletedUser, nullValue());
+
+          // Verify federated identities are deleted
+          assertThat(session.users().getUserById(realm, userId), nullValue());
+
+          // Verify federated identity to user mappings are deleted
+          assertThat(
+              session
+                  .users()
+                  .getUserByFederatedIdentity(
+                      realm, new FederatedIdentityModel("provider1", "brokerUserId1", null)),
+              nullValue());
+          assertThat(
+              session
+                  .users()
+                  .getUserByFederatedIdentity(
+                      realm, new FederatedIdentityModel("provider2", "brokerUserId2", null)),
+              nullValue());
+          assertThat(
+              session
+                  .users()
+                  .getUserByFederatedIdentity(
+                      realm, new FederatedIdentityModel("provider3", "brokerUserId3", null)),
+              nullValue());
+
+          return null;
+        });
+  }
 }

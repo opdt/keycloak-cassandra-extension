@@ -77,6 +77,8 @@ public interface UserRepository {
 
   boolean deleteUserConsentsByUserId(String realmId, String userId);
 
+  boolean deleteFederatedIdentitiesByUserId(String userId);
+
   UserConsent findUserConsent(String realmId, String userId, String clientId);
 
   List<UserConsent> findUserConsentsByUserId(String realmId, String userId);

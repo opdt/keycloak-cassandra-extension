@@ -630,6 +630,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
   @Override
   public boolean removeUser(RealmModel realm, UserModel user) {
     userRepository.deleteUserConsentsByUserId(realm.getId(), user.getId());
+    userRepository.deleteFederatedIdentitiesByUserId(user.getId());
     models.remove(user.getId());
     return ((CassandraUserAdapter) user).delete();
   }
