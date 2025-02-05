@@ -38,6 +38,7 @@ import org.keycloak.component.ComponentFactory;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.*;
+import org.keycloak.models.jpa.entities.RealmAttributes;
 import org.keycloak.models.utils.ComponentUtil;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -212,6 +213,10 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
 
   public static final String IS_ORGANIZATIONS_ENABLED =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "organizationsEnabled";
+  public static final String IS_ADMIN_PERMISSIONS_ENABLED =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "adminPermissionsEnabled";
+  public static final String IS_VERIFIABLE_CREDENTIALS_ENABLED =
+      AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "verifiableCredentialsEnabled";
 
   public static final String BRUTE_FORCE_STRATEGY =
       AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX + "bruteForceStrategy";
@@ -344,6 +349,26 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   @Override
   public void setOrganizationsEnabled(boolean organizationsEnabled) {
     setAttribute(IS_ORGANIZATIONS_ENABLED, organizationsEnabled);
+  }
+
+  @Override
+  public boolean isAdminPermissionsEnabled() {
+    return getAttribute(IS_ADMIN_PERMISSIONS_ENABLED, false);
+  }
+
+  @Override
+  public void setAdminPermissionsEnabled(boolean value) {
+    setAttribute(IS_ADMIN_PERMISSIONS_ENABLED, value);
+  }
+
+  @Override
+  public boolean isVerifiableCredentialsEnabled() {
+    return getAttribute(IS_VERIFIABLE_CREDENTIALS_ENABLED, false);
+  }
+
+  @Override
+  public void setVerifiableCredentialsEnabled(boolean value) {
+    setAttribute(IS_VERIFIABLE_CREDENTIALS_ENABLED, value);
   }
 
   @Override
@@ -2116,6 +2141,21 @@ public class CassandraRealmAdapter extends TransactionalModelAdapter<Realm> impl
   public void setDefaultRole(RoleModel role) {
     entity.getAttributes().put(DEFAULT_ROLE_ID, new ArrayList<>(Arrays.asList(role.getId())));
     setAttribute(DEFAULT_ROLE_ID, new ArrayList<>(Arrays.asList(role.getId())));
+  }
+
+  @Override
+  public ClientModel getAdminPermissionsClient() {
+    if (getAttribute(RealmAttributes.ADMIN_PERMISSIONS_CLIENT_ID) == null) {
+      return null;
+    }
+    return session
+        .clients()
+        .getClientById(this, getAttribute(RealmAttributes.ADMIN_PERMISSIONS_CLIENT_ID));
+  }
+
+  @Override
+  public void setAdminPermissionsClient(ClientModel client) {
+    setAttribute(RealmAttributes.ADMIN_PERMISSIONS_CLIENT_ID, client.getId());
   }
 
   @Override

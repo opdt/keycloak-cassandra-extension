@@ -41,7 +41,10 @@ import org.keycloak.credential.hash.Pbkdf2Sha256PasswordHashProviderFactory;
 import org.keycloak.credential.hash.Pbkdf2Sha512PasswordHashProviderFactory;
 import org.keycloak.device.DeviceRepresentationSpi;
 import org.keycloak.keys.*;
-import org.keycloak.models.*;
+import org.keycloak.models.IdentityProviderStorageSpi;
+import org.keycloak.models.PasswordPolicy;
+import org.keycloak.models.SingleUseObjectProviderFactory;
+import org.keycloak.models.SingleUseObjectSpi;
 import org.keycloak.policy.*;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
@@ -50,6 +53,8 @@ import org.keycloak.services.clientpolicy.DefaultClientPolicyManagerFactory;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicySpi;
 import org.keycloak.services.clientregistration.policy.impl.*;
 import org.keycloak.sessions.AuthenticationSessionSpi;
+import org.keycloak.tracing.NoopTracingProviderFactory;
+import org.keycloak.tracing.TracingSpi;
 import org.keycloak.userprofile.DeclarativeUserProfileProviderFactory;
 import org.keycloak.userprofile.UserProfileSpi;
 import org.keycloak.userprofile.validator.*;
@@ -77,6 +82,7 @@ public class Map extends KeycloakModelParameters {
           .add(UserProfileSpi.class)
           .add(ValidatorSPI.class)
           .add(IdentityProviderStorageSpi.class)
+          .add(TracingSpi.class)
           .build();
 
   static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES =
@@ -121,6 +127,7 @@ public class Map extends KeycloakModelParameters {
           .add(NullDeviceRepresentationProviderFactory.class)
           .add(DeclarativeUserProfileProviderFactory.class)
           .add(ValidatorFactory.class)
+          .add(NoopTracingProviderFactory.class)
           .build();
 
   public Map() {
