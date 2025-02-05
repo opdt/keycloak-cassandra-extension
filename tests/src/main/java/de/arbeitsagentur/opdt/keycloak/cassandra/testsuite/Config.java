@@ -18,7 +18,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.testsuite;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.keycloak.Config.ConfigProvider;
@@ -31,8 +30,6 @@ import org.keycloak.common.util.SystemEnvProperties;
  * @author hmlnarik
  */
 public class Config implements ConfigProvider {
-
-  private final Properties systemProperties = new SystemEnvProperties();
 
   private final Map<String, String> defaultProperties = new HashMap<>();
   private final ThreadLocal<Map<String, String>> properties =
@@ -156,7 +153,8 @@ public class Config implements ConfigProvider {
   }
 
   private String replaceProperties(String value) {
-    return StringPropertyReplacer.replaceProperties(value, systemProperties);
+    return StringPropertyReplacer.replaceProperties(
+        value, SystemEnvProperties.UNFILTERED::getProperty);
   }
 
   @Override

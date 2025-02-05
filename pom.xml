@@ -6,7 +6,7 @@
 
     <groupId>de.arbeitsagentur.opdt</groupId>
     <artifactId>keycloak-cassandra-extension-parent</artifactId>
-    <version>5.0.2-26.0-SNAPSHOT</version>
+    <version>5.0.2-26.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <url>https://github.com/opdt/keycloak-cassandra-extension</url>
@@ -47,14 +47,14 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- keycloak -->
-        <keycloak.version>26.0.6</keycloak.version>
+        <keycloak.version>26.1.1</keycloak.version>
 
         <!-- testing -->
-        <assertj-core.version>3.22.0</assertj-core.version>
-        <testcontainers-keycloak.version>1.17.6</testcontainers-keycloak.version>
+        <assertj-core.version>3.27.3</assertj-core.version>
+        <testcontainers-keycloak.version>1.20.4</testcontainers-keycloak.version>
 
         <!-- tooling -->
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <auto-service.version>1.1.1</auto-service.version>
 
         <!-- cassandra -->
@@ -149,6 +149,14 @@
                 <version>${testcontainers-keycloak.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!-- TODO: Update with next Keycloak update -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>4.1.115.Final</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -158,7 +166,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.4.2</version>
                 </plugin>
 
                 <plugin>
@@ -188,7 +196,7 @@
                             <path>
                                 <groupId>org.slf4j</groupId>
                                 <artifactId>slf4j-nop</artifactId>
-                                <version>2.0.9</version>
+                                <version>2.0.16</version>
                             </path>
                         </annotationProcessorPaths>
                     </configuration>
@@ -231,7 +239,7 @@
                 <plugin>
                     <groupId>com.spotify.fmt</groupId>
                     <artifactId>fmt-maven-plugin</artifactId>
-                    <version>2.24</version>
+                    <version>2.25</version>
                     <configuration>
                         <displayFiles>true</displayFiles>
                         <skip>false</skip>
@@ -251,7 +259,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
-                    <version>3.2.6</version>
+                    <version>3.2.7</version>
                     <executions>
                         <execution>
                             <id>sign-artifacts</id>
