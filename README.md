@@ -91,3 +91,10 @@ Debugging can be enabled via `mvn -Dmaven.surefire.debug verify` (Port 5005).
 
 If you want to use an external cassandra instance on localhost (Port 9042) you can
 use `mvn -Dkeycloak.testsuite.start-cassandra-container=false verify`
+
+## Conflicts with the JPA implementation (since 26.1)
+
+The official Keycloak implementation now executes a `dependsOn()` for each provider. Even if it has a lower priority.
+This will implicitly initialize the default JPA-Provider. 
+
+To circumvent this problem you may want to define a "NullProvider" which overrides the default JPA-Provider.
