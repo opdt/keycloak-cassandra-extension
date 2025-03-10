@@ -51,7 +51,7 @@
 
         <!-- testing -->
         <assertj-core.version>3.27.3</assertj-core.version>
-        <testcontainers-keycloak.version>1.20.4</testcontainers-keycloak.version>
+        <testcontainers-keycloak.version>1.20.6</testcontainers-keycloak.version>
 
         <!-- tooling -->
         <lombok.version>1.18.36</lombok.version>
