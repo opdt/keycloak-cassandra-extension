@@ -58,7 +58,7 @@
         <auto-service.version>1.1.1</auto-service.version>
 
         <!-- cassandra -->
-        <cassandra-java-driver.version>4.18.1</cassandra-java-driver.version>
+        <cassandra-java-driver.version>4.19.0</cassandra-java-driver.version>
 
         <!-- SonarCloud -->
         <sonar.organization>opdt</sonar.organization>
@@ -154,7 +154,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
-                <version>4.1.115.Final</version>
+                <version>4.1.119.Final</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -196,7 +196,7 @@
                             <path>
                                 <groupId>org.slf4j</groupId>
                                 <artifactId>slf4j-nop</artifactId>
-                                <version>2.0.16</version>
+                                <version>2.0.17</version>
                             </path>
                         </annotationProcessorPaths>
                     </configuration>
@@ -205,7 +205,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>3.3.1</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
