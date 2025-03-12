@@ -31,37 +31,37 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 @AutoService(SingleUseObjectProviderFactory.class)
 public class CassandraSingleUseObjectProviderFactory
-    implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider>,
-        EnvironmentDependentProviderFactory {
+        implements SingleUseObjectProviderFactory<CassandraSingleUseObjectProvider>,
+                EnvironmentDependentProviderFactory {
 
-  @Override
-  public CassandraSingleUseObjectProvider create(KeycloakSession session) {
-    CassandraConnectionProvider cassandraConnectionProvider =
-        createProviderCached(session, CassandraConnectionProvider.class);
-    return new CassandraSingleUseObjectProvider(cassandraConnectionProvider.getRepository());
-  }
+    @Override
+    public CassandraSingleUseObjectProvider create(KeycloakSession session) {
+        CassandraConnectionProvider cassandraConnectionProvider =
+                createProviderCached(session, CassandraConnectionProvider.class);
+        return new CassandraSingleUseObjectProvider(cassandraConnectionProvider.getRepository());
+    }
 
-  @Override
-  public void init(Config.Scope config) {}
+    @Override
+    public void init(Config.Scope config) {}
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public String getId() {
-    return "infinispan"; // use same name as infinispan provider to override it
-  }
+    @Override
+    public String getId() {
+        return "infinispan"; // use same name as infinispan provider to override it
+    }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 }

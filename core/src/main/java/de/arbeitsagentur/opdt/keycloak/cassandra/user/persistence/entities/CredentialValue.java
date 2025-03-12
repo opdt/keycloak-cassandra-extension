@@ -23,14 +23,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CredentialValue {
-  private String id;
-  private String type;
-  private String name;
-  private String secretData;
-  private String credentialData;
-  private String userLabel;
-  private int priority;
-  private long
-      created; // Kein Instant o.ä. da die Repräsentation Keycloak-intern ist (z.B. millis vs
-  // seconds). Datum ist u.a. relevant für PW-Expiration!
+    private String id;
+    private String type;
+    private String name;
+    private String secretData;
+    private String credentialData;
+    private String userLabel;
+    private int priority;
+    private long created; // Kein Instant o.ä. da die Repräsentation Keycloak-intern ist (z.B. millis vs
+    // seconds). Datum ist u.a. relevant für PW-Expiration!
 }

@@ -25,110 +25,110 @@ import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
 @JBossLog
 public class CassandraDatastoreProvider extends DefaultDatastoreProvider {
-  private final KeycloakSession session;
+    private final KeycloakSession session;
 
-  public CassandraDatastoreProvider(KeycloakSession session) {
-    super(null, session);
-    this.session = session;
-  }
+    public CassandraDatastoreProvider(KeycloakSession session) {
+        super(null, session);
+        this.session = session;
+    }
 
-  @Override
-  public RealmProvider realms() {
-    return session.getProvider(RealmProvider.class);
-  }
+    @Override
+    public RealmProvider realms() {
+        return session.getProvider(RealmProvider.class);
+    }
 
-  @Override
-  public UserProvider users() {
-    return session.getProvider(UserProvider.class);
-  }
+    @Override
+    public UserProvider users() {
+        return session.getProvider(UserProvider.class);
+    }
 
-  @Override
-  public RoleProvider roles() {
-    return session.getProvider(RoleProvider.class);
-  }
+    @Override
+    public RoleProvider roles() {
+        return session.getProvider(RoleProvider.class);
+    }
 
-  @Override
-  public GroupProvider groups() {
-    return session.getProvider(GroupProvider.class);
-  }
+    @Override
+    public GroupProvider groups() {
+        return session.getProvider(GroupProvider.class);
+    }
 
-  @Override
-  public ClientProvider clients() {
-    return session.getProvider(ClientProvider.class);
-  }
+    @Override
+    public ClientProvider clients() {
+        return session.getProvider(ClientProvider.class);
+    }
 
-  @Override
-  public ClientScopeProvider clientScopes() {
-    return session.getProvider(ClientScopeProvider.class);
-  }
+    @Override
+    public ClientScopeProvider clientScopes() {
+        return session.getProvider(ClientScopeProvider.class);
+    }
 
-  @Override
-  public SingleUseObjectProvider singleUseObjects() {
-    return session.getProvider(SingleUseObjectProvider.class);
-  }
+    @Override
+    public SingleUseObjectProvider singleUseObjects() {
+        return session.getProvider(SingleUseObjectProvider.class);
+    }
 
-  @Override
-  public UserLoginFailureProvider loginFailures() {
-    return session.getProvider(UserLoginFailureProvider.class);
-  }
+    @Override
+    public UserLoginFailureProvider loginFailures() {
+        return session.getProvider(UserLoginFailureProvider.class);
+    }
 
-  @Override
-  public AuthenticationSessionProvider authSessions() {
-    return session.getProvider(AuthenticationSessionProvider.class);
-  }
+    @Override
+    public AuthenticationSessionProvider authSessions() {
+        return session.getProvider(AuthenticationSessionProvider.class);
+    }
 
-  @Override
-  public UserSessionProvider userSessions() {
-    return session.getProvider(UserSessionProvider.class);
-  }
+    @Override
+    public UserSessionProvider userSessions() {
+        return session.getProvider(UserSessionProvider.class);
+    }
 
-  @Override
-  public IdentityProviderStorageProvider identityProviders() {
-    return session.getProvider(IdentityProviderStorageProvider.class);
-  }
+    @Override
+    public IdentityProviderStorageProvider identityProviders() {
+        return session.getProvider(IdentityProviderStorageProvider.class);
+    }
 
-  @Override
-  public ExportImportManager getExportImportManager() {
-    return new CassandraLegacyExportImportManager(session);
-  }
+    @Override
+    public ExportImportManager getExportImportManager() {
+        return new CassandraLegacyExportImportManager(session);
+    }
 
-  @Override
-  public UserProvider userLocalStorage() {
-    return users();
-  }
+    @Override
+    public UserProvider userLocalStorage() {
+        return users();
+    }
 
-  @Override
-  public ClientProvider clientStorageManager() {
-    return clients();
-  }
+    @Override
+    public ClientProvider clientStorageManager() {
+        return clients();
+    }
 
-  @Override
-  public ClientScopeProvider clientScopeStorageManager() {
-    return clientScopes();
-  }
+    @Override
+    public ClientScopeProvider clientScopeStorageManager() {
+        return clientScopes();
+    }
 
-  @Override
-  public GroupProvider groupStorageManager() {
-    return groups();
-  }
+    @Override
+    public GroupProvider groupStorageManager() {
+        return groups();
+    }
 
-  @Override
-  public UserProvider userStorageManager() {
-    return users();
-  }
+    @Override
+    public UserProvider userStorageManager() {
+        return users();
+    }
 
-  @Override
-  public RoleProvider roleStorageManager() {
-    return roles();
-  }
+    @Override
+    public RoleProvider roleStorageManager() {
+        return roles();
+    }
 
-  @Override
-  public MigrationManager getMigrationManager() {
-    return new CassandraMigrationManager();
-  }
+    @Override
+    public MigrationManager getMigrationManager() {
+        return new CassandraMigrationManager();
+    }
 
-  @Override
-  public UserFederatedStorageProvider userFederatedStorage() {
-    return null;
-  }
+    @Override
+    public UserFederatedStorageProvider userFederatedStorage() {
+        return null;
+    }
 }

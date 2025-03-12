@@ -19,23 +19,23 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 import org.keycloak.models.KeycloakTransaction;
 
 public interface CassandraModelTransaction extends KeycloakTransaction {
-  default void begin() {
-    // NOOP
-  }
+    default void begin() {
+        // NOOP
+    }
 
-  default void rollback() {
-    // Not supported
-  }
+    default void rollback() {
+        // Not supported
+    }
 
-  default void setRollbackOnly() {
-    // Not supported
-  }
+    default void setRollbackOnly() {
+        // Not supported
+    }
 
-  default boolean getRollbackOnly() {
-    return false;
-  }
+    default boolean getRollbackOnly() {
+        return false;
+    }
 
-  default boolean isActive() {
-    return true;
-  }
+    default boolean isActive() {
+        return true;
+    }
 }

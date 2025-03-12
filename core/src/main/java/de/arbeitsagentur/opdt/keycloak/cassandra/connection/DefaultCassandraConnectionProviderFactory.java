@@ -94,227 +94,216 @@ import org.keycloak.sessions.CommonClientSessionModel;
 @JBossLog
 @AutoService(CassandraConnectionProviderFactory.class)
 public class DefaultCassandraConnectionProviderFactory
-    implements CassandraConnectionProviderFactory<CassandraConnectionProvider>,
-        EnvironmentDependentProviderFactory {
-  public static final String PROVIDER_ID = "default";
-  private CqlSession cqlSession;
-  private CompositeRepository repository;
+        implements CassandraConnectionProviderFactory<CassandraConnectionProvider>,
+                EnvironmentDependentProviderFactory {
+    public static final String PROVIDER_ID = "default";
+    private CqlSession cqlSession;
+    private CompositeRepository repository;
 
-  @Override
-  public CassandraConnectionProvider create(KeycloakSession session) {
-    return new CassandraConnectionProvider() {
-      @Override
-      public CqlSession getCqlSession() {
-        return cqlSession;
-      }
+    @Override
+    public CassandraConnectionProvider create(KeycloakSession session) {
+        return new CassandraConnectionProvider() {
+            @Override
+            public CqlSession getCqlSession() {
+                return cqlSession;
+            }
 
-      @Override
-      public CompositeRepository getRepository() {
-        L1CacheInterceptor intercepted = new L1CacheInterceptor(session, repository);
-        return (CompositeRepository)
-            Proxy.newProxyInstance(
-                Thread.currentThread().getContextClassLoader(),
-                new Class[] {CompositeRepository.class},
-                intercepted);
-      }
+            @Override
+            public CompositeRepository getRepository() {
+                L1CacheInterceptor intercepted = new L1CacheInterceptor(session, repository);
+                return (CompositeRepository) Proxy.newProxyInstance(
+                        Thread.currentThread().getContextClassLoader(),
+                        new Class[] {CompositeRepository.class},
+                        intercepted);
+            }
 
-      @Override
-      public void close() {}
-    };
-  }
-
-  @Override
-  public void init(Config.Scope scope) {
-    // kc.spi.cassandra-connection.default.contactPoints
-    // Env: KC_SPI_CASSANDRA_CONNECTION_DEFAULT_CONTACT_POINTS
-
-    String contactPoints = scope.get("contactPoints");
-    log.infov("Init CassandraProviderFactory with contactPoints {0}", contactPoints);
-
-    int port = Integer.parseInt(scope.get("port"));
-    String localDatacenter = scope.get("localDatacenter");
-    String keyspace = scope.get("keyspace");
-    String username = scope.get("username");
-    String password = scope.get("password");
-    int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
-
-    List<InetSocketAddress> contactPointsList =
-        Arrays.stream(contactPoints.split(","))
-            .map(cp -> InetSocketAddress.createUnresolved(cp, port))
-            .collect(Collectors.toList());
-
-    if (scope.getBoolean("createKeyspace", true)) {
-      log.info("Create keyspace (if not exists)...");
-      try (CqlSession createKeyspaceSession =
-          CqlSession.builder()
-              .addContactPoints(contactPointsList)
-              .withAuthCredentials(username, password)
-              .withLocalDatacenter(localDatacenter)
-              .build()) {
-        createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
-      }
-    } else {
-      log.info("Skipping create keyspace, assuming keyspace already exists...");
+            @Override
+            public void close() {}
+        };
     }
 
-    if (scope.getBoolean("createSchema", true)) {
-      log.info("Create schema...");
-      ConsistencyLevel migrationConsistencyLevel =
-          DefaultConsistencyLevel.valueOf(scope.get("migrationConsistencyLevel", "ALL"));
-      createDbIfNotExists(
-          contactPointsList,
-          username,
-          password,
-          localDatacenter,
-          keyspace,
-          migrationConsistencyLevel);
-    } else {
-      log.info("Skipping schema creation...");
+    @Override
+    public void init(Config.Scope scope) {
+        // kc.spi.cassandra-connection.default.contactPoints
+        // Env: KC_SPI_CASSANDRA_CONNECTION_DEFAULT_CONTACT_POINTS
+
+        String contactPoints = scope.get("contactPoints");
+        log.infov("Init CassandraProviderFactory with contactPoints {0}", contactPoints);
+
+        int port = Integer.parseInt(scope.get("port"));
+        String localDatacenter = scope.get("localDatacenter");
+        String keyspace = scope.get("keyspace");
+        String username = scope.get("username");
+        String password = scope.get("password");
+        int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
+
+        List<InetSocketAddress> contactPointsList = Arrays.stream(contactPoints.split(","))
+                .map(cp -> InetSocketAddress.createUnresolved(cp, port))
+                .collect(Collectors.toList());
+
+        if (scope.getBoolean("createKeyspace", true)) {
+            log.info("Create keyspace (if not exists)...");
+            try (CqlSession createKeyspaceSession = CqlSession.builder()
+                    .addContactPoints(contactPointsList)
+                    .withAuthCredentials(username, password)
+                    .withLocalDatacenter(localDatacenter)
+                    .build()) {
+                createKeyspaceIfNotExists(createKeyspaceSession, keyspace, replicationFactor);
+            }
+        } else {
+            log.info("Skipping create keyspace, assuming keyspace already exists...");
+        }
+
+        if (scope.getBoolean("createSchema", true)) {
+            log.info("Create schema...");
+            ConsistencyLevel migrationConsistencyLevel =
+                    DefaultConsistencyLevel.valueOf(scope.get("migrationConsistencyLevel", "ALL"));
+            createDbIfNotExists(
+                    contactPointsList, username, password, localDatacenter, keyspace, migrationConsistencyLevel);
+        } else {
+            log.info("Skipping schema creation...");
+        }
+
+        cqlSession = CqlSession.builder()
+                .addContactPoints(contactPointsList)
+                .withAuthCredentials(username, password)
+                .withLocalDatacenter(localDatacenter)
+                .withKeyspace(keyspace)
+                .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
+                .addTypeCodecs(new EnumNameCodec<>(GroupModel.Type.class))
+                .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
+                .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
+                .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
+                .addTypeCodecs(new JsonCodec<>(GroupValue.class, CassandraJsonSerialization.getMapper()))
+                .addTypeCodecs(new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
+                .addTypeCodecs(
+                        new JsonCodec<>(AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
+                .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
+                .build();
+
+        repository = createRepository(cqlSession);
     }
 
-    cqlSession =
-        CqlSession.builder()
-            .addContactPoints(contactPointsList)
-            .withAuthCredentials(username, password)
-            .withLocalDatacenter(localDatacenter)
-            .withKeyspace(keyspace)
-            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.State.class))
-            .addTypeCodecs(new EnumNameCodec<>(GroupModel.Type.class))
-            .addTypeCodecs(new EnumNameCodec<>(UserSessionModel.SessionPersistenceState.class))
-            .addTypeCodecs(new EnumNameCodec<>(CommonClientSessionModel.ExecutionStatus.class))
-            .addTypeCodecs(new JsonCodec<>(RoleValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(
-                new JsonCodec<>(GroupValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(
-                new JsonCodec<>(CredentialValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(
-                new JsonCodec<>(
-                    AuthenticatedClientSessionValue.class, CassandraJsonSerialization.getMapper()))
-            .addTypeCodecs(
-                new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
-            .build();
-
-    repository = createRepository(cqlSession);
-  }
-
-  private void createDbIfNotExists(
-      List<InetSocketAddress> contactPointsList,
-      String username,
-      String password,
-      String localDatacenter,
-      String keyspace,
-      ConsistencyLevel migrationConsistencyLevel) {
-    try (CqlSession createKeyspaceSession =
-        CqlSession.builder()
-            .addContactPoints(contactPointsList)
-            .withAuthCredentials(username, password)
-            .withLocalDatacenter(localDatacenter)
-            .withKeyspace(keyspace)
-            .build()) {
-      createTables(createKeyspaceSession, keyspace, migrationConsistencyLevel);
+    private void createDbIfNotExists(
+            List<InetSocketAddress> contactPointsList,
+            String username,
+            String password,
+            String localDatacenter,
+            String keyspace,
+            ConsistencyLevel migrationConsistencyLevel) {
+        try (CqlSession createKeyspaceSession = CqlSession.builder()
+                .addContactPoints(contactPointsList)
+                .withAuthCredentials(username, password)
+                .withLocalDatacenter(localDatacenter)
+                .withKeyspace(keyspace)
+                .build()) {
+            createTables(createKeyspaceSession, keyspace, migrationConsistencyLevel);
+        }
     }
-  }
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public String getId() {
-    return PROVIDER_ID;
-  }
+    @Override
+    public String getId() {
+        return PROVIDER_ID;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return true;
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return true;
+    }
 
-  @Override
-  public void close() {
-    cqlSession.close();
-  }
+    @Override
+    public void close() {
+        cqlSession.close();
+    }
 
-  private void createKeyspaceIfNotExists(
-      CqlSession cqlSession, String keyspaceName, int replicationFactor) {
-    CreateKeyspace createKeyspace =
-        SchemaBuilder.createKeyspace(keyspaceName)
-            .ifNotExists()
-            .withNetworkTopologyStrategy(
-                Map.of(
-                    "replication_factor",
-                    replicationFactor)); // special dc-name to activate autodiscovery
+    private void createKeyspaceIfNotExists(CqlSession cqlSession, String keyspaceName, int replicationFactor) {
+        CreateKeyspace createKeyspace = SchemaBuilder.createKeyspace(keyspaceName)
+                .ifNotExists()
+                .withNetworkTopologyStrategy(
+                        Map.of("replication_factor", replicationFactor)); // special dc-name to activate autodiscovery
 
-    cqlSession.execute(createKeyspace.build());
-    cqlSession.close();
-  }
+        cqlSession.execute(createKeyspace.build());
+        cqlSession.close();
+    }
 
-  private void createTables(
-      CqlSession cqlSession, String keyspace, ConsistencyLevel migrationConsistencyLevel) {
-    MigrationConfiguration mgConfig = new MigrationConfiguration().withKeyspaceName(keyspace);
-    Database database =
-        new Database(cqlSession, mgConfig).setConsistencyLevel(migrationConsistencyLevel);
-    MigrationTask migration = new MigrationTask(database, new MigrationRepository());
-    migration.migrate();
-  }
+    private void createTables(CqlSession cqlSession, String keyspace, ConsistencyLevel migrationConsistencyLevel) {
+        MigrationConfiguration mgConfig = new MigrationConfiguration().withKeyspaceName(keyspace);
+        Database database = new Database(cqlSession, mgConfig).setConsistencyLevel(migrationConsistencyLevel);
+        MigrationTask migration = new MigrationTask(database, new MigrationRepository());
+        migration.migrate();
+    }
 
-  private CompositeRepository createRepository(CqlSession cqlSession) {
-    UserMapper userMapper =
-        new UserMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    UserRepository userRepository = new CassandraUserRepository(userMapper.userDao());
+    private CompositeRepository createRepository(CqlSession cqlSession) {
+        UserMapper userMapper = new UserMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        UserRepository userRepository = new CassandraUserRepository(userMapper.userDao());
 
-    RoleMapper roleMapper =
-        new RoleMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    RoleRepository roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
+        RoleMapper roleMapper = new RoleMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        RoleRepository roleRepository = new CassandraRoleRepository(roleMapper.roleDao());
 
-    GroupMapper groupMapper =
-        new GroupMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    GroupRepository groupRepository = new CassandraGroupRepository(groupMapper.groupDao());
+        GroupMapper groupMapper = new GroupMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        GroupRepository groupRepository = new CassandraGroupRepository(groupMapper.groupDao());
 
-    RealmMapper realmMapper =
-        new RealmMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    RealmRepository realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
+        RealmMapper realmMapper = new RealmMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        RealmRepository realmRepository = new CassandraRealmRepository(realmMapper.realmDao());
 
-    UserSessionMapper userSessionMapper =
-        new UserSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    UserSessionRepository userSessionRepository =
-        new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
+        UserSessionMapper userSessionMapper = new UserSessionMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        UserSessionRepository userSessionRepository =
+                new CassandraUserSessionRepository(userSessionMapper.userSessionDao());
 
-    AuthSessionMapper authSessionMapper =
-        new AuthSessionMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    AuthSessionRepository authSessionRepository =
-        new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
+        AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        AuthSessionRepository authSessionRepository =
+                new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
 
-    LoginFailureMapper loginFailureMapper =
-        new LoginFailureMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    LoginFailureRepository loginFailureRepository =
-        new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
+        LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        LoginFailureRepository loginFailureRepository =
+                new CassandraLoginFailureRepository(loginFailureMapper.loginFailureDao());
 
-    SingleUseObjectMapper singleUseObjectMapper =
-        new SingleUseObjectMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    SingleUseObjectRepository singleUseObjectRepository =
-        new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
+        SingleUseObjectMapper singleUseObjectMapper = new SingleUseObjectMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        SingleUseObjectRepository singleUseObjectRepository =
+                new CassandraSingleUseObjectRepository(singleUseObjectMapper.singleUseObjectDao());
 
-    ClientMapper clientMapper =
-        new ClientMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    ClientRepository clientRepository = new CassandraClientRepository(clientMapper.clientDao());
+        ClientMapper clientMapper = new ClientMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        ClientRepository clientRepository = new CassandraClientRepository(clientMapper.clientDao());
 
-    ClientScopeMapper clientScopeMapper =
-        new ClientScopeMapperBuilder(cqlSession).withSchemaValidationEnabled(false).build();
-    ClientScopeRepository clientScopeRepository =
-        new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
+        ClientScopeMapper clientScopeMapper = new ClientScopeMapperBuilder(cqlSession)
+                .withSchemaValidationEnabled(false)
+                .build();
+        ClientScopeRepository clientScopeRepository =
+                new CassandraClientScopeRepository(clientScopeMapper.clientScopeDao());
 
-    ManagedCompositeCassandraRepository cassandraRepository =
-        new ManagedCompositeCassandraRepository();
-    cassandraRepository.setRoleRepository(roleRepository);
-    cassandraRepository.setGroupRepository(groupRepository);
-    cassandraRepository.setUserRepository(userRepository);
-    cassandraRepository.setRealmRepository(realmRepository);
-    cassandraRepository.setUserSessionRepository(userSessionRepository);
-    cassandraRepository.setAuthSessionRepository(authSessionRepository);
-    cassandraRepository.setLoginFailureRepository(loginFailureRepository);
-    cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
-    cassandraRepository.setClientRepository(clientRepository);
-    cassandraRepository.setClientScopeRepository(clientScopeRepository);
+        ManagedCompositeCassandraRepository cassandraRepository = new ManagedCompositeCassandraRepository();
+        cassandraRepository.setRoleRepository(roleRepository);
+        cassandraRepository.setGroupRepository(groupRepository);
+        cassandraRepository.setUserRepository(userRepository);
+        cassandraRepository.setRealmRepository(realmRepository);
+        cassandraRepository.setUserSessionRepository(userSessionRepository);
+        cassandraRepository.setAuthSessionRepository(authSessionRepository);
+        cassandraRepository.setLoginFailureRepository(loginFailureRepository);
+        cassandraRepository.setSingleUseObjectRepository(singleUseObjectRepository);
+        cassandraRepository.setClientRepository(clientRepository);
+        cassandraRepository.setClientScopeRepository(clientScopeRepository);
 
-    return cassandraRepository;
-  }
+        return cassandraRepository;
+    }
 }

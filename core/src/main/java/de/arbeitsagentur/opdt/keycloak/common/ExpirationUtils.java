@@ -20,23 +20,23 @@ import org.keycloak.common.util.Time;
 
 public class ExpirationUtils {
 
-  /**
-   * Checks whether the {@code entity} is expired
-   *
-   * @param entity to check
-   * @param allowInfiniteValues sets how null values are interpreted, if true entity with expiration
-   *     equal to {@code null} is interpreted as never expiring entity, if false entities with
-   *     {@code null} expiration are interpreted as expired entities
-   * @return true if the {@code entity} is expired (expiration time is in the past or now), false
-   *     otherwise
-   */
-  public static boolean isExpired(ExpirableEntity entity, boolean allowInfiniteValues) {
-    Long expiration = entity.getExpiration();
-    if (!allowInfiniteValues && expiration == null) return false;
-    return expiration != null && expiration <= Time.currentTimeMillis();
-  }
+    /**
+     * Checks whether the {@code entity} is expired
+     *
+     * @param entity to check
+     * @param allowInfiniteValues sets how null values are interpreted, if true entity with expiration
+     *     equal to {@code null} is interpreted as never expiring entity, if false entities with
+     *     {@code null} expiration are interpreted as expired entities
+     * @return true if the {@code entity} is expired (expiration time is in the past or now), false
+     *     otherwise
+     */
+    public static boolean isExpired(ExpirableEntity entity, boolean allowInfiniteValues) {
+        Long expiration = entity.getExpiration();
+        if (!allowInfiniteValues && expiration == null) return false;
+        return expiration != null && expiration <= Time.currentTimeMillis();
+    }
 
-  public static boolean isNotExpired(Object entity) {
-    return !isExpired((ExpirableEntity) entity, true);
-  }
+    public static boolean isNotExpired(Object entity) {
+        return !isExpired((ExpirableEntity) entity, true);
+    }
 }

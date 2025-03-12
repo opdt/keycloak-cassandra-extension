@@ -16,24 +16,29 @@ import lombok.*;
 @Entity
 @CqlName("user_consents")
 public class UserConsent {
-  @PartitionKey(0)
-  private String realmId;
+    @PartitionKey(0)
+    private String realmId;
 
-  @ClusteringColumn(1)
-  private String userId;
+    @ClusteringColumn(1)
+    private String userId;
 
-  @ClusteringColumn(2)
-  private String clientId;
+    @ClusteringColumn(2)
+    private String clientId;
 
-  @Builder.Default private Instant createdTimestamp = Instant.now();
-  @Builder.Default private Instant lastUpdatedTimestamp = Instant.now();
-  @Builder.Default private Set<String> grantedClientScopesId = new HashSet<>();
+    @Builder.Default
+    private Instant createdTimestamp = Instant.now();
 
-  public void addGrantedClientScopesId(String scope) {
-    grantedClientScopesId.add(scope);
-  }
+    @Builder.Default
+    private Instant lastUpdatedTimestamp = Instant.now();
 
-  public boolean removeGrantedClientScopesId(String scope) {
-    return grantedClientScopesId.remove(scope);
-  }
+    @Builder.Default
+    private Set<String> grantedClientScopesId = new HashSet<>();
+
+    public void addGrantedClientScopesId(String scope) {
+        grantedClientScopesId.add(scope);
+    }
+
+    public boolean removeGrantedClientScopesId(String scope) {
+        return grantedClientScopesId.remove(scope);
+    }
 }

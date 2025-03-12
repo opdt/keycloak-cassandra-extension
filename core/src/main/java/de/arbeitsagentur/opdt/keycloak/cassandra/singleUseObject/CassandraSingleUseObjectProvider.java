@@ -31,119 +31,123 @@ import org.keycloak.models.SingleUseObjectProvider;
 @JBossLog
 @RequiredArgsConstructor
 public class CassandraSingleUseObjectProvider implements SingleUseObjectProvider {
-  private static final String EMPTY_NOTE = "internal.emptyNote";
+    private static final String EMPTY_NOTE = "internal.emptyNote";
 
-  private final SingleUseObjectRepository repository;
+    private final SingleUseObjectRepository repository;
 
-  @Override
-  public void put(String key, long lifespanSeconds, Map<String, String> notes) {
-    log.tracef("put(%s)%s", key, getShortStackTrace());
+    @Override
+    public void put(String key, long lifespanSeconds, Map<String, String> notes) {
+        log.tracef("put(%s)%s", key, getShortStackTrace());
 
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
 
-    if (singleUseEntity != null) {
-      throw new ModelDuplicateException(
-          "Single-use object entity exists: " + singleUseEntity.getKey());
+        if (singleUseEntity != null) {
+            throw new ModelDuplicateException("Single-use object entity exists: " + singleUseEntity.getKey());
+        }
+
+        singleUseEntity = SingleUseObject.builder()
+                .key(key)
+                .notes(getInternalNotes(notes))
+                .build();
+
+        int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanSeconds);
+        repository.insertOrUpdate(singleUseEntity, ttl);
     }
 
-    singleUseEntity = SingleUseObject.builder().key(key).notes(getInternalNotes(notes)).build();
+    @Override
+    public Map<String, String> get(String key) {
+        log.tracef("get(%s)%s", key, getShortStackTrace());
 
-    int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanSeconds);
-    repository.insertOrUpdate(singleUseEntity, ttl);
-  }
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
+        if (singleUseEntity != null) {
+            return getExternalNotes(singleUseEntity.getNotes());
+        }
 
-  @Override
-  public Map<String, String> get(String key) {
-    log.tracef("get(%s)%s", key, getShortStackTrace());
-
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
-    if (singleUseEntity != null) {
-      return getExternalNotes(singleUseEntity.getNotes());
+        return null;
     }
 
-    return null;
-  }
+    @Override
+    public Map<String, String> remove(String key) {
+        log.tracef("remove(%s)%s", key, getShortStackTrace());
 
-  @Override
-  public Map<String, String> remove(String key) {
-    log.tracef("remove(%s)%s", key, getShortStackTrace());
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
 
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
-
-    if (singleUseEntity != null) {
-      Map<String, String> notes = singleUseEntity.getNotes();
-      if (repository.deleteSingleUseObjectByKey(key)) {
-        return getExternalNotes(notes);
-      }
-    }
-    // the single-use entity expired or someone else already used and deleted it
-    return null;
-  }
-
-  @Override
-  public boolean replace(String key, Map<String, String> notes) {
-    log.tracef("replace(%s)%s", key, getShortStackTrace());
-
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
-    if (singleUseEntity != null) {
-      singleUseEntity.setNotes(getInternalNotes(notes));
-      repository.insertOrUpdate(singleUseEntity);
-      return true;
+        if (singleUseEntity != null) {
+            Map<String, String> notes = singleUseEntity.getNotes();
+            if (repository.deleteSingleUseObjectByKey(key)) {
+                return getExternalNotes(notes);
+            }
+        }
+        // the single-use entity expired or someone else already used and deleted it
+        return null;
     }
 
-    return false;
-  }
+    @Override
+    public boolean replace(String key, Map<String, String> notes) {
+        log.tracef("replace(%s)%s", key, getShortStackTrace());
 
-  @Override
-  public boolean putIfAbsent(String key, long lifespanInSeconds) {
-    log.tracef("putIfAbsent(%s)%s", key, getShortStackTrace());
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
+        if (singleUseEntity != null) {
+            singleUseEntity.setNotes(getInternalNotes(notes));
+            repository.insertOrUpdate(singleUseEntity);
+            return true;
+        }
 
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
-    if (singleUseEntity != null) {
-      return false;
-    } else {
-      singleUseEntity = SingleUseObject.builder().key(key).notes(getInternalNotes(null)).build();
-
-      int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanInSeconds);
-      repository.insertOrUpdate(singleUseEntity, ttl);
-      return true;
-    }
-  }
-
-  @Override
-  public boolean contains(String key) {
-    log.tracef("contains(%s)%s", key, getShortStackTrace());
-
-    SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
-
-    return singleUseEntity != null;
-  }
-
-  @Override
-  public void close() {
-    // Nothing to do
-  }
-
-  private Map<String, String> getInternalNotes(Map<String, String> notes) {
-    Map<String, String> result =
-        notes == null
-            ? new HashMap<>()
-            : notes.entrySet().stream()
-                .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-    if (result.isEmpty()) {
-      result.put(EMPTY_NOTE, EMPTY_NOTE);
+        return false;
     }
 
-    return result;
-  }
+    @Override
+    public boolean putIfAbsent(String key, long lifespanInSeconds) {
+        log.tracef("putIfAbsent(%s)%s", key, getShortStackTrace());
 
-  private Map<String, String> getExternalNotes(Map<String, String> notes) {
-    Map<String, String> result = notes == null ? new HashMap<>() : new HashMap<>(notes);
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
+        if (singleUseEntity != null) {
+            return false;
+        } else {
+            singleUseEntity = SingleUseObject.builder()
+                    .key(key)
+                    .notes(getInternalNotes(null))
+                    .build();
 
-    result.remove(EMPTY_NOTE);
+            int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(lifespanInSeconds);
+            repository.insertOrUpdate(singleUseEntity, ttl);
+            return true;
+        }
+    }
 
-    return result;
-  }
+    @Override
+    public boolean contains(String key) {
+        log.tracef("contains(%s)%s", key, getShortStackTrace());
+
+        SingleUseObject singleUseEntity = repository.findSingleUseObjectByKey(key);
+
+        return singleUseEntity != null;
+    }
+
+    @Override
+    public void close() {
+        // Nothing to do
+    }
+
+    private Map<String, String> getInternalNotes(Map<String, String> notes) {
+        Map<String, String> result = notes == null
+                ? new HashMap<>()
+                : notes.entrySet().stream()
+                        .filter(e -> e.getValue() != null)
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (result.isEmpty()) {
+            result.put(EMPTY_NOTE, EMPTY_NOTE);
+        }
+
+        return result;
+    }
+
+    private Map<String, String> getExternalNotes(Map<String, String> notes) {
+        Map<String, String> result = notes == null ? new HashMap<>() : new HashMap<>(notes);
+
+        result.remove(EMPTY_NOTE);
+
+        return result;
+    }
 }

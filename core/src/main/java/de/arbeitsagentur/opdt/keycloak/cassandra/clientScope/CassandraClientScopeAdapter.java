@@ -38,240 +38,238 @@ import org.keycloak.models.utils.RoleUtils;
 @RequiredArgsConstructor
 @EqualsAndHashCode(of = "clientScopeEntity")
 public class CassandraClientScopeAdapter implements ClientScopeModel {
-  public static final String DESCRIPTION = INTERNAL_ATTRIBUTE_PREFIX + "description";
-  public static final String PROTOCOL = INTERNAL_ATTRIBUTE_PREFIX + "protocol";
-  public static final String PROTOCOL_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "protocolMappers";
-  public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
-  private final RealmModel realm;
-  private final ClientScopeValue clientScopeEntity;
+    public static final String DESCRIPTION = INTERNAL_ATTRIBUTE_PREFIX + "description";
+    public static final String PROTOCOL = INTERNAL_ATTRIBUTE_PREFIX + "protocol";
+    public static final String PROTOCOL_MAPPERS = INTERNAL_ATTRIBUTE_PREFIX + "protocolMappers";
+    public static final String SCOPE_MAPPINGS = INTERNAL_ATTRIBUTE_PREFIX + "scopeMappings";
+    private final RealmModel realm;
+    private final ClientScopeValue clientScopeEntity;
 
-  private final ClientScopes scopes;
-  private final ClientScopeRepository clientScopeRepository;
+    private final ClientScopes scopes;
+    private final ClientScopeRepository clientScopeRepository;
 
-  private final CassandraClientScopeProvider provider;
+    private final CassandraClientScopeProvider provider;
 
-  @Override
-  public String getId() {
-    return clientScopeEntity.getId();
-  }
-
-  @Override
-  public RealmModel getRealm() {
-    return realm;
-  }
-
-  @Override
-  public String getName() {
-    return clientScopeEntity.getName();
-  }
-
-  @Override
-  public void setName(String name) {
-    clientScopeEntity.setName(name);
-    provider.markChanged(clientScopeEntity.getRealmId());
-  }
-
-  @Override
-  public String getDescription() {
-    return getAttribute(DESCRIPTION);
-  }
-
-  @Override
-  public void setDescription(String description) {
-    setAttribute(DESCRIPTION, description);
-  }
-
-  @Override
-  public String getProtocol() {
-    return getAttribute(PROTOCOL);
-  }
-
-  @Override
-  public void setProtocol(String protocol) {
-    setAttribute(PROTOCOL, protocol);
-  }
-
-  @Override
-  public Stream<ProtocolMapperModel> getProtocolMappersStream() {
-    return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream();
-  }
-
-  @Override
-  public ProtocolMapperModel addProtocolMapper(ProtocolMapperModel model) {
-    if (model.getId() == null) {
-      String id = KeycloakModelUtils.generateId();
-      model.setId(id);
-    }
-    if (model.getConfig() == null) {
-      model.setConfig(new HashMap<>());
+    @Override
+    public String getId() {
+        return clientScopeEntity.getId();
     }
 
-    List<ProtocolMapperModel> protocolMappers =
-        getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class);
-    protocolMappers.add(model);
-    setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappers);
-    return model;
-  }
-
-  @Override
-  public void removeProtocolMapper(ProtocolMapperModel mapping) {
-    List<ProtocolMapperModel> protocolMappersWithoutMapping =
-        getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-            .filter(e -> !e.getId().equals(mapping.getId()))
-            .collect(Collectors.toList());
-    setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
-  }
-
-  @Override
-  public void updateProtocolMapper(ProtocolMapperModel mapping) {
-    if (mapping.getId() == null) {
-      ProtocolMapperModel existingMapper =
-          getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-              .filter(e -> e.getName().equals(mapping.getName()))
-              .findFirst()
-              .orElse(null);
-
-      if (existingMapper == null) {
-        addProtocolMapper(mapping);
-        return;
-      } else {
-        mapping.setId(existingMapper.getId());
-      }
+    @Override
+    public RealmModel getRealm() {
+        return realm;
     }
 
-    List<ProtocolMapperModel> protocolMappersWithoutMapping =
-        getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-            .filter(
-                e ->
-                    (mapping.getId() == null && !e.getName().equals(mapping.getName()))
-                        || (mapping.getId() != null && !e.getId().equals(mapping.getId())))
-            .collect(Collectors.toList());
-    protocolMappersWithoutMapping.add(mapping);
-    setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
-  }
-
-  @Override
-  public ProtocolMapperModel getProtocolMapperById(String id) {
-    return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-        .filter(e -> e.getId().equals(id))
-        .findFirst()
-        .orElse(null);
-  }
-
-  @Override
-  public ProtocolMapperModel getProtocolMapperByName(String protocol, String name) {
-    return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
-        .filter(e -> Objects.equals(e.getProtocol(), protocol))
-        .filter(e -> Objects.equals(e.getName(), name))
-        .findFirst()
-        .orElse(null);
-  }
-
-  public Stream<RoleModel> getScopeMappingsStream() {
-    List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
-    return scopeMappings == null
-        ? Stream.empty()
-        : scopeMappings.stream().map(getRealm()::getRoleById).filter(Objects::nonNull);
-  }
-
-  @Override
-  public Stream<RoleModel> getRealmScopeMappingsStream() {
-    return getScopeMappingsStream().filter(r -> RoleUtils.isRealmRole(r, getRealm()));
-  }
-
-  @Override
-  public void addScopeMapping(RoleModel role) {
-    if (role == null) {
-      return;
+    @Override
+    public String getName() {
+        return clientScopeEntity.getName();
     }
 
-    Set<String> scopeMappings = new HashSet<>(getAttributeValues(SCOPE_MAPPINGS));
-    scopeMappings.add(role.getId());
-    setAttributeValues(SCOPE_MAPPINGS, new ArrayList<>(scopeMappings));
-  }
-
-  @Override
-  public void deleteScopeMapping(RoleModel role) {
-    if (role == null) {
-      return;
+    @Override
+    public void setName(String name) {
+        clientScopeEntity.setName(name);
+        provider.markChanged(clientScopeEntity.getRealmId());
     }
 
-    List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
-    scopeMappings.remove(role.getId());
-    setAttributeValues(SCOPE_MAPPINGS, scopeMappings);
-  }
-
-  @Override
-  public boolean hasScope(RoleModel role) {
-    return RoleUtils.hasRole(getScopeMappingsStream(), role);
-  }
-
-  @Override
-  public void setAttribute(String name, String value) {
-    if (name == null || value == null) {
-      return;
+    @Override
+    public String getDescription() {
+        return getAttribute(DESCRIPTION);
     }
 
-    clientScopeEntity.getAttributes().put(name, Arrays.asList(value));
-    provider.markChanged(clientScopeEntity.getRealmId());
-  }
-
-  @Override
-  public void removeAttribute(String name) {
-    if (name == null) {
-      return;
-    }
-    clientScopeEntity.getAttributes().remove(name);
-    provider.markChanged(clientScopeEntity.getRealmId());
-  }
-
-  @Override
-  public String getAttribute(String name) {
-    List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
-    return values.isEmpty() || values.iterator().next().isEmpty() ? null : values.iterator().next();
-  }
-
-  @Override
-  public Map<String, String> getAttributes() {
-    return clientScopeEntity.getAttributes().entrySet().stream()
-        .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
-        .filter(
-            e ->
-                e.getValue() != null
-                    && !e.getValue().isEmpty()
-                    && !e.getValue().iterator().next().isEmpty())
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().iterator().next()));
-  }
-
-  public void setAttributeValues(String name, List<String> values) {
-    if (name == null || values == null) {
-      return;
+    @Override
+    public void setDescription(String description) {
+        setAttribute(DESCRIPTION, description);
     }
 
-    clientScopeEntity.getAttributes().put(name, values);
-    provider.markChanged(clientScopeEntity.getRealmId());
-  }
+    @Override
+    public String getProtocol() {
+        return getAttribute(PROTOCOL);
+    }
 
-  private List<String> getAttributeValues(String name) {
-    List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
-    return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
-  }
+    @Override
+    public void setProtocol(String protocol) {
+        setAttribute(PROTOCOL, protocol);
+    }
 
-  private void setSerializedAttributeValues(String name, List<?> values) {
-    List<String> attributeValues =
-        values.stream()
-            .map(CassandraJsonSerialization::writeValueAsString)
-            .collect(Collectors.toList());
+    @Override
+    public Stream<ProtocolMapperModel> getProtocolMappersStream() {
+        return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream();
+    }
 
-    clientScopeEntity.getAttributes().put(name, attributeValues);
-    provider.markChanged(clientScopeEntity.getRealmId());
-  }
+    @Override
+    public ProtocolMapperModel addProtocolMapper(ProtocolMapperModel model) {
+        if (model.getId() == null) {
+            String id = KeycloakModelUtils.generateId();
+            model.setId(id);
+        }
+        if (model.getConfig() == null) {
+            model.setConfig(new HashMap<>());
+        }
 
-  private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
-    List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
+        List<ProtocolMapperModel> protocolMappers =
+                getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class);
+        protocolMappers.add(model);
+        setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappers);
+        return model;
+    }
 
-    return values.stream()
-        .map(value -> CassandraJsonSerialization.readValue(value, type))
-        .collect(Collectors.toCollection(ArrayList::new));
-  }
+    @Override
+    public void removeProtocolMapper(ProtocolMapperModel mapping) {
+        List<ProtocolMapperModel> protocolMappersWithoutMapping =
+                getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                        .filter(e -> !e.getId().equals(mapping.getId()))
+                        .collect(Collectors.toList());
+        setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
+    }
+
+    @Override
+    public void updateProtocolMapper(ProtocolMapperModel mapping) {
+        if (mapping.getId() == null) {
+            ProtocolMapperModel existingMapper =
+                    getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                            .filter(e -> e.getName().equals(mapping.getName()))
+                            .findFirst()
+                            .orElse(null);
+
+            if (existingMapper == null) {
+                addProtocolMapper(mapping);
+                return;
+            } else {
+                mapping.setId(existingMapper.getId());
+            }
+        }
+
+        List<ProtocolMapperModel> protocolMappersWithoutMapping =
+                getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                        .filter(e -> (mapping.getId() == null && !e.getName().equals(mapping.getName()))
+                                || (mapping.getId() != null && !e.getId().equals(mapping.getId())))
+                        .collect(Collectors.toList());
+        protocolMappersWithoutMapping.add(mapping);
+        setSerializedAttributeValues(PROTOCOL_MAPPERS, protocolMappersWithoutMapping);
+    }
+
+    @Override
+    public ProtocolMapperModel getProtocolMapperById(String id) {
+        return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                .filter(e -> e.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public ProtocolMapperModel getProtocolMapperByName(String protocol, String name) {
+        return getDeserializedAttributes(PROTOCOL_MAPPERS, ProtocolMapperModel.class).stream()
+                .filter(e -> Objects.equals(e.getProtocol(), protocol))
+                .filter(e -> Objects.equals(e.getName(), name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Stream<RoleModel> getScopeMappingsStream() {
+        List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
+        return scopeMappings == null
+                ? Stream.empty()
+                : scopeMappings.stream().map(getRealm()::getRoleById).filter(Objects::nonNull);
+    }
+
+    @Override
+    public Stream<RoleModel> getRealmScopeMappingsStream() {
+        return getScopeMappingsStream().filter(r -> RoleUtils.isRealmRole(r, getRealm()));
+    }
+
+    @Override
+    public void addScopeMapping(RoleModel role) {
+        if (role == null) {
+            return;
+        }
+
+        Set<String> scopeMappings = new HashSet<>(getAttributeValues(SCOPE_MAPPINGS));
+        scopeMappings.add(role.getId());
+        setAttributeValues(SCOPE_MAPPINGS, new ArrayList<>(scopeMappings));
+    }
+
+    @Override
+    public void deleteScopeMapping(RoleModel role) {
+        if (role == null) {
+            return;
+        }
+
+        List<String> scopeMappings = getAttributeValues(SCOPE_MAPPINGS);
+        scopeMappings.remove(role.getId());
+        setAttributeValues(SCOPE_MAPPINGS, scopeMappings);
+    }
+
+    @Override
+    public boolean hasScope(RoleModel role) {
+        return RoleUtils.hasRole(getScopeMappingsStream(), role);
+    }
+
+    @Override
+    public void setAttribute(String name, String value) {
+        if (name == null || value == null) {
+            return;
+        }
+
+        clientScopeEntity.getAttributes().put(name, Arrays.asList(value));
+        provider.markChanged(clientScopeEntity.getRealmId());
+    }
+
+    @Override
+    public void removeAttribute(String name) {
+        if (name == null) {
+            return;
+        }
+        clientScopeEntity.getAttributes().remove(name);
+        provider.markChanged(clientScopeEntity.getRealmId());
+    }
+
+    @Override
+    public String getAttribute(String name) {
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
+        return values.isEmpty() || values.iterator().next().isEmpty()
+                ? null
+                : values.iterator().next();
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        return clientScopeEntity.getAttributes().entrySet().stream()
+                .filter(e -> !e.getKey().startsWith(INTERNAL_ATTRIBUTE_PREFIX))
+                .filter(e -> e.getValue() != null
+                        && !e.getValue().isEmpty()
+                        && !e.getValue().iterator().next().isEmpty())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, e -> e.getValue().iterator().next()));
+    }
+
+    public void setAttributeValues(String name, List<String> values) {
+        if (name == null || values == null) {
+            return;
+        }
+
+        clientScopeEntity.getAttributes().put(name, values);
+        provider.markChanged(clientScopeEntity.getRealmId());
+    }
+
+    private List<String> getAttributeValues(String name) {
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
+        return values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
+    }
+
+    private void setSerializedAttributeValues(String name, List<?> values) {
+        List<String> attributeValues = values.stream()
+                .map(CassandraJsonSerialization::writeValueAsString)
+                .collect(Collectors.toList());
+
+        clientScopeEntity.getAttributes().put(name, attributeValues);
+        provider.markChanged(clientScopeEntity.getRealmId());
+    }
+
+    private <T> List<T> getDeserializedAttributes(String name, Class<T> type) {
+        List<String> values = clientScopeEntity.getAttributes().getOrDefault(name, new ArrayList<>());
+
+        return values.stream()
+                .map(value -> CassandraJsonSerialization.readValue(value, type))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
 }

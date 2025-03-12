@@ -34,45 +34,47 @@ import org.keycloak.models.UserSessionModel;
 @Entity
 @CqlName("user_sessions")
 public class UserSession implements ExpirableEntity {
-  @PartitionKey private String id;
+    @PartitionKey
+    private String id;
 
-  private String realmId;
-  private String userId;
-  private String loginUsername;
-  private String ipAddress;
-  private String authMethod;
-  private String brokerSessionId;
-  private String brokerUserId;
-  private Long timestamp;
-  private Long expiration;
-  private Boolean offline;
-  private Boolean rememberMe;
-  private Long lastSessionRefresh;
+    private String realmId;
+    private String userId;
+    private String loginUsername;
+    private String ipAddress;
+    private String authMethod;
+    private String brokerSessionId;
+    private String brokerUserId;
+    private Long timestamp;
+    private Long expiration;
+    private Boolean offline;
+    private Boolean rememberMe;
+    private Long lastSessionRefresh;
 
-  private UserSessionModel.State state;
+    private UserSessionModel.State state;
 
-  @Builder.Default private Map<String, String> notes = new HashMap<>();
+    @Builder.Default
+    private Map<String, String> notes = new HashMap<>();
 
-  @Builder.Default
-  private Map<String, AuthenticatedClientSessionValue> clientSessions = new HashMap<>();
+    @Builder.Default
+    private Map<String, AuthenticatedClientSessionValue> clientSessions = new HashMap<>();
 
-  private UserSessionModel.SessionPersistenceState persistenceState;
+    private UserSessionModel.SessionPersistenceState persistenceState;
 
-  public boolean hasCorrespondingSession() {
-    return getNotes().containsKey(CORRESPONDING_SESSION_ID);
-  }
-
-  public Map<String, String> getNotes() {
-    if (notes == null) {
-      notes = new HashMap<>();
+    public boolean hasCorrespondingSession() {
+        return getNotes().containsKey(CORRESPONDING_SESSION_ID);
     }
-    return notes;
-  }
 
-  public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
-    if (clientSessions == null) {
-      clientSessions = new HashMap<>();
+    public Map<String, String> getNotes() {
+        if (notes == null) {
+            notes = new HashMap<>();
+        }
+        return notes;
     }
-    return clientSessions;
-  }
+
+    public Map<String, AuthenticatedClientSessionValue> getClientSessions() {
+        if (clientSessions == null) {
+            clientSessions = new HashMap<>();
+        }
+        return clientSessions;
+    }
 }

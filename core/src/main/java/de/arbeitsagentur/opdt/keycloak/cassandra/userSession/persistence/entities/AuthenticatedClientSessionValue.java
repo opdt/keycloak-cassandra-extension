@@ -28,24 +28,25 @@ import lombok.*;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true) // ignore old "refreshTokenUses"
 public class AuthenticatedClientSessionValue implements ExpirableEntity {
-  private String id;
-  private String clientId;
-  private Long timestamp;
-  private Long expiration;
+    private String id;
+    private String clientId;
+    private Long timestamp;
+    private Long expiration;
 
-  private String authMethod;
-  private String redirectUri;
-  private String action;
-  private String currentRefreshToken;
-  private Integer currentRefreshTokenUseCount;
-  private boolean offline;
+    private String authMethod;
+    private String redirectUri;
+    private String action;
+    private String currentRefreshToken;
+    private Integer currentRefreshTokenUseCount;
+    private boolean offline;
 
-  @Builder.Default private Map<String, String> notes = new HashMap<>();
+    @Builder.Default
+    private Map<String, String> notes = new HashMap<>();
 
-  public Map<String, String> getNotes() {
-    if (notes == null) {
-      notes = new HashMap<>();
+    public Map<String, String> getNotes() {
+        if (notes == null) {
+            notes = new HashMap<>();
+        }
+        return notes;
     }
-    return notes;
-  }
 }

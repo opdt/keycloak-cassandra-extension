@@ -32,42 +32,42 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 @AutoService(PublicKeyStorageProviderFactory.class)
 public class TransientPublicKeyStorageProviderFactory
-    implements PublicKeyStorageProviderFactory<TransientPublicKeyStorageProvider>,
-        EnvironmentDependentProviderFactory,
-        ServerInfoAwareProviderFactory {
+        implements PublicKeyStorageProviderFactory<TransientPublicKeyStorageProvider>,
+                EnvironmentDependentProviderFactory,
+                ServerInfoAwareProviderFactory {
 
-  @Override
-  public TransientPublicKeyStorageProvider create(KeycloakSession session) {
-    return createProviderCached(
-        session, TransientPublicKeyStorageProvider.class, TransientPublicKeyStorageProvider::new);
-  }
+    @Override
+    public TransientPublicKeyStorageProvider create(KeycloakSession session) {
+        return createProviderCached(
+                session, TransientPublicKeyStorageProvider.class, TransientPublicKeyStorageProvider::new);
+    }
 
-  @Override
-  public void init(Config.Scope config) {}
+    @Override
+    public void init(Config.Scope config) {}
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public String getId() {
-    return "infinispan"; // use same name as infinispan provider to override it
-  }
+    @Override
+    public String getId() {
+        return "infinispan"; // use same name as infinispan provider to override it
+    }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 
-  @Override
-  public Map<String, String> getOperationalInfo() {
-    return Map.of("implementation", "transient (cassandra-extension)");
-  }
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        return Map.of("implementation", "transient (cassandra-extension)");
+    }
 }

@@ -23,12 +23,12 @@ import com.datastax.oss.driver.api.mapper.annotations.Update;
 import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 
 public interface TransactionalDao<T extends TransactionalEntity> extends BaseDao {
-  @Insert(ifNotExists = true)
-  void insert(T entity);
+    @Insert(ifNotExists = true)
+    void insert(T entity);
 
-  @Update(customIfClause = "version = :expectedVersion")
-  ResultSet update(T entity, long expectedVersion);
+    @Update(customIfClause = "version = :expectedVersion")
+    ResultSet update(T entity, long expectedVersion);
 
-  @Delete(ifExists = true)
-  void delete(T entity);
+    @Delete(ifExists = true)
+    void delete(T entity);
 }

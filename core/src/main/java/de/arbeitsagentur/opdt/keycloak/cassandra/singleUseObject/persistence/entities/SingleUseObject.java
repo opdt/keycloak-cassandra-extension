@@ -30,14 +30,16 @@ import lombok.*;
 @Entity
 @CqlName("single_use_objects")
 public class SingleUseObject {
-  @PartitionKey private String key;
+    @PartitionKey
+    private String key;
 
-  @Builder.Default private Map<String, String> notes = new HashMap<>();
+    @Builder.Default
+    private Map<String, String> notes = new HashMap<>();
 
-  public Map<String, String> getNotes() {
-    if (notes == null) {
-      notes = new HashMap<>();
+    public Map<String, String> getNotes() {
+        if (notes == null) {
+            notes = new HashMap<>();
+        }
+        return notes;
     }
-    return notes;
-  }
 }

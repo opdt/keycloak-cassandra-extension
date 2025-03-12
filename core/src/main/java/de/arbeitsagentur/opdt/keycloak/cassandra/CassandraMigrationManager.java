@@ -23,14 +23,13 @@ import org.keycloak.storage.MigrationManager;
 
 @JBossLog
 public class CassandraMigrationManager implements MigrationManager {
-  @Override
-  public void migrate() {
-    log.info(
-        "Skipping migration manager as migration should already be done by cassandraConnectionFactory.init()");
-  }
+    @Override
+    public void migrate() {
+        log.info("Skipping migration manager as migration should already be done by cassandraConnectionFactory.init()");
+    }
 
-  @Override
-  public void migrate(RealmModel realm, RealmRepresentation rep, boolean skipUserDependent) {
-    migrate();
-  }
+    @Override
+    public void migrate(RealmModel realm, RealmRepresentation rep, boolean skipUserDependent) {
+        migrate();
+    }
 }

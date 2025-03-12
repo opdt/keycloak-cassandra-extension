@@ -23,25 +23,25 @@ import org.keycloak.provider.Spi;
 @AutoService(Spi.class)
 public class CassandraConnectionSpi implements Spi {
 
-  public static final String NAME = "cassandraConnection";
+    public static final String NAME = "cassandraConnection";
 
-  @Override
-  public boolean isInternal() {
-    return true;
-  }
+    @Override
+    public boolean isInternal() {
+        return true;
+    }
 
-  @Override
-  public String getName() {
-    return NAME;
-  }
+    @Override
+    public String getName() {
+        return NAME;
+    }
 
-  @Override
-  public Class<? extends Provider> getProviderClass() {
-    return CassandraConnectionProvider.class;
-  }
+    @Override
+    public Class<? extends Provider> getProviderClass() {
+        return CassandraConnectionProvider.class;
+    }
 
-  @Override
-  public Class<? extends ProviderFactory> getProviderFactoryClass() {
-    return CassandraConnectionProviderFactory.class;
-  }
+    @Override
+    public Class<? extends ProviderFactory> getProviderFactoryClass() {
+        return CassandraConnectionProviderFactory.class;
+    }
 }

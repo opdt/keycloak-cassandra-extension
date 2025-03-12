@@ -30,13 +30,15 @@ import lombok.*;
 @Entity
 @CqlName("client_initial_accesses")
 public class ClientInitialAccess implements ExpirableEntity {
-  @PartitionKey private String realmId;
+    @PartitionKey
+    private String realmId;
 
-  @ClusteringColumn private String id;
+    @ClusteringColumn
+    private String id;
 
-  private Long timestamp;
-  private Long expiration;
+    private Long timestamp;
+    private Long expiration;
 
-  private Integer count;
-  private Integer remainingCount;
+    private Integer count;
+    private Integer remainingCount;
 }

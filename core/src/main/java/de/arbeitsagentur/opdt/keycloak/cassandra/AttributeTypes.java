@@ -17,7 +17,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra;
 
 public final class AttributeTypes {
-  public static final String INDEXED_ATTRIBUTE_PREFIX = "indexed.";
-  public static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
-  public static final String READONLY_ATTRIBUTE_PREFIX = "readonly.";
+    public static final String INDEXED_ATTRIBUTE_PREFIX = "indexed.";
+    public static final String INTERNAL_ATTRIBUTE_PREFIX = "internal.";
+    public static final String READONLY_ATTRIBUTE_PREFIX = "readonly.";
 }

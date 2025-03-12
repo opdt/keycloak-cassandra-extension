@@ -29,9 +29,11 @@ import lombok.*;
 @Entity
 @CqlName("root_authentication_sessions")
 public class RootAuthenticationSession implements ExpirableEntity {
-  @PartitionKey private String id;
-  private String realmId;
+    @PartitionKey
+    private String id;
 
-  private Long timestamp;
-  private Long expiration;
+    private String realmId;
+
+    private Long timestamp;
+    private Long expiration;
 }

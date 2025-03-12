@@ -37,62 +37,62 @@ import org.keycloak.sessions.StickySessionEncoderProviderFactory;
  */
 @AutoService(StickySessionEncoderProviderFactory.class)
 public class DisabledStickySessionEncoderProvider
-    implements StickySessionEncoderProviderFactory,
-        StickySessionEncoderProvider,
-        EnvironmentDependentProviderFactory,
-        ServerInfoAwareProviderFactory {
+        implements StickySessionEncoderProviderFactory,
+                StickySessionEncoderProvider,
+                EnvironmentDependentProviderFactory,
+                ServerInfoAwareProviderFactory {
 
-  @Override
-  public StickySessionEncoderProvider create(KeycloakSession session) {
-    return createProviderCached(session, StickySessionEncoderProvider.class, () -> this);
-  }
+    @Override
+    public StickySessionEncoderProvider create(KeycloakSession session) {
+        return createProviderCached(session, StickySessionEncoderProvider.class, () -> this);
+    }
 
-  @Override
-  public String encodeSessionId(String sessionId) {
-    return sessionId;
-  }
+    @Override
+    public String encodeSessionId(String sessionId) {
+        return sessionId;
+    }
 
-  @Override
-  public String decodeSessionId(String encodedSessionId) {
-    return encodedSessionId;
-  }
+    @Override
+    public String decodeSessionId(String encodedSessionId) {
+        return encodedSessionId;
+    }
 
-  @Override
-  public boolean shouldAttachRoute() {
-    return false;
-  }
+    @Override
+    public boolean shouldAttachRoute() {
+        return false;
+    }
 
-  @Override
-  public void init(Config.Scope config) {}
+    @Override
+    public void init(Config.Scope config) {}
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public String getId() {
-    return "infinispan"; // use same name as infinispan provider to override it
-  }
+    @Override
+    public String getId() {
+        return "infinispan"; // use same name as infinispan provider to override it
+    }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 
-  @Override
-  public Map<String, String> getOperationalInfo() {
-    return Map.of("implementation", "disabled (cassandra-extension)");
-  }
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        return Map.of("implementation", "disabled (cassandra-extension)");
+    }
 
-  @Override
-  public void setShouldAttachRoute(boolean b) {
-    // do nothing
-  }
+    @Override
+    public void setShouldAttachRoute(boolean b) {
+        // do nothing
+    }
 }

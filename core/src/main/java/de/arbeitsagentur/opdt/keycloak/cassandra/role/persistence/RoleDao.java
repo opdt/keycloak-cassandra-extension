@@ -21,9 +21,9 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
 public interface RoleDao extends TransactionalDao<Roles> {
-  @Select(customWhereClause = "realm_id = :realmId")
-  Roles getRolesByRealmId(String realmId);
+    @Select(customWhereClause = "realm_id = :realmId")
+    Roles getRolesByRealmId(String realmId);
 
-  @Delete(entityClass = Roles.class, ifExists = true)
-  void deleteAllRealmRoles(String realmId);
+    @Delete(entityClass = Roles.class, ifExists = true)
+    void deleteAllRealmRoles(String realmId);
 }

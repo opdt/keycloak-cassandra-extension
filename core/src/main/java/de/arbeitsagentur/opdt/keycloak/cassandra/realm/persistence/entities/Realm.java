@@ -30,22 +30,24 @@ import lombok.*;
 @Entity
 @CqlName("realms")
 public class Realm implements TransactionalEntity {
-  @PartitionKey private String id;
+    @PartitionKey
+    private String id;
 
-  private String name;
+    private String name;
 
-  private Long version;
+    private Long version;
 
-  @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
+    @Builder.Default
+    private Map<String, List<String>> attributes = new HashMap<>();
 
-  public Map<String, List<String>> getAttributes() {
-    if (attributes == null) {
-      attributes = new HashMap<>();
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        return attributes;
     }
-    return attributes;
-  }
 
-  public List<String> getAttribute(String name) {
-    return attributes.getOrDefault(name, new ArrayList<>());
-  }
+    public List<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new ArrayList<>());
+    }
 }

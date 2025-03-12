@@ -32,20 +32,20 @@ package de.arbeitsagentur.opdt.keycloak.common;
  */
 public interface ExpirableEntity {
 
-  /**
-   * Returns a point in the time (timestamp in milliseconds since The Epoch) when this entity
-   * expires.
-   *
-   * @return a timestamp in milliseconds since The Epoch or {@code null} if this entity never
-   *     expires or expiration is not known.
-   */
-  Long getExpiration();
+    /**
+     * Returns a point in the time (timestamp in milliseconds since The Epoch) when this entity
+     * expires.
+     *
+     * @return a timestamp in milliseconds since The Epoch or {@code null} if this entity never
+     *     expires or expiration is not known.
+     */
+    Long getExpiration();
 
-  /**
-   * Sets a point in the time (timestamp in milliseconds since The Epoch) when this entity expires.
-   *
-   * @param expiration a timestamp in milliseconds since The Epoch or {@code null} if this entity
-   *     never expires.
-   */
-  void setExpiration(Long expiration);
+    /**
+     * Sets a point in the time (timestamp in milliseconds since The Epoch) when this entity expires.
+     *
+     * @param expiration a timestamp in milliseconds since The Epoch or {@code null} if this entity
+     *     never expires.
+     */
+    void setExpiration(Long expiration);
 }

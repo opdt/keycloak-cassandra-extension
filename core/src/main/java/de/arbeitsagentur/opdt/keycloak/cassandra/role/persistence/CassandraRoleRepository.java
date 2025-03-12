@@ -18,25 +18,24 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 
-public class CassandraRoleRepository extends TransactionalRepository<Roles, RoleDao>
-    implements RoleRepository {
+public class CassandraRoleRepository extends TransactionalRepository<Roles, RoleDao> implements RoleRepository {
 
-  public CassandraRoleRepository(RoleDao dao) {
-    super(dao);
-  }
-
-  @Override
-  public Roles getRolesByRealmId(String realmId) {
-    Roles rolesByRealmId = dao.getRolesByRealmId(realmId);
-    if (rolesByRealmId == null) {
-      rolesByRealmId = Roles.builder().realmId(realmId).build();
+    public CassandraRoleRepository(RoleDao dao) {
+        super(dao);
     }
 
-    return rolesByRealmId;
-  }
+    @Override
+    public Roles getRolesByRealmId(String realmId) {
+        Roles rolesByRealmId = dao.getRolesByRealmId(realmId);
+        if (rolesByRealmId == null) {
+            rolesByRealmId = Roles.builder().realmId(realmId).build();
+        }
 
-  @Override
-  public void deleteRealmRoles(String realmId) {
-    dao.deleteAllRealmRoles(realmId);
-  }
+        return rolesByRealmId;
+    }
+
+    @Override
+    public void deleteRealmRoles(String realmId) {
+        dao.deleteAllRealmRoles(realmId);
+    }
 }

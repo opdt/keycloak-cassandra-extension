@@ -36,73 +36,65 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 @JBossLog
 @AutoService(ClusterProviderFactory.class)
 public class NullInfinispanClusterProviderFactory
-    implements ClusterProviderFactory,
-        EnvironmentDependentProviderFactory,
-        ServerInfoAwareProviderFactory {
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+        implements ClusterProviderFactory, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 
-  @Override
-  public ClusterProvider create(KeycloakSession session) {
-    return createProviderCached(
-        session,
-        ClusterProvider.class,
-        () ->
-            new ClusterProvider() {
-              @Override
-              public int getClusterStartupTime() {
+    @Override
+    public ClusterProvider create(KeycloakSession session) {
+        return createProviderCached(session, ClusterProvider.class, () -> new ClusterProvider() {
+            @Override
+            public int getClusterStartupTime() {
                 return 0;
-              }
+            }
 
-              @Override
-              public <T> ExecutionResult<T> executeIfNotExecuted(
-                  String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
+            @Override
+            public <T> ExecutionResult<T> executeIfNotExecuted(
+                    String taskKey, int taskTimeoutInSeconds, Callable<T> task) {
                 return null;
-              }
+            }
 
-              @Override
-              public Future<Boolean> executeIfNotExecutedAsync(
-                  String taskKey, int taskTimeoutInSeconds, Callable task) {
+            @Override
+            public Future<Boolean> executeIfNotExecutedAsync(String taskKey, int taskTimeoutInSeconds, Callable task) {
                 return null;
-              }
+            }
 
-              @Override
-              public void registerListener(String taskKey, ClusterListener task) {}
+            @Override
+            public void registerListener(String taskKey, ClusterListener task) {}
 
-              @Override
-              public void notify(
-                  String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {}
+            @Override
+            public void notify(String taskKey, ClusterEvent event, boolean ignoreSender, DCNotify dcNotify) {}
 
-              @Override
-              public void close() {}
-            });
-  }
+            @Override
+            public void close() {}
+        });
+    }
 
-  @Override
-  public void init(Config.Scope config) {
-    log.info("Infinispan-ClusterProvider deactivated...");
-  }
+    @Override
+    public void init(Config.Scope config) {
+        log.info("Infinispan-ClusterProvider deactivated...");
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public String getId() {
-    return "infinispan";
-  }
+    @Override
+    public String getId() {
+        return "infinispan";
+    }
 
-  @Override
-  public Map<String, String> getOperationalInfo() {
-    return Map.of("implementation", "deactivated (cassandra-extension)");
-  }
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        return Map.of("implementation", "deactivated (cassandra-extension)");
+    }
 }

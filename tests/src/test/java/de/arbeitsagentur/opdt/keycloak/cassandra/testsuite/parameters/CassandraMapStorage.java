@@ -33,68 +33,62 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
-  public static final Boolean START_CONTAINER =
-      Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
+    public static final Boolean START_CONTAINER =
+            Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
 
-  static final Set<Class<? extends Spi>> ALLOWED_SPIS =
-      ImmutableSet.<Class<? extends Spi>>builder()
-          .add(CassandraConnectionSpi.class)
-          .add(DatastoreSpi.class)
-          .build();
+    static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
+            .add(CassandraConnectionSpi.class)
+            .add(DatastoreSpi.class)
+            .build();
 
-  static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES =
-      ImmutableSet.<Class<? extends ProviderFactory>>builder()
-          .add(CassandraConnectionProviderFactory.class)
-          .add(CassandraDatastoreProviderFactory.class)
-          .build();
+    static final Set<Class<? extends ProviderFactory>> ALLOWED_FACTORIES =
+            ImmutableSet.<Class<? extends ProviderFactory>>builder()
+                    .add(CassandraConnectionProviderFactory.class)
+                    .add(CassandraDatastoreProviderFactory.class)
+                    .build();
 
-  private final GenericContainer cassandraContainer = createCassandraContainer();
+    private final GenericContainer cassandraContainer = createCassandraContainer();
 
-  public CassandraMapStorage() {
-    super(ALLOWED_SPIS, ALLOWED_FACTORIES);
-  }
-
-  @Override
-  public void updateConfig(Config cf) {
-    cf.spi("datastore")
-        .defaultProvider("legacy")
-        .config("dir", "${project.build.directory:target}");
-
-    cf.spi(CassandraConnectionSpi.NAME)
-        .provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
-        .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
-        .config(
-            "port",
-            START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
-        .config("localDatacenter", "datacenter1")
-        .config("keyspace", "test")
-        .config("username", "cassandra")
-        .config("password", "cassandra")
-        .config("replicationFactor", "1");
-  }
-
-  @Override
-  public void beforeSuite(Config cf) {
-    if (START_CONTAINER) {
-      cassandraContainer.start();
+    public CassandraMapStorage() {
+        super(ALLOWED_SPIS, ALLOWED_FACTORIES);
     }
-  }
 
-  @Override
-  public void afterSuite() {
-    if (START_CONTAINER) {
-      cassandraContainer.stop();
+    @Override
+    public void updateConfig(Config cf) {
+        cf.spi("datastore").defaultProvider("legacy").config("dir", "${project.build.directory:target}");
+
+        cf.spi(CassandraConnectionSpi.NAME)
+                .provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
+                .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
+                .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
+                .config("localDatacenter", "datacenter1")
+                .config("keyspace", "test")
+                .config("username", "cassandra")
+                .config("password", "cassandra")
+                .config("replicationFactor", "1");
     }
-  }
 
-  private static GenericContainer createCassandraContainer() {
-    return new GenericContainer("bitnami/cassandra:4.1.3-debian-11-r0")
-        .withExposedPorts(9042)
-        .withEnv("CASSANDRA_DATACENTER", "datacenter1")
-        // TODO: withLogConsumer
-        .waitingFor(
-            new LogMessageWaitStrategy()
-                .withRegEx(".*Starting listening for CQL clients.*")
-                .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES)));
-  }
+    @Override
+    public void beforeSuite(Config cf) {
+        if (START_CONTAINER) {
+            cassandraContainer.start();
+        }
+    }
+
+    @Override
+    public void afterSuite() {
+        if (START_CONTAINER) {
+            cassandraContainer.stop();
+        }
+    }
+
+    private static GenericContainer createCassandraContainer() {
+        return new GenericContainer("bitnami/cassandra:4.1.3-debian-11-r0")
+                .withExposedPorts(9042)
+                .withEnv("CASSANDRA_DATACENTER", "datacenter1")
+                // TODO: withLogConsumer
+                .waitingFor(new LogMessageWaitStrategy()
+                        .withRegEx(".*Starting listening for CQL clients.*")
+                        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES)));
+    }
 }

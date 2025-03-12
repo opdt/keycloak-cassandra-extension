@@ -31,16 +31,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @CqlName("user_sessions_to_attributes")
 public class UserSessionToAttributeMapping {
-  @PartitionKey private String userSessionId;
+    @PartitionKey
+    private String userSessionId;
 
-  @ClusteringColumn private String attributeName;
+    @ClusteringColumn
+    private String attributeName;
 
-  private List<String> attributeValues;
+    private List<String> attributeValues;
 
-  public List<String> getAttributeValues() {
-    if (attributeValues == null) {
-      attributeValues = new ArrayList<>();
+    public List<String> getAttributeValues() {
+        if (attributeValues == null) {
+            attributeValues = new ArrayList<>();
+        }
+        return attributeValues;
     }
-    return attributeValues;
-  }
 }

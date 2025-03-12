@@ -34,22 +34,25 @@ import lombok.*;
 @Entity
 @CqlName("clients")
 public class Client implements TransactionalEntity {
-  @PartitionKey private String realmId;
+    @PartitionKey
+    private String realmId;
 
-  @ClusteringColumn private String id;
+    @ClusteringColumn
+    private String id;
 
-  private Long version;
+    private Long version;
 
-  @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
+    @Builder.Default
+    private Map<String, List<String>> attributes = new HashMap<>();
 
-  public Map<String, List<String>> getAttributes() {
-    if (attributes == null) {
-      attributes = new HashMap<>();
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        return attributes;
     }
-    return attributes;
-  }
 
-  public List<String> getAttribute(String name) {
-    return attributes.getOrDefault(name, new ArrayList<>());
-  }
+    public List<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new ArrayList<>());
+    }
 }
