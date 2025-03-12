@@ -30,36 +30,35 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 @AutoService(ClientScopeProviderFactory.class)
 public class CassandraClientScopeProviderFactory
-    implements ClientScopeProviderFactory<CassandraClientScopeProvider>,
-        EnvironmentDependentProviderFactory {
-  @Override
-  public CassandraClientScopeProvider create(KeycloakSession session) {
-    CassandraConnectionProvider cassandraConnectionProvider =
-        createProviderCached(session, CassandraConnectionProvider.class);
-    return new CassandraClientScopeProvider(session, cassandraConnectionProvider.getRepository());
-  }
+        implements ClientScopeProviderFactory<CassandraClientScopeProvider>, EnvironmentDependentProviderFactory {
+    @Override
+    public CassandraClientScopeProvider create(KeycloakSession session) {
+        CassandraConnectionProvider cassandraConnectionProvider =
+                createProviderCached(session, CassandraConnectionProvider.class);
+        return new CassandraClientScopeProvider(session, cassandraConnectionProvider.getRepository());
+    }
 
-  @Override
-  public void init(Config.Scope config) {}
+    @Override
+    public void init(Config.Scope config) {}
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public String getId() {
-    return "cassandra";
-  }
+    @Override
+    public String getId() {
+        return "cassandra";
+    }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled();
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled();
+    }
 }

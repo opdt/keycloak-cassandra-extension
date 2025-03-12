@@ -20,7 +20,7 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.CompositeRepository;
 import org.keycloak.provider.Provider;
 
 public interface CassandraConnectionProvider extends Provider {
-  CqlSession getCqlSession();
+    CqlSession getCqlSession();
 
-  CompositeRepository getRepository();
+    CompositeRepository getRepository();
 }

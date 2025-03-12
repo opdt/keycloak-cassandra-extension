@@ -21,64 +21,60 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Cli
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import java.util.List;
 
-public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao>
-    implements ClientRepository {
+public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao> implements ClientRepository {
 
-  private static final String CLIENT_ID = "clientId";
+    private static final String CLIENT_ID = "clientId";
 
-  public CassandraClientRepository(ClientDao dao) {
-    super(dao);
-  }
-
-  @Override
-  public void insertOrUpdate(Client entity) {
-    if (entity.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
-      dao.insertOrUpdate(
-          new ClientSearchIndex(
-              entity.getRealmId(),
-              CLIENT_ID,
-              entity.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
-              entity.getId()));
+    public CassandraClientRepository(ClientDao dao) {
+        super(dao);
     }
 
-    super.insertOrUpdate(entity);
-  }
+    @Override
+    public void insertOrUpdate(Client entity) {
+        if (entity.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
+            dao.insertOrUpdate(new ClientSearchIndex(
+                    entity.getRealmId(),
+                    CLIENT_ID,
+                    entity.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+                    entity.getId()));
+        }
 
-  @Override
-  public void delete(Client client) {
-    if (client.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
-      dao.deleteIndex(
-          client.getRealmId(),
-          CLIENT_ID,
-          client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
-          client.getId());
-    }
-    dao.delete(client);
-  }
-
-  @Override
-  public Client getClientById(String realmId, String id) {
-    return dao.getClientById(realmId, id);
-  }
-
-  public Client findByClientId(String realmId, String clientId) {
-    ClientSearchIndex index = dao.findClient(realmId, CLIENT_ID, clientId);
-    if (index == null) {
-      return null;
+        super.insertOrUpdate(entity);
     }
 
-    return dao.getClientById(realmId, index.getClientId());
-  }
+    @Override
+    public void delete(Client client) {
+        if (client.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
+            dao.deleteIndex(
+                    client.getRealmId(),
+                    CLIENT_ID,
+                    client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
+                    client.getId());
+        }
+        dao.delete(client);
+    }
 
-  @Override
-  public long countClientsByRealm(String realmId) {
-    return dao.findAllClientsWithRealmId(realmId)
-        .all()
-        .size(); // isn't using count() for Amazon Keyspaces support
-  }
+    @Override
+    public Client getClientById(String realmId, String id) {
+        return dao.getClientById(realmId, id);
+    }
 
-  @Override
-  public List<Client> findAllClientsWithRealmId(String realmId) {
-    return dao.findAllClientsWithRealmId(realmId).all();
-  }
+    public Client findByClientId(String realmId, String clientId) {
+        ClientSearchIndex index = dao.findClient(realmId, CLIENT_ID, clientId);
+        if (index == null) {
+            return null;
+        }
+
+        return dao.getClientById(realmId, index.getClientId());
+    }
+
+    @Override
+    public long countClientsByRealm(String realmId) {
+        return dao.findAllClientsWithRealmId(realmId).all().size(); // isn't using count() for Amazon Keyspaces support
+    }
+
+    @Override
+    public List<Client> findAllClientsWithRealmId(String realmId) {
+        return dao.findAllClientsWithRealmId(realmId).all();
+    }
 }

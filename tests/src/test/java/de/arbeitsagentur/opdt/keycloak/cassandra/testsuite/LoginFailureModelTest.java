@@ -25,111 +25,95 @@ import org.keycloak.models.*;
 
 public class LoginFailureModelTest extends KeycloakModelTest {
 
-  private String realmId;
+    private String realmId;
 
-  @Override
-  public void createEnvironment(KeycloakSession s) {
-    RealmModel realm = s.realms().createRealm("realm");
-    realm.setDefaultRole(
-        s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
-    realmId = realm.getId();
-  }
+    @Override
+    public void createEnvironment(KeycloakSession s) {
+        RealmModel realm = s.realms().createRealm("realm");
+        realm.setDefaultRole(
+                s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
+        realmId = realm.getId();
+    }
 
-  @Override
-  public void cleanEnvironment(KeycloakSession s) {
-    s.realms().removeRealm(realmId);
-  }
+    @Override
+    public void cleanEnvironment(KeycloakSession s) {
+        s.realms().removeRealm(realmId);
+    }
 
-  @Test
-  public void testLoginFailures() {
-    String userId = withRealm(realmId, (s, realm) -> s.users().addUser(realm, "user")).getId();
-    UserLoginFailureModel loginFailureModel =
-        withRealm(
-            realmId,
-            (s, realm) -> {
-              UserLoginFailureProvider loginFailureProvider = s.loginFailures();
-              return loginFailureProvider.addUserLoginFailure(realm, userId);
-            });
-
-    withRealm(
-        realmId,
-        (s, realm) -> {
-          UserLoginFailureProvider loginFailureProvider = s.loginFailures();
-          UserLoginFailureModel currentModel =
-              loginFailureProvider.getUserLoginFailure(realm, userId);
-          assertThat(currentModel, is(loginFailureModel));
-
-          // Re-adding doesnt change anything
-          UserLoginFailureModel readded = loginFailureProvider.addUserLoginFailure(realm, userId);
-          assertThat(readded, is(loginFailureModel));
-
-          currentModel.setLastFailure(42L);
-          currentModel.setLastIPFailure("some-ip");
-          currentModel.setFailedLoginNotBefore(50);
-          currentModel.incrementFailures();
-
-          return null;
+    @Test
+    public void testLoginFailures() {
+        String userId = withRealm(realmId, (s, realm) -> s.users().addUser(realm, "user"))
+                .getId();
+        UserLoginFailureModel loginFailureModel = withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+            return loginFailureProvider.addUserLoginFailure(realm, userId);
         });
 
-    withRealm(
-        realmId,
-        (s, realm) -> {
-          UserLoginFailureProvider loginFailureProvider = s.loginFailures();
-          UserLoginFailureModel currentModel =
-              loginFailureProvider.getUserLoginFailure(realm, userId);
+        withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+            UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
+            assertThat(currentModel, is(loginFailureModel));
 
-          assertThat(currentModel.getLastFailure(), is(42L));
-          assertThat(currentModel.getLastIPFailure(), is("some-ip"));
-          assertThat(currentModel.getFailedLoginNotBefore(), is(50));
-          assertThat(currentModel.getNumFailures(), is(1));
+            // Re-adding doesnt change anything
+            UserLoginFailureModel readded = loginFailureProvider.addUserLoginFailure(realm, userId);
+            assertThat(readded, is(loginFailureModel));
 
-          currentModel.clearFailures();
+            currentModel.setLastFailure(42L);
+            currentModel.setLastIPFailure("some-ip");
+            currentModel.setFailedLoginNotBefore(50);
+            currentModel.incrementFailures();
 
-          return null;
+            return null;
         });
 
-    withRealm(
-        realmId,
-        (s, realm) -> {
-          UserLoginFailureProvider loginFailureProvider = s.loginFailures();
-          UserLoginFailureModel currentModel =
-              loginFailureProvider.getUserLoginFailure(realm, userId);
+        withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+            UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
 
-          assertThat(currentModel.getLastFailure(), is(0L));
-          assertNull(currentModel.getLastIPFailure());
-          assertThat(currentModel.getFailedLoginNotBefore(), is(0));
-          assertThat(currentModel.getNumFailures(), is(0));
+            assertThat(currentModel.getLastFailure(), is(42L));
+            assertThat(currentModel.getLastIPFailure(), is("some-ip"));
+            assertThat(currentModel.getFailedLoginNotBefore(), is(50));
+            assertThat(currentModel.getNumFailures(), is(1));
 
-          loginFailureProvider.removeUserLoginFailure(realm, userId);
+            currentModel.clearFailures();
 
-          return null;
+            return null;
         });
 
-    String userId2 =
-        withRealm(
-            realmId,
-            (s, realm) -> {
-              UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+        withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+            UserLoginFailureModel currentModel = loginFailureProvider.getUserLoginFailure(realm, userId);
 
-              assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
+            assertThat(currentModel.getLastFailure(), is(0L));
+            assertNull(currentModel.getLastIPFailure());
+            assertThat(currentModel.getFailedLoginNotBefore(), is(0));
+            assertThat(currentModel.getNumFailures(), is(0));
 
-              String id2 = s.users().addUser(realm, "user2").getId();
-              loginFailureProvider.addUserLoginFailure(realm, userId);
-              loginFailureProvider.addUserLoginFailure(realm, id2);
-              loginFailureProvider.removeAllUserLoginFailures(realm);
+            loginFailureProvider.removeUserLoginFailure(realm, userId);
 
-              return id2;
-            });
-
-    withRealm(
-        realmId,
-        (s, realm) -> {
-          UserLoginFailureProvider loginFailureProvider = s.loginFailures();
-
-          assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
-          assertNull(loginFailureProvider.getUserLoginFailure(realm, userId2));
-
-          return null;
+            return null;
         });
-  }
+
+        String userId2 = withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+
+            assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
+
+            String id2 = s.users().addUser(realm, "user2").getId();
+            loginFailureProvider.addUserLoginFailure(realm, userId);
+            loginFailureProvider.addUserLoginFailure(realm, id2);
+            loginFailureProvider.removeAllUserLoginFailures(realm);
+
+            return id2;
+        });
+
+        withRealm(realmId, (s, realm) -> {
+            UserLoginFailureProvider loginFailureProvider = s.loginFailures();
+
+            assertNull(loginFailureProvider.getUserLoginFailure(realm, userId));
+            assertNull(loginFailureProvider.getUserLoginFailure(realm, userId2));
+
+            return null;
+        });
+    }
 }

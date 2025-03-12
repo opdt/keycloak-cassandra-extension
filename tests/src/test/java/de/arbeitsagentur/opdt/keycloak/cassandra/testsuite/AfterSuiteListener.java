@@ -22,11 +22,11 @@ import org.junit.runner.notification.RunListener;
 
 public class AfterSuiteListener extends RunListener {
 
-  @Override
-  public void testRunFinished(Result result) throws Exception {
-    KeycloakModelTest.closeKeycloakSessionFactory();
-    for (KeycloakModelParameters kmp : KeycloakModelTest.MODEL_PARAMETERS) {
-      kmp.afterSuite();
+    @Override
+    public void testRunFinished(Result result) throws Exception {
+        KeycloakModelTest.closeKeycloakSessionFactory();
+        for (KeycloakModelParameters kmp : KeycloakModelTest.MODEL_PARAMETERS) {
+            kmp.afterSuite();
+        }
     }
-  }
 }

@@ -29,10 +29,12 @@ import lombok.NoArgsConstructor;
 @Entity
 @CqlName("attributes_to_user_sessions")
 public class AttributeToUserSessionMapping {
-  @PartitionKey private String attributeName;
+    @PartitionKey
+    private String attributeName;
 
-  @ClusteringColumn private String attributeValue;
+    @ClusteringColumn
+    private String attributeValue;
 
-  @ClusteringColumn(1)
-  private String userSessionId;
+    @ClusteringColumn(1)
+    private String userSessionId;
 }

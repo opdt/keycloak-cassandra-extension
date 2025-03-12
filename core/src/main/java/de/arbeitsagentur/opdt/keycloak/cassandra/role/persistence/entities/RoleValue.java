@@ -28,29 +28,31 @@ import lombok.*;
 @Builder
 @Data
 public class RoleValue {
-  private String id;
-  private String name;
-  private String description;
-  private String clientId;
-  private String realmId;
+    private String id;
+    private String name;
+    private String description;
+    private String clientId;
+    private String realmId;
 
-  @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
+    @Builder.Default
+    private Map<String, List<String>> attributes = new HashMap<>();
 
-  @Builder.Default private List<String> childRoles = new ArrayList<>();
+    @Builder.Default
+    private List<String> childRoles = new ArrayList<>();
 
-  public Map<String, List<String>> getAttributes() {
-    if (attributes == null) {
-      attributes = new HashMap<>();
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        return attributes;
     }
 
-    return attributes;
-  }
+    public List<String> getChildRoles() {
+        if (childRoles == null) {
+            childRoles = new ArrayList<>();
+        }
 
-  public List<String> getChildRoles() {
-    if (childRoles == null) {
-      childRoles = new ArrayList<>();
+        return childRoles;
     }
-
-    return childRoles;
-  }
 }

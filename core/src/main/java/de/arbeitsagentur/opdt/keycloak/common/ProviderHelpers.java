@@ -23,22 +23,21 @@ import org.keycloak.provider.Provider;
 
 @JBossLog
 public class ProviderHelpers {
-  public static <T extends Provider> T createProviderCached(
-      KeycloakSession session, Class<T> providerClass) {
-    return createProviderCached(session, providerClass, () -> session.getProvider(providerClass));
-  }
-
-  public static <T extends Provider> T createProviderCached(
-      KeycloakSession session, Class<T> providerClass, Supplier<T> providerSupplier) {
-    T provider = session.getAttribute(providerClass.getName(), providerClass);
-    if (provider != null) {
-      return provider;
+    public static <T extends Provider> T createProviderCached(KeycloakSession session, Class<T> providerClass) {
+        return createProviderCached(session, providerClass, () -> session.getProvider(providerClass));
     }
 
-    log.debugf("Using provider %s", providerClass.getName());
-    provider = providerSupplier.get();
-    session.setAttribute(providerClass.getName(), provider);
+    public static <T extends Provider> T createProviderCached(
+            KeycloakSession session, Class<T> providerClass, Supplier<T> providerSupplier) {
+        T provider = session.getAttribute(providerClass.getName(), providerClass);
+        if (provider != null) {
+            return provider;
+        }
 
-    return provider;
-  }
+        log.debugf("Using provider %s", providerClass.getName());
+        provider = providerSupplier.get();
+        session.setAttribute(providerClass.getName(), provider);
+
+        return provider;
+    }
 }

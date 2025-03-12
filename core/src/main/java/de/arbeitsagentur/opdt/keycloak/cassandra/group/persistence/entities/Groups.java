@@ -16,44 +16,49 @@ import lombok.*;
 @Entity
 @CqlName("groups")
 public class Groups implements TransactionalEntity {
-  @PartitionKey private String realmId;
+    @PartitionKey
+    private String realmId;
 
-  private Long version;
+    private Long version;
 
-  @Builder.Default private Set<GroupValue> realmGroups = new HashSet<>();
+    @Builder.Default
+    private Set<GroupValue> realmGroups = new HashSet<>();
 
-  @Override
-  public String getId() {
-    return realmId;
-  }
-
-  public Set<GroupValue> getRealmGroups() {
-    if (realmGroups == null) {
-      return new HashSet<>();
+    @Override
+    public String getId() {
+        return realmId;
     }
-    return realmGroups;
-  }
 
-  public GroupValue getGroupById(String id) {
-    return realmGroups.stream().filter(group -> group.getId().equals(id)).findFirst().orElse(null);
-  }
+    public Set<GroupValue> getRealmGroups() {
+        if (realmGroups == null) {
+            return new HashSet<>();
+        }
+        return realmGroups;
+    }
 
-  public List<GroupValue> getRealmGroupsByParentId(String id) {
-    return realmGroups.stream()
-        .filter(group -> Objects.equals(group.getParentId(), id))
-        .collect(Collectors.toList());
-  }
+    public GroupValue getGroupById(String id) {
+        return realmGroups.stream()
+                .filter(group -> group.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
 
-  public void addRealmGroup(GroupValue group) {
-    realmGroups.add(group);
-  }
+    public List<GroupValue> getRealmGroupsByParentId(String id) {
+        return realmGroups.stream()
+                .filter(group -> Objects.equals(group.getParentId(), id))
+                .collect(Collectors.toList());
+    }
 
-  public boolean removeRealmGroup(String id) {
-    return realmGroups.remove(GroupValue.builder().id(id).build());
-  }
+    public void addRealmGroup(GroupValue group) {
+        realmGroups.add(group);
+    }
 
-  @Override
-  public Map<String, List<String>> getAttributes() {
-    return Collections.emptyMap();
-  }
+    public boolean removeRealmGroup(String id) {
+        return realmGroups.remove(GroupValue.builder().id(id).build());
+    }
+
+    @Override
+    public Map<String, List<String>> getAttributes() {
+        return Collections.emptyMap();
+    }
 }

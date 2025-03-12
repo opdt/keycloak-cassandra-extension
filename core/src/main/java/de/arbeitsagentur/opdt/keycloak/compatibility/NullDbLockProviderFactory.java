@@ -29,61 +29,61 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 @AutoService(DBLockProviderFactory.class)
 public class NullDbLockProviderFactory
-    implements DBLockProviderFactory, DBLockProvider, ServerInfoAwareProviderFactory {
-  private volatile Namespace lockedNamespace;
+        implements DBLockProviderFactory, DBLockProvider, ServerInfoAwareProviderFactory {
+    private volatile Namespace lockedNamespace;
 
-  @Override
-  public void setTimeouts(long l, long l1) {}
+    @Override
+    public void setTimeouts(long l, long l1) {}
 
-  @Override
-  public DBLockProvider create(KeycloakSession keycloakSession) {
-    return this;
-  }
+    @Override
+    public DBLockProvider create(KeycloakSession keycloakSession) {
+        return this;
+    }
 
-  @Override
-  public void init(Config.Scope scope) {}
+    @Override
+    public void init(Config.Scope scope) {}
 
-  @Override
-  public void postInit(KeycloakSessionFactory keycloakSessionFactory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory keycloakSessionFactory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public String getId() {
-    return "jpa";
-  }
+    @Override
+    public String getId() {
+        return "jpa";
+    }
 
-  @Override
-  public void waitForLock(Namespace namespace) {
-    this.lockedNamespace = namespace;
-  }
+    @Override
+    public void waitForLock(Namespace namespace) {
+        this.lockedNamespace = namespace;
+    }
 
-  @Override
-  public void releaseLock() {
-    lockedNamespace = null;
-  }
+    @Override
+    public void releaseLock() {
+        lockedNamespace = null;
+    }
 
-  @Override
-  public Namespace getCurrentLock() {
-    return lockedNamespace;
-  }
+    @Override
+    public Namespace getCurrentLock() {
+        return lockedNamespace;
+    }
 
-  @Override
-  public boolean supportsForcedUnlock() {
-    return false;
-  }
+    @Override
+    public boolean supportsForcedUnlock() {
+        return false;
+    }
 
-  @Override
-  public void destroyLockInfo() {}
+    @Override
+    public void destroyLockInfo() {}
 
-  @Override
-  public Map<String, String> getOperationalInfo() {
-    return Map.of("implementation", "null (cassandra-extension)");
-  }
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        return Map.of("implementation", "null (cassandra-extension)");
+    }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 }

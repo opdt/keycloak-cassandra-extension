@@ -35,132 +35,152 @@ import lombok.*;
 @CqlName("users")
 public class User implements TransactionalEntity {
 
-  @PartitionKey(0)
-  private String realmId;
+    @PartitionKey(0)
+    private String realmId;
 
-  @PartitionKey(1)
-  private String id;
+    @PartitionKey(1)
+    private String id;
 
-  private Long version;
+    private Long version;
 
-  private String username;
-  private String email;
-  @Transient private Boolean hasEmailChanged = true;
-  private String firstName;
-  private String lastName;
-  private String usernameCaseInsensitive;
-  private String serviceAccountClientLink;
-  @Transient private Boolean hasServiceAccountClientLinkChanged = true;
-  private String federationLink;
-  @Transient private Boolean hasFederationLinkChanged = true;
+    private String username;
+    private String email;
 
-  @Builder.Default private Boolean enabled = true;
-  @Builder.Default private Boolean emailVerified = false;
+    @Transient
+    private Boolean hasEmailChanged = true;
 
-  @Builder.Default private boolean serviceAccount = false;
+    private String firstName;
+    private String lastName;
+    private String usernameCaseInsensitive;
+    private String serviceAccountClientLink;
 
-  @Builder.Default private Instant createdTimestamp = Instant.now();
+    @Transient
+    private Boolean hasServiceAccountClientLinkChanged = true;
 
-  @Builder.Default private Set<CredentialValue> credentials = new HashSet<>();
+    private String federationLink;
 
-  @Builder.Default private Set<String> requiredActions = new HashSet<>();
+    @Transient
+    private Boolean hasFederationLinkChanged = true;
 
-  @Builder.Default private Set<String> groupsMembership = new HashSet<>();
-  @Builder.Default private Set<String> realmRoles = new HashSet<>();
+    @Builder.Default
+    private Boolean enabled = true;
 
-  @Builder.Default private Map<String, Set<String>> clientRoles = new HashMap<>();
+    @Builder.Default
+    private Boolean emailVerified = false;
 
-  @Builder.Default private Map<String, List<String>> attributes = new HashMap<>();
+    @Builder.Default
+    private boolean serviceAccount = false;
 
-  public Map<String, List<String>> getAttributes() {
-    if (attributes == null) {
-      attributes = new HashMap<>();
+    @Builder.Default
+    private Instant createdTimestamp = Instant.now();
+
+    @Builder.Default
+    private Set<CredentialValue> credentials = new HashSet<>();
+
+    @Builder.Default
+    private Set<String> requiredActions = new HashSet<>();
+
+    @Builder.Default
+    private Set<String> groupsMembership = new HashSet<>();
+
+    @Builder.Default
+    private Set<String> realmRoles = new HashSet<>();
+
+    @Builder.Default
+    private Map<String, Set<String>> clientRoles = new HashMap<>();
+
+    @Builder.Default
+    private Map<String, List<String>> attributes = new HashMap<>();
+
+    public Map<String, List<String>> getAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        return attributes;
     }
-    return attributes;
-  }
 
-  public Map<String, List<String>> getIndexedAttributes() {
-    if (attributes == null) {
-      attributes = new HashMap<>();
+    public Map<String, List<String>> getIndexedAttributes() {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        return attributes.entrySet().stream()
+                .filter(e -> e.getKey().startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    return attributes.entrySet().stream()
-        .filter(e -> e.getKey().startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  public List<String> getAttribute(String name) {
-    return attributes.getOrDefault(name, new ArrayList<>());
-  }
-
-  public Set<String> getRealmRoles() {
-    if (realmRoles == null) {
-      realmRoles = new HashSet<>();
+    public List<String> getAttribute(String name) {
+        return attributes.getOrDefault(name, new ArrayList<>());
     }
-    return realmRoles;
-  }
 
-  public Map<String, Set<String>> getClientRoles() {
-    if (clientRoles == null) {
-      clientRoles = new HashMap<>();
+    public Set<String> getRealmRoles() {
+        if (realmRoles == null) {
+            realmRoles = new HashSet<>();
+        }
+        return realmRoles;
     }
-    return clientRoles;
-  }
 
-  public Set<String> getRequiredActions() {
-    if (requiredActions == null) {
-      requiredActions = new HashSet<>();
+    public Map<String, Set<String>> getClientRoles() {
+        if (clientRoles == null) {
+            clientRoles = new HashMap<>();
+        }
+        return clientRoles;
     }
-    return requiredActions;
-  }
 
-  public Set<CredentialValue> getCredentials() {
-    if (credentials == null) {
-      credentials = new HashSet<>();
+    public Set<String> getRequiredActions() {
+        if (requiredActions == null) {
+            requiredActions = new HashSet<>();
+        }
+        return requiredActions;
     }
-    return credentials;
-  }
 
-  public List<CredentialValue> getSortedCredentials() {
-    return getCredentials().stream()
-        .sorted(Comparator.comparing(CredentialValue::getPriority))
-        .collect(Collectors.toList());
-  }
+    public Set<CredentialValue> getCredentials() {
+        if (credentials == null) {
+            credentials = new HashSet<>();
+        }
+        return credentials;
+    }
 
-  public boolean hasCredential(String id) {
-    return getCredentials().stream().anyMatch(c -> c.getId().equals(id));
-  }
+    public List<CredentialValue> getSortedCredentials() {
+        return getCredentials().stream()
+                .sorted(Comparator.comparing(CredentialValue::getPriority))
+                .collect(Collectors.toList());
+    }
 
-  public Set<String> getGroupsMembership() {
-    return this.groupsMembership;
-  }
+    public boolean hasCredential(String id) {
+        return getCredentials().stream().anyMatch(c -> c.getId().equals(id));
+    }
 
-  public void setGroupsMembership(Set<String> groupsMembership) {
-    this.groupsMembership.clear();
-    if (groupsMembership != null) this.groupsMembership.addAll(groupsMembership);
-  }
+    public Set<String> getGroupsMembership() {
+        return this.groupsMembership;
+    }
 
-  public void addGroupsMembership(String groupId) {
-    this.groupsMembership.add(groupId);
-  }
+    public void setGroupsMembership(Set<String> groupsMembership) {
+        this.groupsMembership.clear();
+        if (groupsMembership != null) this.groupsMembership.addAll(groupsMembership);
+    }
 
-  public void removeGroupsMembership(String groupId) {
-    this.groupsMembership.remove(groupId);
-  }
+    public void addGroupsMembership(String groupId) {
+        this.groupsMembership.add(groupId);
+    }
 
-  public void setEmail(String email) {
-    this.hasEmailChanged = !Objects.equals(this.email, email);
-    this.email = email;
-  }
+    public void removeGroupsMembership(String groupId) {
+        this.groupsMembership.remove(groupId);
+    }
 
-  public void setServiceAccountClientLink(String serviceAccountClientLink) {
-    this.hasServiceAccountClientLinkChanged =
-        !Objects.equals(this.serviceAccountClientLink, serviceAccountClientLink);
-    this.serviceAccountClientLink = serviceAccountClientLink;
-  }
+    public void setEmail(String email) {
+        this.hasEmailChanged = !Objects.equals(this.email, email);
+        this.email = email;
+    }
 
-  public void setFederationLink(String federationLink) {
-    this.hasFederationLinkChanged = !Objects.equals(this.federationLink, federationLink);
-    this.federationLink = federationLink;
-  }
+    public void setServiceAccountClientLink(String serviceAccountClientLink) {
+        this.hasServiceAccountClientLinkChanged =
+                !Objects.equals(this.serviceAccountClientLink, serviceAccountClientLink);
+        this.serviceAccountClientLink = serviceAccountClientLink;
+    }
+
+    public void setFederationLink(String federationLink) {
+        this.hasFederationLinkChanged = !Objects.equals(this.federationLink, federationLink);
+        this.federationLink = federationLink;
+    }
 }

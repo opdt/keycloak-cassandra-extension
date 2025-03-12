@@ -35,146 +35,126 @@ import org.keycloak.services.managers.RealmManager;
  */
 public class OfflineSessionPersistenceTest extends KeycloakModelTest {
 
-  private static final int USER_COUNT = 50;
-  private static final int OFFLINE_SESSION_COUNT_PER_USER = 10;
+    private static final int USER_COUNT = 50;
+    private static final int OFFLINE_SESSION_COUNT_PER_USER = 10;
 
-  private String realmId;
-  private List<String> userIds;
+    private String realmId;
+    private List<String> userIds;
 
-  @Override
-  public void createEnvironment(KeycloakSession s) {
-    RealmModel realm = prepareRealm(s, "realm");
-    this.realmId = realm.getId();
+    @Override
+    public void createEnvironment(KeycloakSession s) {
+        RealmModel realm = prepareRealm(s, "realm");
+        this.realmId = realm.getId();
 
-    userIds =
-        IntStream.range(0, USER_COUNT)
-            .mapToObj(i -> s.users().addUser(realm, "user-" + i))
-            .map(UserModel::getId)
-            .collect(Collectors.toList());
-  }
-
-  private static RealmModel prepareRealm(KeycloakSession s, String name) {
-    RealmModel realm = createRealm(s, name);
-    realm.setDefaultRole(
-        s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
-    realm.setSsoSessionMaxLifespan(10 * 60 * 60);
-    realm.setSsoSessionIdleTimeout(1 * 60 * 60);
-    realm.setOfflineSessionMaxLifespan(365 * 24 * 60 * 60);
-    realm.setOfflineSessionIdleTimeout(30 * 24 * 60 * 60);
-    return realm;
-  }
-
-  @Override
-  public void cleanEnvironment(KeycloakSession s) {
-    new RealmManager(s)
-        .removeRealm(
-            s.realms().getRealm(realmId)); // See https://issues.redhat.com/browse/KEYCLOAK-17876
-  }
-
-  @Test
-  public void testPersistenceSingleNodeDeleteRealm() {
-    String realmId2 =
-        inComittedTransaction(
-            session -> {
-              return prepareRealm(session, "realm2").getId();
-            });
-    List<String> userIds2 =
-        withRealm(
-            realmId2,
-            (session, realm) ->
-                IntStream.range(0, USER_COUNT)
-                    .mapToObj(i -> session.users().addUser(realm, "user2-" + i))
-                    .map(UserModel::getId)
-                    .collect(Collectors.toList()));
-
-    try {
-      List<String> offlineSessionIds = createOfflineSessions(realmId, userIds);
-      assertOfflineSessionsExist(realmId, offlineSessionIds);
-
-      List<String> offlineSessionIds2 = createOfflineSessions(realmId2, userIds2);
-      assertOfflineSessionsExist(realmId2, offlineSessionIds2);
-
-      // Simulate server restart
-      reinitializeKeycloakSessionFactory();
-
-      withRealm(realmId2, (session, realm) -> new RealmManager(session).removeRealm(realm));
-
-      // Simulate server restart
-      reinitializeKeycloakSessionFactory();
-      assertOfflineSessionsExist(realmId, offlineSessionIds);
-    } finally {
-      withRealm(
-          realmId2,
-          (session, realm) -> realm == null ? false : new RealmManager(session).removeRealm(realm));
+        userIds = IntStream.range(0, USER_COUNT)
+                .mapToObj(i -> s.users().addUser(realm, "user-" + i))
+                .map(UserModel::getId)
+                .collect(Collectors.toList());
     }
-  }
 
-  @Test
-  public void testPersistenceSingleNode() {
-    List<String> offlineSessionIds = createOfflineSessions(realmId, userIds);
-    assertOfflineSessionsExist(realmId, offlineSessionIds);
+    private static RealmModel prepareRealm(KeycloakSession s, String name) {
+        RealmModel realm = createRealm(s, name);
+        realm.setDefaultRole(
+                s.roles().addRealmRole(realm, Constants.DEFAULT_ROLES_ROLE_PREFIX + "-" + realm.getName()));
+        realm.setSsoSessionMaxLifespan(10 * 60 * 60);
+        realm.setSsoSessionIdleTimeout(1 * 60 * 60);
+        realm.setOfflineSessionMaxLifespan(365 * 24 * 60 * 60);
+        realm.setOfflineSessionIdleTimeout(30 * 24 * 60 * 60);
+        return realm;
+    }
 
-    // Simulate server restart
-    reinitializeKeycloakSessionFactory();
-    assertOfflineSessionsExist(realmId, offlineSessionIds);
-  }
+    @Override
+    public void cleanEnvironment(KeycloakSession s) {
+        new RealmManager(s)
+                .removeRealm(s.realms().getRealm(realmId)); // See https://issues.redhat.com/browse/KEYCLOAK-17876
+    }
 
-  /**
-   * Assert that all the offline sessions passed in the {@code offlineSessionIds} parameter exist
-   */
-  private void assertOfflineSessionsExist(String realmId, Collection<String> offlineSessionIds) {
-    int foundOfflineSessions =
-        withRealm(
-            realmId,
-            (session, realm) ->
-                offlineSessionIds.stream()
-                    .map(
-                        offlineSessionId ->
-                            session.sessions().getOfflineUserSession(realm, offlineSessionId))
-                    .map(ous -> ous == null ? 0 : 1)
-                    .reduce(0, Integer::sum));
+    @Test
+    public void testPersistenceSingleNodeDeleteRealm() {
+        String realmId2 = inComittedTransaction(session -> {
+            return prepareRealm(session, "realm2").getId();
+        });
+        List<String> userIds2 = withRealm(realmId2, (session, realm) -> IntStream.range(0, USER_COUNT)
+                .mapToObj(i -> session.users().addUser(realm, "user2-" + i))
+                .map(UserModel::getId)
+                .collect(Collectors.toList()));
 
-    assertThat(foundOfflineSessions, Matchers.is(offlineSessionIds.size()));
-    // catch a programming error where an empty collection of offline session IDs is passed
-    assertThat(foundOfflineSessions, Matchers.greaterThan(0));
-  }
+        try {
+            List<String> offlineSessionIds = createOfflineSessions(realmId, userIds);
+            assertOfflineSessionsExist(realmId, offlineSessionIds);
 
-  // ***************** Helper methods *****************
+            List<String> offlineSessionIds2 = createOfflineSessions(realmId2, userIds2);
+            assertOfflineSessionsExist(realmId2, offlineSessionIds2);
 
-  /**
-   * Creates {@link #OFFLINE_SESSION_COUNT_PER_USER} offline sessions for every user from {@link
-   * #userIds}.
-   *
-   * @return Ids of the offline sessions
-   */
-  private List<String> createOfflineSessions(String realmId, List<String> userIds) {
-    return withRealm(
-        realmId,
-        (session, realm) ->
-            userIds.stream()
+            // Simulate server restart
+            reinitializeKeycloakSessionFactory();
+
+            withRealm(realmId2, (session, realm) -> new RealmManager(session).removeRealm(realm));
+
+            // Simulate server restart
+            reinitializeKeycloakSessionFactory();
+            assertOfflineSessionsExist(realmId, offlineSessionIds);
+        } finally {
+            withRealm(
+                    realmId2, (session, realm) -> realm == null ? false : new RealmManager(session).removeRealm(realm));
+        }
+    }
+
+    @Test
+    public void testPersistenceSingleNode() {
+        List<String> offlineSessionIds = createOfflineSessions(realmId, userIds);
+        assertOfflineSessionsExist(realmId, offlineSessionIds);
+
+        // Simulate server restart
+        reinitializeKeycloakSessionFactory();
+        assertOfflineSessionsExist(realmId, offlineSessionIds);
+    }
+
+    /**
+     * Assert that all the offline sessions passed in the {@code offlineSessionIds} parameter exist
+     */
+    private void assertOfflineSessionsExist(String realmId, Collection<String> offlineSessionIds) {
+        int foundOfflineSessions = withRealm(realmId, (session, realm) -> offlineSessionIds.stream()
+                .map(offlineSessionId -> session.sessions().getOfflineUserSession(realm, offlineSessionId))
+                .map(ous -> ous == null ? 0 : 1)
+                .reduce(0, Integer::sum));
+
+        assertThat(foundOfflineSessions, Matchers.is(offlineSessionIds.size()));
+        // catch a programming error where an empty collection of offline session IDs is passed
+        assertThat(foundOfflineSessions, Matchers.greaterThan(0));
+    }
+
+    // ***************** Helper methods *****************
+
+    /**
+     * Creates {@link #OFFLINE_SESSION_COUNT_PER_USER} offline sessions for every user from {@link
+     * #userIds}.
+     *
+     * @return Ids of the offline sessions
+     */
+    private List<String> createOfflineSessions(String realmId, List<String> userIds) {
+        return withRealm(realmId, (session, realm) -> userIds.stream()
                 .flatMap(userId -> createOfflineSessions(session, realm, userId, us -> {}))
                 .map(UserSessionModel::getId)
                 .collect(Collectors.toList()));
-  }
+    }
 
-  /** Creates {@link #OFFLINE_SESSION_COUNT_PER_USER} offline sessions for {@code userId} user. */
-  private Stream<UserSessionModel> createOfflineSessions(
-      KeycloakSession session,
-      RealmModel realm,
-      String userId,
-      Consumer<? super UserSessionModel> alterUserSession) {
-    return IntStream.range(0, OFFLINE_SESSION_COUNT_PER_USER)
-        .mapToObj(sess -> createOfflineSession(session, realm, userId, sess))
-        .peek(alterUserSession == null ? us -> {} : us -> alterUserSession.accept(us));
-  }
+    /** Creates {@link #OFFLINE_SESSION_COUNT_PER_USER} offline sessions for {@code userId} user. */
+    private Stream<UserSessionModel> createOfflineSessions(
+            KeycloakSession session,
+            RealmModel realm,
+            String userId,
+            Consumer<? super UserSessionModel> alterUserSession) {
+        return IntStream.range(0, OFFLINE_SESSION_COUNT_PER_USER)
+                .mapToObj(sess -> createOfflineSession(session, realm, userId, sess))
+                .peek(alterUserSession == null ? us -> {} : us -> alterUserSession.accept(us));
+    }
 
-  private UserSessionModel createOfflineSession(
-      KeycloakSession session, RealmModel realm, String userId, int sessionIndex) {
-    final UserModel user = session.users().getUserById(realm, userId);
-    UserSessionModel us =
-        session
-            .sessions()
-            .createUserSession(realm, user, "un" + sessionIndex, "ip1", "auth", false, null, null);
-    return session.sessions().createOfflineUserSession(us);
-  }
+    private UserSessionModel createOfflineSession(
+            KeycloakSession session, RealmModel realm, String userId, int sessionIndex) {
+        final UserModel user = session.users().getUserById(realm, userId);
+        UserSessionModel us = session.sessions()
+                .createUserSession(realm, user, "un" + sessionIndex, "ip1", "auth", false, null, null);
+        return session.sessions().createOfflineUserSession(us);
+    }
 }

@@ -30,14 +30,15 @@ import lombok.*;
 @Entity
 @CqlName("client_search_index")
 public class ClientSearchIndex {
-  @PartitionKey(0)
-  private String realmId;
+    @PartitionKey(0)
+    private String realmId;
 
-  @PartitionKey(1)
-  private String name;
+    @PartitionKey(1)
+    private String name;
 
-  @PartitionKey(2)
-  private String value;
+    @PartitionKey(2)
+    private String value;
 
-  @ClusteringColumn private String clientId; // internal id, not external ClientId
+    @ClusteringColumn
+    private String clientId; // internal id, not external ClientId
 }

@@ -25,50 +25,48 @@ import org.keycloak.keys.PublicKeyStorageProvider;
 
 public class TransientPublicKeyStorageProvider implements PublicKeyStorageProvider {
 
-  @Override
-  public KeyWrapper getFirstPublicKey(String modelKey, String algorithm, PublicKeyLoader loader) {
-    return getPublicKey(modelKey, null, algorithm, loader);
-  }
-
-  @Override
-  public KeyWrapper getPublicKey(
-      String modelKey, String kid, String algorithm, PublicKeyLoader loader) {
-    PublicKeysWrapper keys = null;
-    try {
-      keys = loader.loadKeys();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    @Override
+    public KeyWrapper getFirstPublicKey(String modelKey, String algorithm, PublicKeyLoader loader) {
+        return getPublicKey(modelKey, null, algorithm, loader);
     }
-    return keys.getKeyByKidAndAlg(kid, algorithm);
-  }
 
-  @Override
-  public KeyWrapper getFirstPublicKey(
-      String modelKey, Predicate<KeyWrapper> predicate, PublicKeyLoader loader) {
-    try {
-      return loader.loadKeys().getKeyByPredicate(predicate);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    @Override
+    public KeyWrapper getPublicKey(String modelKey, String kid, String algorithm, PublicKeyLoader loader) {
+        PublicKeysWrapper keys = null;
+        try {
+            keys = loader.loadKeys();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return keys.getKeyByKidAndAlg(kid, algorithm);
     }
-  }
 
-  @Override
-  public List<KeyWrapper> getKeys(String modelKey, PublicKeyLoader loader) {
-    try {
-      return loader.loadKeys().getKeys();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    @Override
+    public KeyWrapper getFirstPublicKey(String modelKey, Predicate<KeyWrapper> predicate, PublicKeyLoader loader) {
+        try {
+            return loader.loadKeys().getKeyByPredicate(predicate);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
-  }
 
-  @Override
-  public boolean reloadKeys(String modelKey, PublicKeyLoader loader) {
-    // noop
-    return true;
-  }
+    @Override
+    public List<KeyWrapper> getKeys(String modelKey, PublicKeyLoader loader) {
+        try {
+            return loader.loadKeys().getKeys();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-  @Override
-  public void close() {
-    // noop
-  }
+    @Override
+    public boolean reloadKeys(String modelKey, PublicKeyLoader loader) {
+        // noop
+        return true;
+    }
+
+    @Override
+    public void close() {
+        // noop
+    }
 }

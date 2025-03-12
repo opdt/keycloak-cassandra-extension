@@ -18,9 +18,9 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence;
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
 
 public interface RoleRepository {
-  void insertOrUpdate(Roles role);
+    void insertOrUpdate(Roles role);
 
-  Roles getRolesByRealmId(String realmId);
+    Roles getRolesByRealmId(String realmId);
 
-  void deleteRealmRoles(String realmId);
+    void deleteRealmRoles(String realmId);
 }

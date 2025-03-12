@@ -20,6 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface ClientScopeMapper {
-  @DaoFactory
-  ClientScopeDao clientScopeDao();
+    @DaoFactory
+    ClientScopeDao clientScopeDao();
 }

@@ -37,112 +37,100 @@ import org.keycloak.storage.DatastoreProviderFactory;
 @JBossLog
 @AutoService(DatastoreProviderFactory.class)
 public class CassandraDatastoreProviderFactory
-    implements DatastoreProviderFactory, InvalidationHandler, EnvironmentDependentProviderFactory {
-  private static final String PROVIDER_ID =
-      "legacy"; // Override legacy provider to disable timers / event listeners and stuff...
+        implements DatastoreProviderFactory, InvalidationHandler, EnvironmentDependentProviderFactory {
+    private static final String PROVIDER_ID =
+            "legacy"; // Override legacy provider to disable timers / event listeners and stuff...
 
-  @Override
-  public String getId() {
-    return PROVIDER_ID;
-  }
+    @Override
+    public String getId() {
+        return PROVIDER_ID;
+    }
 
-  @Override
-  public DatastoreProvider create(KeycloakSession session) {
-    return createProviderCached(
-        session, DatastoreProvider.class, () -> new CassandraDatastoreProvider(session));
-  }
+    @Override
+    public DatastoreProvider create(KeycloakSession session) {
+        return createProviderCached(session, DatastoreProvider.class, () -> new CassandraDatastoreProvider(session));
+    }
 
-  @Override
-  public void init(Config.Scope scope) {
-    log.info("Using cassandra datastore...");
-  }
+    @Override
+    public void init(Config.Scope scope) {
+        log.info("Using cassandra datastore...");
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory keycloakSessionFactory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory keycloakSessionFactory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public void invalidate(KeycloakSession session, InvalidableObjectType type, Object... params) {
-    if (type == REALM_BEFORE_REMOVE) {
-      create(session).users().preRemove((RealmModel) params[0]);
-      ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0]);
-      ((CassandraClientScopeProvider) create(session).clientScopes())
-          .preRemove((RealmModel) params[0]);
-      ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0]);
-      ((CassandraGroupProvider) create(session).groups()).preRemove((RealmModel) params[0]);
-    } else if (type == ROLE_BEFORE_REMOVE) {
-      create(session).users().preRemove((RealmModel) params[0], (RoleModel) params[1]);
-      ((CassandraClientProvider) create(session).clients())
-          .preRemove((RealmModel) params[0], (RoleModel) params[1]);
-      ((CassandraRoleProvider) create(session).roles())
-          .preRemove((RealmModel) params[0], (RoleModel) params[1]);
-      ((CassandraGroupProvider) create(session).groups())
-          .preRemove((RealmModel) params[0], (RoleModel) params[1]);
-    } else if (type == CLIENT_SCOPE_BEFORE_REMOVE) {
-      create(session).users().preRemove((ClientScopeModel) params[1]);
-      ((RealmModel) params[0]).removeDefaultClientScope((ClientScopeModel) params[1]);
-    } else if (type == CLIENT_BEFORE_REMOVE) {
-      create(session).users().preRemove((RealmModel) params[0], (ClientModel) params[1]);
-      create(session).roles().removeRoles((ClientModel) params[1]);
-    } else if (type == GROUP_BEFORE_REMOVE) {
-      create(session).users().preRemove((RealmModel) params[0], (GroupModel) params[1]);
-    } else if (type == CLIENT_AFTER_REMOVE) {
-      session
-          .getKeycloakSessionFactory()
-          .publish(
-              new ClientModel.ClientRemovedEvent() {
+    @Override
+    public void invalidate(KeycloakSession session, InvalidableObjectType type, Object... params) {
+        if (type == REALM_BEFORE_REMOVE) {
+            create(session).users().preRemove((RealmModel) params[0]);
+            ((CassandraClientProvider) create(session).clients()).preRemove((RealmModel) params[0]);
+            ((CassandraClientScopeProvider) create(session).clientScopes()).preRemove((RealmModel) params[0]);
+            ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0]);
+            ((CassandraGroupProvider) create(session).groups()).preRemove((RealmModel) params[0]);
+        } else if (type == ROLE_BEFORE_REMOVE) {
+            create(session).users().preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraClientProvider) create(session).clients())
+                    .preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraRoleProvider) create(session).roles()).preRemove((RealmModel) params[0], (RoleModel) params[1]);
+            ((CassandraGroupProvider) create(session).groups())
+                    .preRemove((RealmModel) params[0], (RoleModel) params[1]);
+        } else if (type == CLIENT_SCOPE_BEFORE_REMOVE) {
+            create(session).users().preRemove((ClientScopeModel) params[1]);
+            ((RealmModel) params[0]).removeDefaultClientScope((ClientScopeModel) params[1]);
+        } else if (type == CLIENT_BEFORE_REMOVE) {
+            create(session).users().preRemove((RealmModel) params[0], (ClientModel) params[1]);
+            create(session).roles().removeRoles((ClientModel) params[1]);
+        } else if (type == GROUP_BEFORE_REMOVE) {
+            create(session).users().preRemove((RealmModel) params[0], (GroupModel) params[1]);
+        } else if (type == CLIENT_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new ClientModel.ClientRemovedEvent() {
                 @Override
                 public ClientModel getClient() {
-                  return (ClientModel) params[0];
+                    return (ClientModel) params[0];
                 }
 
                 @Override
                 public KeycloakSession getKeycloakSession() {
-                  return session;
+                    return session;
                 }
-              });
-    } else if (type == CLIENT_SCOPE_AFTER_REMOVE) {
-      session
-          .getKeycloakSessionFactory()
-          .publish(
-              new ClientScopeModel.ClientScopeRemovedEvent() {
+            });
+        } else if (type == CLIENT_SCOPE_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new ClientScopeModel.ClientScopeRemovedEvent() {
                 @Override
                 public ClientScopeModel getClientScope() {
-                  return (ClientScopeModel) params[0];
+                    return (ClientScopeModel) params[0];
                 }
 
                 @Override
                 public KeycloakSession getKeycloakSession() {
-                  return session;
+                    return session;
                 }
-              });
-    } else if (type == ROLE_AFTER_REMOVE) {
-      session
-          .getKeycloakSessionFactory()
-          .publish(
-              new RoleContainerModel.RoleRemovedEvent() {
+            });
+        } else if (type == ROLE_AFTER_REMOVE) {
+            session.getKeycloakSessionFactory().publish(new RoleContainerModel.RoleRemovedEvent() {
                 @Override
                 public RoleModel getRole() {
-                  return (RoleModel) params[1];
+                    return (RoleModel) params[1];
                 }
 
                 @Override
                 public KeycloakSession getKeycloakSession() {
-                  return session;
+                    return session;
                 }
-              });
+            });
+        }
     }
-  }
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 }

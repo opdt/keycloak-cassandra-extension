@@ -23,93 +23,90 @@ import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.List;
 import org.keycloak.common.util.Time;
 
-public class CassandraRealmRepository extends TransactionalRepository<Realm, RealmDao>
-    implements RealmRepository {
+public class CassandraRealmRepository extends TransactionalRepository<Realm, RealmDao> implements RealmRepository {
 
-  public CassandraRealmRepository(RealmDao dao) {
-    super(dao);
-  }
-
-  @Override
-  public void insertOrUpdate(Realm realm) {
-    super.insertOrUpdate(realm);
-    dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
-  }
-
-  @Override
-  public Realm getRealmById(String id) {
-    return dao.getRealmById(id);
-  }
-
-  @Override
-  public Realm findRealmByName(String name) {
-    NameToRealm byName = dao.findByName(name);
-    if (byName == null) {
-      return null;
+    public CassandraRealmRepository(RealmDao dao) {
+        super(dao);
     }
 
-    return getRealmById(byName.getId());
-  }
-
-  @Override
-  public List<Realm> getAllRealms() {
-    return dao.findAll().all();
-  }
-
-  @Override
-  public void createRealm(Realm realm) {
-    realm.setVersion(1L);
-    dao.insert(realm);
-    dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
-  }
-
-  @Override
-  public void deleteRealm(Realm realm) {
-    dao.delete(realm);
-    dao.deleteAllClientInitialAccessModels(realm.getId());
-    dao.deleteNameToRealm(realm.getName());
-  }
-
-  @Override
-  public void deleteNameToRealm(String name) {
-    dao.deleteNameToRealm(name);
-  }
-
-  // ClientInitialAccessModel
-  @Override
-  public void insertOrUpdate(ClientInitialAccess model) {
-    if (model.getExpiration() == null) {
-      dao.insertOrUpdate(model);
-    } else {
-      int ttl =
-          TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
-              TimeAdapter.fromMilliSecondsToSeconds(
-                  model.getExpiration() - Time.currentTimeMillis()));
-      dao.insertOrUpdate(model, ttl);
+    @Override
+    public void insertOrUpdate(Realm realm) {
+        super.insertOrUpdate(realm);
+        dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
     }
-  }
 
-  @Override
-  public List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId) {
-    return dao.getClientInitialAccesses(realmId).all();
-  }
+    @Override
+    public Realm getRealmById(String id) {
+        return dao.getRealmById(id);
+    }
 
-  @Override
-  public List<ClientInitialAccess> getAllClientInitialAccesses() {
-    return dao.getAllClientInitialAccesses().all();
-  }
+    @Override
+    public Realm findRealmByName(String name) {
+        NameToRealm byName = dao.findByName(name);
+        if (byName == null) {
+            return null;
+        }
 
-  @Override
-  public void deleteClientInitialAccess(ClientInitialAccess access) {
-    dao.deleteClientInitialAccessModel(access.getRealmId(), access.getId());
-  }
+        return getRealmById(byName.getId());
+    }
 
-  public void deleteClientInitialAccess(String realmId, String id) {
-    dao.deleteClientInitialAccessModel(realmId, id);
-  }
+    @Override
+    public List<Realm> getAllRealms() {
+        return dao.findAll().all();
+    }
 
-  @Override
-  public ClientInitialAccess getClientInitialAccess(String realmId, String id) {
-    return dao.getClientInitialAccessModelById(realmId, id);
-  }
+    @Override
+    public void createRealm(Realm realm) {
+        realm.setVersion(1L);
+        dao.insert(realm);
+        dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
+    }
+
+    @Override
+    public void deleteRealm(Realm realm) {
+        dao.delete(realm);
+        dao.deleteAllClientInitialAccessModels(realm.getId());
+        dao.deleteNameToRealm(realm.getName());
+    }
+
+    @Override
+    public void deleteNameToRealm(String name) {
+        dao.deleteNameToRealm(name);
+    }
+
+    // ClientInitialAccessModel
+    @Override
+    public void insertOrUpdate(ClientInitialAccess model) {
+        if (model.getExpiration() == null) {
+            dao.insertOrUpdate(model);
+        } else {
+            int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
+                    TimeAdapter.fromMilliSecondsToSeconds(model.getExpiration() - Time.currentTimeMillis()));
+            dao.insertOrUpdate(model, ttl);
+        }
+    }
+
+    @Override
+    public List<ClientInitialAccess> getAllClientInitialAccessesByRealmId(String realmId) {
+        return dao.getClientInitialAccesses(realmId).all();
+    }
+
+    @Override
+    public List<ClientInitialAccess> getAllClientInitialAccesses() {
+        return dao.getAllClientInitialAccesses().all();
+    }
+
+    @Override
+    public void deleteClientInitialAccess(ClientInitialAccess access) {
+        dao.deleteClientInitialAccessModel(access.getRealmId(), access.getId());
+    }
+
+    public void deleteClientInitialAccess(String realmId, String id) {
+        dao.deleteClientInitialAccessModel(realmId, id);
+    }
+
+    @Override
+    public ClientInitialAccess getClientInitialAccess(String realmId, String id) {
+        return dao.getClientInitialAccessModelById(realmId, id);
+    }
 }

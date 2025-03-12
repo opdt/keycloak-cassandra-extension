@@ -24,15 +24,15 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.singleUseObject.persistence.ent
 
 @Dao
 public interface SingleUseObjectDao extends BaseDao {
-  @Select(customWhereClause = "key = :key")
-  SingleUseObject findByKey(String key);
+    @Select(customWhereClause = "key = :key")
+    SingleUseObject findByKey(String key);
 
-  @Update
-  void insertOrUpdate(SingleUseObject singleUseObject);
+    @Update
+    void insertOrUpdate(SingleUseObject singleUseObject);
 
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(SingleUseObject singleUseObject, int ttl);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(SingleUseObject singleUseObject, int ttl);
 
-  @Delete(entityClass = SingleUseObject.class)
-  boolean delete(String key);
+    @Delete(entityClass = SingleUseObject.class)
+    boolean delete(String key);
 }

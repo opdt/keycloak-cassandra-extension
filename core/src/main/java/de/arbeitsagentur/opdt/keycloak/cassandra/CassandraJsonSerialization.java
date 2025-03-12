@@ -24,40 +24,40 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
 
 public class CassandraJsonSerialization {
-  public static final ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper();
 
-  static {
-    mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-    mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-    mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-  }
-
-  public static ObjectMapper getMapper() {
-    return mapper;
-  }
-
-  public static String writeValueAsString(Object obj) {
-    try {
-      return mapper.writeValueAsString(obj);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    static {
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
-  }
 
-  public static <T> T readValue(String bytes, Class<T> type) {
-    try {
-      return mapper.readValue(bytes, type);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    public static ObjectMapper getMapper() {
+        return mapper;
     }
-  }
 
-  public static <T> T readValue(String string, TypeReference<T> type) {
-    try {
-      return mapper.readValue(string, type);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    public static String writeValueAsString(Object obj) {
+        try {
+            return mapper.writeValueAsString(obj);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-  }
+
+    public static <T> T readValue(String bytes, Class<T> type) {
+        try {
+            return mapper.readValue(bytes, type);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T readValue(String string, TypeReference<T> type) {
+        try {
+            return mapper.readValue(string, type);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

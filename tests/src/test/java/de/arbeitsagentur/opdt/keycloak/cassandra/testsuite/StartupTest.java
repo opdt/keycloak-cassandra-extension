@@ -26,30 +26,28 @@ import org.keycloak.services.managers.ApplianceBootstrap;
 import org.keycloak.services.resources.KeycloakApplication;
 
 public class StartupTest extends KeycloakModelTest {
-  @Test
-  public void testCreateMasterRealm() {
-    inComittedTransaction(
-        session -> {
-          ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
-          CryptoIntegration.init(KeycloakApplication.class.getClassLoader());
-          boolean result = applianceBootstrap.createMasterRealm();
-          applianceBootstrap.createMasterRealmUser("admin", "admin");
+    @Test
+    public void testCreateMasterRealm() {
+        inComittedTransaction(session -> {
+            ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
+            CryptoIntegration.init(KeycloakApplication.class.getClassLoader());
+            boolean result = applianceBootstrap.createMasterRealm();
+            applianceBootstrap.createMasterRealmUser("admin", "admin");
 
-          assertTrue(result);
+            assertTrue(result);
         });
 
-    inComittedTransaction(
-        session -> {
-          RealmModel masterRealm = session.realms().getRealmByName("master");
+        inComittedTransaction(session -> {
+            RealmModel masterRealm = session.realms().getRealmByName("master");
 
-          assertNotNull(masterRealm);
+            assertNotNull(masterRealm);
 
-          UserModel admin = session.users().getUserByUsername(masterRealm, "admin");
-          assertNotNull(admin);
+            UserModel admin = session.users().getUserByUsername(masterRealm, "admin");
+            assertNotNull(admin);
 
-          assertTrue(admin.credentialManager().isValid(UserCredentialModel.password("admin")));
+            assertTrue(admin.credentialManager().isValid(UserCredentialModel.password("admin")));
 
-          session.realms().removeRealm(masterRealm.getId());
+            session.realms().removeRealm(masterRealm.getId());
         });
-  }
+    }
 }

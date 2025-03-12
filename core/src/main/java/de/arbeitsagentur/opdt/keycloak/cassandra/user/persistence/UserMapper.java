@@ -20,6 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface UserMapper {
-  @DaoFactory
-  UserDao userDao();
+    @DaoFactory
+    UserDao userDao();
 }

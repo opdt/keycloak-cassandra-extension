@@ -41,84 +41,81 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 @JBossLog
 @AutoService(InfinispanConnectionProviderFactory.class)
 public class NullQuarkusInfinispanConnectionProviderFactory
-    implements InfinispanConnectionProviderFactory,
-        EnvironmentDependentProviderFactory,
-        ServerInfoAwareProviderFactory {
-  @Override
-  public boolean isSupported(Config.Scope config) {
-    return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
-  }
+        implements InfinispanConnectionProviderFactory,
+                EnvironmentDependentProviderFactory,
+                ServerInfoAwareProviderFactory {
+    @Override
+    public boolean isSupported(Config.Scope config) {
+        return isCassandraProfileEnabled() || isCassandraCacheProfileEnabled();
+    }
 
-  @Override
-  public InfinispanConnectionProvider create(KeycloakSession session) {
-    return createProviderCached(
-        session,
-        InfinispanConnectionProvider.class,
-        () ->
-            new InfinispanConnectionProvider() {
-              @Override
-              public <K, V> Cache<K, V> getCache(String s) {
-                return null;
-              }
+    @Override
+    public InfinispanConnectionProvider create(KeycloakSession session) {
+        return createProviderCached(
+                session, InfinispanConnectionProvider.class, () -> new InfinispanConnectionProvider() {
+                    @Override
+                    public <K, V> Cache<K, V> getCache(String s) {
+                        return null;
+                    }
 
-              @Override
-              public <K, V> Cache<K, V> getCache(String s, boolean b) {
-                return null;
-              }
+                    @Override
+                    public <K, V> Cache<K, V> getCache(String s, boolean b) {
+                        return null;
+                    }
 
-              @Override
-              public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
-                return null;
-              }
+                    @Override
+                    public <K, V> RemoteCache<K, V> getRemoteCache(String s) {
+                        return null;
+                    }
 
-              @Override
-              public TopologyInfo getTopologyInfo() {
-                return null;
-              }
+                    @Override
+                    public TopologyInfo getTopologyInfo() {
+                        return null;
+                    }
 
-              @Override
-              public CompletionStage<Void> migrateToProtoStream() {
-                return null;
-              }
+                    @Override
+                    public CompletionStage<Void> migrateToProtoStream() {
+                        return null;
+                    }
 
-              @Override
-              public ScheduledExecutorService getScheduledExecutor() {
-                return null;
-              }
+                    @Override
+                    public ScheduledExecutorService getScheduledExecutor() {
+                        return null;
+                    }
 
-              @Override
-              public BlockingManager getBlockingManager() {
-                return null;
-              }
+                    @Override
+                    public BlockingManager getBlockingManager() {
+                        return null;
+                    }
 
-              @Override
-              public void close() {}
-            });
-  }
+                    @Override
+                    public void close() {}
+                });
+    }
 
-  @Override
-  public void init(Config.Scope config) {
-    log.info("Infinispan (quarkus) deactivated...");
-  }
+    @Override
+    public void init(Config.Scope config) {
+        log.info("Infinispan (quarkus) deactivated...");
+    }
 
-  @Override
-  public void postInit(KeycloakSessionFactory factory) {}
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {}
 
-  @Override
-  public void close() {}
+    @Override
+    public void close() {}
 
-  @Override
-  public int order() {
-    return PROVIDER_PRIORITY + 1;
-  }
+    @Override
+    public int order() {
+        return PROVIDER_PRIORITY + 1;
+    }
 
-  @Override
-  public String getId() {
-    return "quarkus";
-  }
+    @Override
+    public String getId() {
+        return "quarkus";
+    }
 
-  @Override
-  public Map<String, String> getOperationalInfo() {
-    return Map.of("implementation", "deactivated (cassandra-extension)");
-  }
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        return Map.of("implementation", "deactivated (cassandra-extension)");
+    }
 }

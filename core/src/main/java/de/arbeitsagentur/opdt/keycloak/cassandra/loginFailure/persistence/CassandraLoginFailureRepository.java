@@ -21,30 +21,30 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class CassandraLoginFailureRepository implements LoginFailureRepository {
-  private final LoginFailureDao dao;
+    private final LoginFailureDao dao;
 
-  @Override
-  public void insertOrUpdate(LoginFailure loginFailure) {
-    dao.insertOrUpdate(loginFailure);
-  }
+    @Override
+    public void insertOrUpdate(LoginFailure loginFailure) {
+        dao.insertOrUpdate(loginFailure);
+    }
 
-  @Override
-  public List<LoginFailure> findLoginFailuresByUserId(String userId) {
-    return dao.findByUserId(userId).all();
-  }
+    @Override
+    public List<LoginFailure> findLoginFailuresByUserId(String userId) {
+        return dao.findByUserId(userId).all();
+    }
 
-  @Override
-  public void deleteLoginFailure(LoginFailure loginFailure) {
-    dao.delete(loginFailure);
-  }
+    @Override
+    public void deleteLoginFailure(LoginFailure loginFailure) {
+        dao.delete(loginFailure);
+    }
 
-  @Override
-  public void deleteLoginFailureByUserId(String userId) {
-    dao.deleteByUserId(userId);
-  }
+    @Override
+    public void deleteLoginFailureByUserId(String userId) {
+        dao.deleteByUserId(userId);
+    }
 
-  @Override
-  public List<LoginFailure> findAllLoginFailures() {
-    return dao.findAll().all();
-  }
+    @Override
+    public List<LoginFailure> findAllLoginFailures() {
+        return dao.findAll().all();
+    }
 }

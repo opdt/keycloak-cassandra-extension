@@ -32,16 +32,19 @@ import lombok.NoArgsConstructor;
 @Builder
 @CqlName("federated_identities")
 public class FederatedIdentity {
-  @PartitionKey private String userId;
+    @PartitionKey
+    private String userId;
 
-  @ClusteringColumn private String identityProvider;
+    @ClusteringColumn
+    private String identityProvider;
 
-  @CqlName("identity_token") // Token is reserved word in CQL
-  private String token;
+    @CqlName("identity_token") // Token is reserved word in CQL
+    private String token;
 
-  private String brokerUserId;
-  private String realmId;
-  private String brokerUserName;
+    private String brokerUserId;
+    private String realmId;
+    private String brokerUserName;
 
-  @Builder.Default private Instant createdTimestamp = Instant.now();
+    @Builder.Default
+    private Instant createdTimestamp = Instant.now();
 }

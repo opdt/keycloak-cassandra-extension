@@ -19,13 +19,13 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entiti
 import java.util.List;
 
 public interface LoginFailureRepository {
-  void insertOrUpdate(LoginFailure loginFailure);
+    void insertOrUpdate(LoginFailure loginFailure);
 
-  List<LoginFailure> findLoginFailuresByUserId(String userId);
+    List<LoginFailure> findLoginFailuresByUserId(String userId);
 
-  void deleteLoginFailure(LoginFailure loginFailure);
+    void deleteLoginFailure(LoginFailure loginFailure);
 
-  void deleteLoginFailureByUserId(String userId);
+    void deleteLoginFailureByUserId(String userId);
 
-  List<LoginFailure> findAllLoginFailures();
+    List<LoginFailure> findAllLoginFailures();
 }

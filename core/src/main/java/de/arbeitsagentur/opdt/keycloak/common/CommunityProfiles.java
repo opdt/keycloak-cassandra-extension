@@ -17,32 +17,26 @@
 package de.arbeitsagentur.opdt.keycloak.common;
 
 public class CommunityProfiles {
-  private static final String ENV_CASSANDRA_PROFILE_ENABLED =
-      "KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED";
-  private static final String PROP_CASSANDRA_PROFILE_ENABLED =
-      "kc.community.datastore.cassandra.enabled";
-  private static final String ENV_CASSANDRA_CACHE_PROFILE_ENABLED =
-      "KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED";
-  private static final String PROP_CASSANDRA_CACHE_PROFILE_ENABLED =
-      "kc.community.datastore.cassandra.cache.enabled";
+    private static final String ENV_CASSANDRA_PROFILE_ENABLED = "KC_COMMUNITY_DATASTORE_CASSANDRA_ENABLED";
+    private static final String PROP_CASSANDRA_PROFILE_ENABLED = "kc.community.datastore.cassandra.enabled";
+    private static final String ENV_CASSANDRA_CACHE_PROFILE_ENABLED = "KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED";
+    private static final String PROP_CASSANDRA_CACHE_PROFILE_ENABLED = "kc.community.datastore.cassandra.cache.enabled";
 
-  private static final boolean isCassandraProfileEnabled;
-  private static final boolean isCassandraCacheProfileEnabled;
+    private static final boolean isCassandraProfileEnabled;
+    private static final boolean isCassandraCacheProfileEnabled;
 
-  static {
-    isCassandraProfileEnabled =
-        Boolean.parseBoolean(System.getenv(ENV_CASSANDRA_PROFILE_ENABLED))
-            || Boolean.parseBoolean(System.getProperty(PROP_CASSANDRA_PROFILE_ENABLED));
-    isCassandraCacheProfileEnabled =
-        Boolean.parseBoolean(System.getenv(ENV_CASSANDRA_CACHE_PROFILE_ENABLED))
-            || Boolean.parseBoolean(System.getProperty(PROP_CASSANDRA_CACHE_PROFILE_ENABLED));
-  }
+    static {
+        isCassandraProfileEnabled = Boolean.parseBoolean(System.getenv(ENV_CASSANDRA_PROFILE_ENABLED))
+                || Boolean.parseBoolean(System.getProperty(PROP_CASSANDRA_PROFILE_ENABLED));
+        isCassandraCacheProfileEnabled = Boolean.parseBoolean(System.getenv(ENV_CASSANDRA_CACHE_PROFILE_ENABLED))
+                || Boolean.parseBoolean(System.getProperty(PROP_CASSANDRA_CACHE_PROFILE_ENABLED));
+    }
 
-  public static boolean isCassandraProfileEnabled() {
-    return isCassandraProfileEnabled;
-  }
+    public static boolean isCassandraProfileEnabled() {
+        return isCassandraProfileEnabled;
+    }
 
-  public static boolean isCassandraCacheProfileEnabled() {
-    return isCassandraCacheProfileEnabled;
-  }
+    public static boolean isCassandraCacheProfileEnabled() {
+        return isCassandraCacheProfileEnabled;
+    }
 }

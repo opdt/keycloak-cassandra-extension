@@ -20,6 +20,6 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface RoleMapper {
-  @DaoFactory
-  RoleDao roleDao();
+    @DaoFactory
+    RoleDao roleDao();
 }

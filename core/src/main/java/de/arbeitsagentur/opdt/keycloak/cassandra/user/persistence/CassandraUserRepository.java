@@ -29,383 +29,352 @@ import java.util.stream.StreamSupport;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class CassandraUserRepository extends TransactionalRepository<User, UserDao>
-    implements UserRepository {
-  private static final String USERNAME = "username";
-  private static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
-  private static final String EMAIL = "email";
-  private static final String SERVICE_ACCOUNT_LINK = "serviceAccountLink";
-  private static final String FEDERATION_LINK = "federationLink";
+public class CassandraUserRepository extends TransactionalRepository<User, UserDao> implements UserRepository {
+    private static final String USERNAME = "username";
+    private static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
+    private static final String EMAIL = "email";
+    private static final String SERVICE_ACCOUNT_LINK = "serviceAccountLink";
+    private static final String FEDERATION_LINK = "federationLink";
 
-  public CassandraUserRepository(UserDao dao) {
-    super(dao);
-  }
-
-  @Override
-  public Stream<User> findAllUsers() {
-    return StreamSupport.stream(dao.findAll().spliterator(), false);
-  }
-
-  @Override
-  public User findUserById(String realmId, String id) {
-    return dao.findById(realmId, id);
-  }
-
-  @Override
-  public User findUserByEmail(String realmId, String email) {
-    if (email == null) {
-      return null;
+    public CassandraUserRepository(UserDao dao) {
+        super(dao);
     }
 
-    List<User> users =
-        dao.findUsers(realmId, EMAIL, email).all().stream()
-            .map(idx -> findUserById(realmId, idx.getUserId()))
-            .filter(Objects::nonNull)
-            .toList();
-
-    if (users.size() > 1) {
-      log.warn("Found multiple users with email: " + email);
-      return null;
+    @Override
+    public Stream<User> findAllUsers() {
+        return StreamSupport.stream(dao.findAll().spliterator(), false);
     }
 
-    if (users.isEmpty()) {
-      return null;
+    @Override
+    public User findUserById(String realmId, String id) {
+        return dao.findById(realmId, id);
     }
 
-    return users.getFirst();
-  }
+    @Override
+    public User findUserByEmail(String realmId, String email) {
+        if (email == null) {
+            return null;
+        }
 
-  @Override
-  public User findUserByUsername(String realmId, String username) {
-    if (username == null) {
-      return null;
+        List<User> users = dao.findUsers(realmId, EMAIL, email).all().stream()
+                .map(idx -> findUserById(realmId, idx.getUserId()))
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (users.size() > 1) {
+            log.warn("Found multiple users with email: " + email);
+            return null;
+        }
+
+        if (users.isEmpty()) {
+            return null;
+        }
+
+        return users.getFirst();
     }
 
-    List<User> users =
-        dao.findUsers(realmId, USERNAME, username).all().stream()
-            .map(idx -> findUserById(realmId, idx.getUserId()))
-            .filter(Objects::nonNull)
-            .toList();
+    @Override
+    public User findUserByUsername(String realmId, String username) {
+        if (username == null) {
+            return null;
+        }
 
-    if (users.size() > 1) {
-      log.warn("Found multiple users with username: " + username);
-      return null;
+        List<User> users = dao.findUsers(realmId, USERNAME, username).all().stream()
+                .map(idx -> findUserById(realmId, idx.getUserId()))
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (users.size() > 1) {
+            log.warn("Found multiple users with username: " + username);
+            return null;
+        }
+
+        if (users.isEmpty()) {
+            return null;
+        }
+
+        return users.getFirst();
     }
 
-    if (users.isEmpty()) {
-      return null;
+    @Override
+    public User findUserByUsernameCaseInsensitive(String realmId, String username) {
+        if (username == null) {
+            return null;
+        }
+
+        List<User> users = dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream()
+                .map(idx -> findUserById(realmId, idx.getUserId()))
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (users.size() > 1) {
+            log.warn("Found multiple users with username (case insensitive): " + username);
+            return null;
+        }
+
+        if (users.isEmpty()) {
+            return null;
+        }
+
+        return users.getFirst();
     }
 
-    return users.getFirst();
-  }
+    @Override
+    public User findUserByServiceAccountLink(String realmId, String serviceAccountLink) {
+        if (serviceAccountLink == null) {
+            return null;
+        }
 
-  @Override
-  public User findUserByUsernameCaseInsensitive(String realmId, String username) {
-    if (username == null) {
-      return null;
+        UserSearchIndex user = dao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink).all().stream()
+                .findFirst()
+                .orElse(null);
+
+        if (user == null) {
+            return null;
+        }
+
+        return findUserById(realmId, user.getUserId());
     }
 
-    List<User> users =
-        dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream()
-            .map(idx -> findUserById(realmId, idx.getUserId()))
-            .filter(Objects::nonNull)
-            .toList();
+    @Override
+    public Stream<User> findUsersByFederationLink(String realmId, String federationLink) {
+        if (federationLink == null) {
+            return null;
+        }
 
-    if (users.size() > 1) {
-      log.warn("Found multiple users with username (case insensitive): " + username);
-      return null;
+        List<String> userIds = dao.findUsers(realmId, FEDERATION_LINK, federationLink).all().stream()
+                .map(UserSearchIndex::getUserId)
+                .collect(Collectors.toList());
+
+        return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
     }
 
-    if (users.isEmpty()) {
-      return null;
+    @Override
+    public Stream<User> findUsersByIndexedAttribute(String realmId, String attributeName, String attributeValue) {
+        if (attributeName == null
+                || attributeValue == null
+                || !attributeName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
+            return Stream.empty();
+        }
+
+        List<String> userIds = dao.findUsers(realmId, attributeName, attributeValue).all().stream()
+                .map(UserSearchIndex::getUserId)
+                .collect(Collectors.toList());
+
+        return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
     }
 
-    return users.getFirst();
-  }
+    @Override
+    public void deleteUsernameSearchIndex(String realmId, User user) {
+        if (user.getUsername() != null) {
+            dao.deleteIndex(realmId, USERNAME, user.getUsername(), user.getId());
+        }
 
-  @Override
-  public User findUserByServiceAccountLink(String realmId, String serviceAccountLink) {
-    if (serviceAccountLink == null) {
-      return null;
+        if (user.getUsernameCaseInsensitive() != null) {
+            dao.deleteIndex(realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId());
+        }
     }
 
-    UserSearchIndex user =
-        dao.findUsers(realmId, SERVICE_ACCOUNT_LINK, serviceAccountLink).all().stream()
-            .findFirst()
-            .orElse(null);
-
-    if (user == null) {
-      return null;
+    @Override
+    public void deleteEmailSearchIndex(String realmId, User user) {
+        if (user.getEmail() != null) {
+            dao.deleteIndex(realmId, EMAIL, user.getEmail(), user.getId());
+        }
     }
 
-    return findUserById(realmId, user.getUserId());
-  }
-
-  @Override
-  public Stream<User> findUsersByFederationLink(String realmId, String federationLink) {
-    if (federationLink == null) {
-      return null;
+    @Override
+    public void deleteFederationLinkSearchIndex(String realmId, User user) {
+        if (user.getFederationLink() != null) {
+            dao.deleteIndex(realmId, FEDERATION_LINK, user.getFederationLink(), user.getId());
+        }
     }
 
-    List<String> userIds =
-        dao.findUsers(realmId, FEDERATION_LINK, federationLink).all().stream()
-            .map(UserSearchIndex::getUserId)
-            .collect(Collectors.toList());
-
-    return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
-  }
-
-  @Override
-  public Stream<User> findUsersByIndexedAttribute(
-      String realmId, String attributeName, String attributeValue) {
-    if (attributeName == null
-        || attributeValue == null
-        || !attributeName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
-      return Stream.empty();
+    @Override
+    public void deleteServiceAccountLinkSearchIndex(String realmId, User user) {
+        if (user.getServiceAccountClientLink() != null) {
+            dao.deleteIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId());
+        }
     }
 
-    List<String> userIds =
-        dao.findUsers(realmId, attributeName, attributeValue).all().stream()
-            .map(UserSearchIndex::getUserId)
-            .collect(Collectors.toList());
-
-    return StreamSupport.stream(dao.findByIds(realmId, userIds).spliterator(), false);
-  }
-
-  @Override
-  public void deleteUsernameSearchIndex(String realmId, User user) {
-    if (user.getUsername() != null) {
-      dao.deleteIndex(realmId, USERNAME, user.getUsername(), user.getId());
+    @Override
+    public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
+        if (attrName != null && attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
+            user.getAttribute(attrName).forEach(value -> dao.deleteIndex(realmId, attrName, value, user.getId()));
+        }
     }
 
-    if (user.getUsernameCaseInsensitive() != null) {
-      dao.deleteIndex(
-          realmId, USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId());
-    }
-  }
+    @Override
+    public void insertOrUpdate(User user) {
+        super.insertOrUpdate(user);
 
-  @Override
-  public void deleteEmailSearchIndex(String realmId, User user) {
-    if (user.getEmail() != null) {
-      dao.deleteIndex(realmId, EMAIL, user.getEmail(), user.getId());
-    }
-  }
+        dao.insert(new RealmToUserMapping(user.getRealmId(), user.isServiceAccount(), user.getId()));
 
-  @Override
-  public void deleteFederationLinkSearchIndex(String realmId, User user) {
-    if (user.getFederationLink() != null) {
-      dao.deleteIndex(realmId, FEDERATION_LINK, user.getFederationLink(), user.getId());
-    }
-  }
+        if (user.getUsername() != null) {
+            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), USERNAME, user.getUsername(), user.getId()));
+        }
 
-  @Override
-  public void deleteServiceAccountLinkSearchIndex(String realmId, User user) {
-    if (user.getServiceAccountClientLink() != null) {
-      dao.deleteIndex(
-          realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId());
-    }
-  }
+        if (user.getUsernameCaseInsensitive() != null) {
+            dao.insertOrUpdate(new UserSearchIndex(
+                    user.getRealmId(), USERNAME_CASE_INSENSITIVE, user.getUsernameCaseInsensitive(), user.getId()));
+        }
 
-  @Override
-  public void deleteAttributeSearchIndex(String realmId, User user, String attrName) {
-    if (attrName != null && attrName.startsWith(AttributeTypes.INDEXED_ATTRIBUTE_PREFIX)) {
-      user.getAttribute(attrName)
-          .forEach(value -> dao.deleteIndex(realmId, attrName, value, user.getId()));
-    }
-  }
+        if (user.getEmail() != null && user.getHasEmailChanged()) {
+            dao.insertOrUpdate(new UserSearchIndex(user.getRealmId(), EMAIL, user.getEmail(), user.getId()));
+        }
 
-  @Override
-  public void insertOrUpdate(User user) {
-    super.insertOrUpdate(user);
+        if (user.getServiceAccountClientLink() != null && user.getHasServiceAccountClientLinkChanged()) {
+            dao.insertOrUpdate(new UserSearchIndex(
+                    user.getRealmId(), SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
+        }
 
-    dao.insert(new RealmToUserMapping(user.getRealmId(), user.isServiceAccount(), user.getId()));
+        if (user.getFederationLink() != null && user.getHasFederationLinkChanged()) {
+            dao.insertOrUpdate(
+                    new UserSearchIndex(user.getRealmId(), FEDERATION_LINK, user.getFederationLink(), user.getId()));
+        }
 
-    if (user.getUsername() != null) {
-      dao.insertOrUpdate(
-          new UserSearchIndex(user.getRealmId(), USERNAME, user.getUsername(), user.getId()));
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
+            entry.getValue()
+                    .forEach(value -> dao.insertOrUpdate(
+                            new UserSearchIndex(user.getRealmId(), entry.getKey(), value, user.getId())));
+        }
     }
 
-    if (user.getUsernameCaseInsensitive() != null) {
-      dao.insertOrUpdate(
-          new UserSearchIndex(
-              user.getRealmId(),
-              USERNAME_CASE_INSENSITIVE,
-              user.getUsernameCaseInsensitive(),
-              user.getId()));
+    @Override
+    public boolean deleteUser(String realmId, String userId) {
+        User user = findUserById(realmId, userId);
+
+        if (user == null) {
+            return false;
+        }
+
+        dao.delete(user);
+        dao.deleteRealmToUserMapping(realmId, user.isServiceAccount(), user.getId());
+
+        deleteUsernameSearchIndex(realmId, user);
+        deleteEmailSearchIndex(realmId, user);
+        deleteServiceAccountLinkSearchIndex(realmId, user);
+        deleteFederationLinkSearchIndex(realmId, user);
+
+        for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
+            entry.getValue().forEach(value -> dao.deleteIndex(realmId, entry.getKey(), value, userId));
+        }
+
+        return true;
     }
 
-    if (user.getEmail() != null && user.getHasEmailChanged()) {
-      dao.insertOrUpdate(
-          new UserSearchIndex(user.getRealmId(), EMAIL, user.getEmail(), user.getId()));
+    @Override
+    public void makeUserServiceAccount(User user, String realmId) {
+        user.setServiceAccount(true);
+        super.insertOrUpdate(user);
+
+        dao.deleteRealmToUserMapping(realmId, false, user.getId());
+        dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+
+        dao.insertOrUpdate(
+                new UserSearchIndex(realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
     }
 
-    if (user.getServiceAccountClientLink() != null
-        && user.getHasServiceAccountClientLinkChanged()) {
-      dao.insertOrUpdate(
-          new UserSearchIndex(
-              user.getRealmId(),
-              SERVICE_ACCOUNT_LINK,
-              user.getServiceAccountClientLink(),
-              user.getId()));
+    @Override
+    public FederatedIdentity findFederatedIdentity(String userId, String identityProvider) {
+        return dao.findFederatedIdentity(userId, identityProvider);
     }
 
-    if (user.getFederationLink() != null && user.getHasFederationLinkChanged()) {
-      dao.insertOrUpdate(
-          new UserSearchIndex(
-              user.getRealmId(), FEDERATION_LINK, user.getFederationLink(), user.getId()));
+    @Override
+    public FederatedIdentity findFederatedIdentityByBrokerUserId(String brokerUserId, String identityProvider) {
+        FederatedIdentityToUserMapping identityToUserMapping =
+                dao.findFederatedIdentityByBrokerUserId(brokerUserId, identityProvider);
+
+        if (identityToUserMapping == null) {
+            return null;
+        }
+
+        return findFederatedIdentity(identityToUserMapping.getUserId(), identityProvider);
     }
 
-    for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
-      entry
-          .getValue()
-          .forEach(
-              value ->
-                  dao.insertOrUpdate(
-                      new UserSearchIndex(user.getRealmId(), entry.getKey(), value, user.getId())));
-    }
-  }
-
-  @Override
-  public boolean deleteUser(String realmId, String userId) {
-    User user = findUserById(realmId, userId);
-
-    if (user == null) {
-      return false;
+    @Override
+    public List<FederatedIdentity> findFederatedIdentities(String userId) {
+        return dao.findFederatedIdentities(userId).all();
     }
 
-    dao.delete(user);
-    dao.deleteRealmToUserMapping(realmId, user.isServiceAccount(), user.getId());
-
-    deleteUsernameSearchIndex(realmId, user);
-    deleteEmailSearchIndex(realmId, user);
-    deleteServiceAccountLinkSearchIndex(realmId, user);
-    deleteFederationLinkSearchIndex(realmId, user);
-
-    for (Map.Entry<String, List<String>> entry : user.getIndexedAttributes().entrySet()) {
-      entry.getValue().forEach(value -> dao.deleteIndex(realmId, entry.getKey(), value, userId));
+    @Override
+    public void createOrUpdateFederatedIdentity(FederatedIdentity federatedIdentity) {
+        dao.update(federatedIdentity);
+        FederatedIdentityToUserMapping identityToUserMapping = new FederatedIdentityToUserMapping(
+                federatedIdentity.getBrokerUserId(),
+                federatedIdentity.getIdentityProvider(),
+                federatedIdentity.getUserId());
+        dao.update(identityToUserMapping);
     }
 
-    return true;
-  }
+    @Override
+    public boolean deleteFederatedIdentity(String userId, String identityProvider) {
+        FederatedIdentity federatedIdentity = findFederatedIdentity(userId, identityProvider);
 
-  @Override
-  public void makeUserServiceAccount(User user, String realmId) {
-    user.setServiceAccount(true);
-    super.insertOrUpdate(user);
+        if (federatedIdentity == null) {
+            return false;
+        }
 
-    dao.deleteRealmToUserMapping(realmId, false, user.getId());
-    dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));
+        FederatedIdentityToUserMapping identityToUserMapping =
+                dao.findFederatedIdentityByBrokerUserId(federatedIdentity.getBrokerUserId(), identityProvider);
 
-    dao.insertOrUpdate(
-        new UserSearchIndex(
-            realmId, SERVICE_ACCOUNT_LINK, user.getServiceAccountClientLink(), user.getId()));
-  }
-
-  @Override
-  public FederatedIdentity findFederatedIdentity(String userId, String identityProvider) {
-    return dao.findFederatedIdentity(userId, identityProvider);
-  }
-
-  @Override
-  public FederatedIdentity findFederatedIdentityByBrokerUserId(
-      String brokerUserId, String identityProvider) {
-    FederatedIdentityToUserMapping identityToUserMapping =
-        dao.findFederatedIdentityByBrokerUserId(brokerUserId, identityProvider);
-
-    if (identityToUserMapping == null) {
-      return null;
+        dao.delete(federatedIdentity);
+        dao.delete(identityToUserMapping);
+        return true;
     }
 
-    return findFederatedIdentity(identityToUserMapping.getUserId(), identityProvider);
-  }
-
-  @Override
-  public List<FederatedIdentity> findFederatedIdentities(String userId) {
-    return dao.findFederatedIdentities(userId).all();
-  }
-
-  @Override
-  public void createOrUpdateFederatedIdentity(FederatedIdentity federatedIdentity) {
-    dao.update(federatedIdentity);
-    FederatedIdentityToUserMapping identityToUserMapping =
-        new FederatedIdentityToUserMapping(
-            federatedIdentity.getBrokerUserId(),
-            federatedIdentity.getIdentityProvider(),
-            federatedIdentity.getUserId());
-    dao.update(identityToUserMapping);
-  }
-
-  @Override
-  public boolean deleteFederatedIdentity(String userId, String identityProvider) {
-    FederatedIdentity federatedIdentity = findFederatedIdentity(userId, identityProvider);
-
-    if (federatedIdentity == null) {
-      return false;
+    @Override
+    public Set<String> findUserIdsByRealmId(String realmId, int first, int max) {
+        return StreamExtensions.paginated(dao.findUsersByRealmId(realmId), first, max)
+                .map(RealmToUserMapping::getUserId)
+                .collect(Collectors.toSet());
     }
 
-    FederatedIdentityToUserMapping identityToUserMapping =
-        dao.findFederatedIdentityByBrokerUserId(
-            federatedIdentity.getBrokerUserId(), identityProvider);
-
-    dao.delete(federatedIdentity);
-    dao.delete(identityToUserMapping);
-    return true;
-  }
-
-  @Override
-  public Set<String> findUserIdsByRealmId(String realmId, int first, int max) {
-    return StreamExtensions.paginated(dao.findUsersByRealmId(realmId), first, max)
-        .map(RealmToUserMapping::getUserId)
-        .collect(Collectors.toSet());
-  }
-
-  @Override
-  public long countUsersByRealmId(String realmId, boolean includeServiceAccounts) {
-    // Avoid count()-queries for Amazon Keyspaces support
-    if (includeServiceAccounts) {
-      return dao.findUsersByRealmId(realmId).all().size();
-    } else {
-      return dao.findNonServiceAccountUsersByRealmId(realmId).all().size();
-    }
-  }
-
-  @Override
-  public void createOrUpdateUserConsent(UserConsent consent) {
-    dao.insertOrUpdate(consent);
-  }
-
-  @Override
-  public boolean deleteUserConsent(String realmId, String userId, String clientId) {
-    return dao.deleteUserConsent(realmId, userId, clientId);
-  }
-
-  @Override
-  public boolean deleteUserConsentsByUserId(String realmId, String userId) {
-    return dao.deleteUserConsentsByUserId(realmId, userId);
-  }
-
-  @Override
-  public boolean deleteFederatedIdentitiesByUserId(String userId) {
-    for (FederatedIdentity identity : dao.findFederatedIdentities(userId)) {
-      dao.deleteFederatedIdentityToUserMapping(
-          identity.getBrokerUserId(), identity.getIdentityProvider());
+    @Override
+    public long countUsersByRealmId(String realmId, boolean includeServiceAccounts) {
+        // Avoid count()-queries for Amazon Keyspaces support
+        if (includeServiceAccounts) {
+            return dao.findUsersByRealmId(realmId).all().size();
+        } else {
+            return dao.findNonServiceAccountUsersByRealmId(realmId).all().size();
+        }
     }
 
-    return dao.deleteFederatedIdentitiesByUserId(userId);
-  }
+    @Override
+    public void createOrUpdateUserConsent(UserConsent consent) {
+        dao.insertOrUpdate(consent);
+    }
 
-  @Override
-  public UserConsent findUserConsent(String realmId, String userId, String clientId) {
-    return dao.findUserConsent(realmId, userId, clientId);
-  }
+    @Override
+    public boolean deleteUserConsent(String realmId, String userId, String clientId) {
+        return dao.deleteUserConsent(realmId, userId, clientId);
+    }
 
-  @Override
-  public List<UserConsent> findUserConsentsByUserId(String realmId, String userId) {
-    return dao.findUserConsentsByUserId(realmId, userId).all();
-  }
+    @Override
+    public boolean deleteUserConsentsByUserId(String realmId, String userId) {
+        return dao.deleteUserConsentsByUserId(realmId, userId);
+    }
 
-  @Override
-  public List<UserConsent> findUserConsentsByRealmId(String realmId) {
-    return dao.findUserConsentsByRealmId(realmId).all();
-  }
+    @Override
+    public boolean deleteFederatedIdentitiesByUserId(String userId) {
+        for (FederatedIdentity identity : dao.findFederatedIdentities(userId)) {
+            dao.deleteFederatedIdentityToUserMapping(identity.getBrokerUserId(), identity.getIdentityProvider());
+        }
+
+        return dao.deleteFederatedIdentitiesByUserId(userId);
+    }
+
+    @Override
+    public UserConsent findUserConsent(String realmId, String userId, String clientId) {
+        return dao.findUserConsent(realmId, userId, clientId);
+    }
+
+    @Override
+    public List<UserConsent> findUserConsentsByUserId(String realmId, String userId) {
+        return dao.findUserConsentsByUserId(realmId, userId).all();
+    }
+
+    @Override
+    public List<UserConsent> findUserConsentsByRealmId(String realmId) {
+        return dao.findUserConsentsByRealmId(realmId).all();
+    }
 }

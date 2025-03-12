@@ -25,18 +25,18 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entiti
 
 @Dao
 public interface LoginFailureDao extends BaseDao {
-  @Update
-  void insertOrUpdate(LoginFailure loginFailure);
+    @Update
+    void insertOrUpdate(LoginFailure loginFailure);
 
-  @Select(customWhereClause = "user_id = :userId")
-  PagingIterable<LoginFailure> findByUserId(String userId);
+    @Select(customWhereClause = "user_id = :userId")
+    PagingIterable<LoginFailure> findByUserId(String userId);
 
-  @Select
-  PagingIterable<LoginFailure> findAll();
+    @Select
+    PagingIterable<LoginFailure> findAll();
 
-  @Delete
-  void delete(LoginFailure loginFailure);
+    @Delete
+    void delete(LoginFailure loginFailure);
 
-  @Delete(entityClass = LoginFailure.class)
-  void deleteByUserId(String userId);
+    @Delete(entityClass = LoginFailure.class)
+    void deleteByUserId(String userId);
 }

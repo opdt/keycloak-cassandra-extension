@@ -19,13 +19,13 @@ package de.arbeitsagentur.opdt.keycloak.common;
 import org.keycloak.models.ModelException;
 
 public class ModelIllegalStateException extends ModelException {
-  public ModelIllegalStateException() {}
+    public ModelIllegalStateException() {}
 
-  public ModelIllegalStateException(String message) {
-    super(message);
-  }
+    public ModelIllegalStateException(String message) {
+        super(message);
+    }
 
-  public ModelIllegalStateException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public ModelIllegalStateException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

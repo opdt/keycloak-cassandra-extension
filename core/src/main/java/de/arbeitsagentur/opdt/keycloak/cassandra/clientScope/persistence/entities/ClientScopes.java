@@ -15,42 +15,49 @@ import lombok.*;
 @Entity
 @CqlName("client_scopes")
 public class ClientScopes implements TransactionalEntity {
-  @PartitionKey private String realmId;
+    @PartitionKey
+    private String realmId;
 
-  private Long version;
+    private Long version;
 
-  @Builder.Default private Set<ClientScopeValue> clientScopes = new HashSet<>();
+    @Builder.Default
+    private Set<ClientScopeValue> clientScopes = new HashSet<>();
 
-  @Override
-  public String getId() {
-    return realmId;
-  }
-
-  public Set<ClientScopeValue> getClientScopes() {
-    if (clientScopes == null) {
-      return new HashSet<>();
+    @Override
+    public String getId() {
+        return realmId;
     }
-    return clientScopes;
-  }
 
-  public ClientScopeValue getClientScopeById(String id) {
-    ClientScopeValue clientScope =
-        clientScopes.stream().filter(s -> s.getId().equals(id)).findFirst().orElse(null);
-    if (clientScope == null) {
-      return clientScopes.stream().filter(r -> r.getId().equals(id)).findFirst().orElse(null);
+    public Set<ClientScopeValue> getClientScopes() {
+        if (clientScopes == null) {
+            return new HashSet<>();
+        }
+        return clientScopes;
     }
-    return clientScope;
-  }
 
-  public void addClientScope(ClientScopeValue clientScopeValue) {
-    clientScopes.add(clientScopeValue);
-  }
+    public ClientScopeValue getClientScopeById(String id) {
+        ClientScopeValue clientScope = clientScopes.stream()
+                .filter(s -> s.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+        if (clientScope == null) {
+            return clientScopes.stream()
+                    .filter(r -> r.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        }
+        return clientScope;
+    }
 
-  public boolean removeClientScope(String id) {
-    return clientScopes.removeIf(s -> Objects.equals(s.getId(), id));
-  }
+    public void addClientScope(ClientScopeValue clientScopeValue) {
+        clientScopes.add(clientScopeValue);
+    }
 
-  public Map<String, List<String>> getAttributes() {
-    return Collections.emptyMap();
-  }
+    public boolean removeClientScope(String id) {
+        return clientScopes.removeIf(s -> Objects.equals(s.getId(), id));
+    }
+
+    public Map<String, List<String>> getAttributes() {
+        return Collections.emptyMap();
+    }
 }

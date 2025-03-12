@@ -26,35 +26,33 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entitie
 
 @Dao
 public interface AuthSessionDao extends BaseDao {
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(RootAuthenticationSession session, int ttl);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(RootAuthenticationSession session, int ttl);
 
-  @Update
-  void insertOrUpdate(RootAuthenticationSession session);
+    @Update
+    void insertOrUpdate(RootAuthenticationSession session);
 
-  @Update
-  void insertOrUpdate(AuthenticationSession session);
+    @Update
+    void insertOrUpdate(AuthenticationSession session);
 
-  @Update(ttl = ":ttl")
-  void insertOrUpdate(AuthenticationSession session, int ttl);
+    @Update(ttl = ":ttl")
+    void insertOrUpdate(AuthenticationSession session, int ttl);
 
-  @Delete(entityClass = RootAuthenticationSession.class)
-  void deleteRootAuthSession(String id);
+    @Delete(entityClass = RootAuthenticationSession.class)
+    void deleteRootAuthSession(String id);
 
-  @Delete
-  void delete(RootAuthenticationSession session);
+    @Delete
+    void delete(RootAuthenticationSession session);
 
-  @Delete
-  void delete(AuthenticationSession session);
+    @Delete
+    void delete(AuthenticationSession session);
 
-  @Delete(
-      entityClass = AuthenticationSession.class,
-      customWhereClause = "parent_session_id = :parentSessionId")
-  void deleteAuthSessions(String parentSessionId);
+    @Delete(entityClass = AuthenticationSession.class, customWhereClause = "parent_session_id = :parentSessionId")
+    void deleteAuthSessions(String parentSessionId);
 
-  @Select(customWhereClause = "parent_session_id = :parentSessionId")
-  PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
+    @Select(customWhereClause = "parent_session_id = :parentSessionId")
+    PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
 
-  @Select(customWhereClause = "id = :id")
-  RootAuthenticationSession findById(String id);
+    @Select(customWhereClause = "id = :id")
+    RootAuthenticationSession findById(String id);
 }
