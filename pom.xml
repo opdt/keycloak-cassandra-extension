@@ -63,7 +63,7 @@
     <testcontainers-keycloak.version>1.20.6</testcontainers-keycloak.version>
 
     <!-- tooling -->
-    <lombok.version>1.18.36</lombok.version>
+    <lombok.version>1.18.38</lombok.version>
     <auto-service.version>1.1.1</auto-service.version>
     <spotless.version>2.44.3</spotless.version>
 
