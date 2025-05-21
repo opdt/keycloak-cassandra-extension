@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.HasAttributes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @CqlName("clients")
-public class Client implements TransactionalEntity {
+public class Client implements TransactionalEntity, HasAttributes {
     @PartitionKey
     private String realmId;
 

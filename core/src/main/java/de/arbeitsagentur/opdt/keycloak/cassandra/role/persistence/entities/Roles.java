@@ -18,6 +18,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.HasAttributes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,7 +31,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @CqlName("roles")
-public class Roles implements TransactionalEntity {
+public class Roles implements TransactionalEntity, HasAttributes {
     @PartitionKey
     private String realmId;
 

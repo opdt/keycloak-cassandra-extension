@@ -3,6 +3,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entiti
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.HasAttributes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.util.*;
 import lombok.*;
@@ -14,7 +15,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @CqlName("client_scopes")
-public class ClientScopes implements TransactionalEntity {
+public class ClientScopes implements TransactionalEntity, HasAttributes {
     @PartitionKey
     private String realmId;
 
