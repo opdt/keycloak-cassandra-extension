@@ -19,6 +19,7 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(of = "entity")
@@ -57,6 +58,10 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
         deleted = true;
     }
 
+    private Optional<HasAttributes> asHasAttributes() {
+        return entity instanceof HasAttributes ? Optional.of((HasAttributes) entity) : Optional.empty();
+    }
+
     public void setAttribute(String name, List<String> values) {
         if (name == null || values == null || name.startsWith(AttributeTypes.READONLY_ATTRIBUTE_PREFIX)) {
             return;
@@ -65,7 +70,7 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
         if (ENTITY_VERSION.equals(name)) {
             entity.setVersion(Long.parseLong(values.get(0)));
         } else {
-            entity.getAttributes().put(name, values);
+            asHasAttributes().ifPresent(a -> a.getAttributes().put(name, values));
         }
 
         markUpdated();
@@ -88,7 +93,7 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
             return;
         }
 
-        entity.getAttributes().remove(name);
+        asHasAttributes().ifPresent(a -> a.getAttributes().remove(name));
         markUpdated();
     }
 
@@ -97,7 +102,8 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
             return List.of(String.valueOf(entity.getVersion()));
         }
 
-        List<String> values = entity.getAttributes().get(name);
+        List<String> values =
+                asHasAttributes().map(a -> a.getAttributes().get(name)).orElse(null);
         return values == null
                 ? Collections.emptyList()
                 : values.stream().filter(v -> v != null && !v.isEmpty()).collect(Collectors.toList());
@@ -107,14 +113,17 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
         if (ENTITY_VERSION.equals(name) || ENTITY_VERSION_READONLY.equals(name)) {
             return String.valueOf(entity.getVersion());
         }
-        List<String> values = entity.getAttributes().get(name);
+        List<String> values =
+                asHasAttributes().map(a -> a.getAttributes().get(name)).orElse(null);
         return values == null || values.isEmpty() || values.iterator().next().isEmpty()
                 ? null
                 : values.iterator().next();
     }
 
     public Map<String, String> getAttributeFirstValues() {
-        Map<String, String> attributes = entity.getAttributes().entrySet().stream()
+        Map<String, String> attributes = asHasAttributes()
+                .map(a -> a.getAttributes().entrySet().stream())
+                .orElseGet(Stream::empty)
                 .filter(e -> !e.getKey().startsWith(AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX))
                 .filter(e -> e.getValue() != null
                         && !e.getValue().isEmpty()
@@ -130,7 +139,9 @@ public abstract class TransactionalModelAdapter<T extends TransactionalEntity> i
     }
 
     public Map<String, List<String>> getAllAttributes() {
-        Map<String, List<String>> attributes = entity.getAttributes().entrySet().stream()
+        Map<String, List<String>> attributes = asHasAttributes()
+                .map(a -> a.getAttributes().entrySet().stream())
+                .orElseGet(Stream::empty)
                 .filter(e -> !e.getKey().startsWith(AttributeTypes.INTERNAL_ATTRIBUTE_PREFIX))
                 .filter(e -> e.getValue() != null
                         && !e.getValue().isEmpty()

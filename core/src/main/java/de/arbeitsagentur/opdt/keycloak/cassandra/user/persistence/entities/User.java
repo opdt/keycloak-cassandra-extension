@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.annotations.Transient;
 import de.arbeitsagentur.opdt.keycloak.cassandra.AttributeTypes;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.HasAttributes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.time.Instant;
 import java.util.*;
@@ -33,7 +34,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @CqlName("users")
-public class User implements TransactionalEntity {
+public class User implements TransactionalEntity, HasAttributes {
 
     @PartitionKey(0)
     private String realmId;
