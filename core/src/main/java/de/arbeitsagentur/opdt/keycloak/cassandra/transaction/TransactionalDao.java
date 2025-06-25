@@ -19,16 +19,20 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.StatementAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
 import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 
 public interface TransactionalDao<T extends TransactionalEntity> extends BaseDao {
     @Insert(ifNotExists = true)
+    @StatementAttributes(executionProfileName = "write")
     void insert(T entity);
 
     @Update(customIfClause = "version = :expectedVersion")
+    @StatementAttributes(executionProfileName = "write")
     ResultSet update(T entity, long expectedVersion);
 
     @Delete(ifExists = true)
+    @StatementAttributes(executionProfileName = "write")
     void delete(T entity);
 }

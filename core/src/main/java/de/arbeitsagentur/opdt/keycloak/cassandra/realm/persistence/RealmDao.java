@@ -25,40 +25,52 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 @Dao
 public interface RealmDao extends TransactionalDao<Realm> {
     @Select(customWhereClause = "id = :id")
+    @StatementAttributes(executionProfileName = "read")
     Realm getRealmById(String id);
 
     @Select
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<Realm> findAll();
 
     @Select(customWhereClause = "name = :name")
+    @StatementAttributes(executionProfileName = "read")
     NameToRealm findByName(String name);
 
     @Delete(entityClass = NameToRealm.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteNameToRealm(String name);
 
     @Update
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(NameToRealm nameToRealm);
 
     // ClientInitialAccessModel
 
     @Select(customWhereClause = "realm_id = :realmId AND id = :id")
+    @StatementAttributes(executionProfileName = "read")
     ClientInitialAccess getClientInitialAccessModelById(String realmId, String id);
 
     @Select(customWhereClause = "realm_id = :realmId")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<ClientInitialAccess> getClientInitialAccesses(String realmId);
 
     @Select
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<ClientInitialAccess> getAllClientInitialAccesses();
 
     @Update
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(ClientInitialAccess model);
 
     @Update(ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(ClientInitialAccess model, int ttl);
 
     @Delete(entityClass = ClientInitialAccess.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteClientInitialAccessModel(String realmId, String id);
 
     @Delete(entityClass = ClientInitialAccess.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteAllClientInitialAccessModels(String realmId);
 }
