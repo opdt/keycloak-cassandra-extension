@@ -16,27 +16,29 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Delete;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
-import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.loginFailure.persistence.entities.LoginFailure;
 
 @Dao
 public interface LoginFailureDao extends BaseDao {
     @Update
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(LoginFailure loginFailure);
 
     @Select(customWhereClause = "user_id = :userId")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<LoginFailure> findByUserId(String userId);
 
     @Select
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<LoginFailure> findAll();
 
     @Delete
+    @StatementAttributes(executionProfileName = "write")
     void delete(LoginFailure loginFailure);
 
     @Delete(entityClass = LoginFailure.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteByUserId(String userId);
 }

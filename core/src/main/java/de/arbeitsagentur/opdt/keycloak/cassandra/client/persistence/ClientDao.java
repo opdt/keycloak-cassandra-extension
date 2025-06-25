@@ -24,21 +24,27 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 @Dao
 public interface ClientDao extends TransactionalDao<Client> {
     @Select(customWhereClause = "realm_id = :realmId AND id = :id")
+    @StatementAttributes(executionProfileName = "read")
     Client getClientById(String realmId, String id);
 
     @Select(customWhereClause = "realm_id = :realmId")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<Client> findAllClientsWithRealmId(String realmId);
 
     // Search
     @Insert
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(ClientSearchIndex searchIndex);
 
     @Select(customWhereClause = "realm_id = :realmId AND name = :name AND value = :value")
+    @StatementAttributes(executionProfileName = "read")
     ClientSearchIndex findClient(String realmId, String name, String value);
 
     @Delete
+    @StatementAttributes(executionProfileName = "write")
     void delete(ClientSearchIndex searchIndex);
 
     @Delete(entityClass = ClientSearchIndex.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteIndex(String realmId, String name, String value, String clientId);
 }

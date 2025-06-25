@@ -26,58 +26,76 @@ import java.util.List;
 @Dao
 public interface UserSessionDao extends BaseDao {
     @Update
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(UserSession session);
 
     @Update(ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(UserSession session, int ttl);
 
     @Select(customWhereClause = "id = :id")
+    @StatementAttributes(executionProfileName = "read")
     UserSession findById(String id);
 
     @Select(customWhereClause = "id IN :ids")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<UserSession> findByIds(List<String> ids);
 
     @Select
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<UserSession> findAll();
 
     @Delete
+    @StatementAttributes(executionProfileName = "write")
     void deleteUserSession(UserSession session);
 
     @Delete(entityClass = UserSession.class)
+    @StatementAttributes(executionProfileName = "write")
     void deleteUserSession(String id);
 
     // Attributes
     // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
     @Insert
+    @StatementAttributes(executionProfileName = "write")
     void insert(AttributeToUserSessionMapping mapping);
 
     @Insert(ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
     void insert(AttributeToUserSessionMapping mapping, int ttl);
 
     @Update
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(UserSessionToAttributeMapping mapping);
 
     @Update(ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(UserSessionToAttributeMapping mapping, int ttl);
 
     @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
+    @StatementAttributes(executionProfileName = "read")
     UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
 
     @Select(customWhereClause = "user_session_id = :userSessionId")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
 
     @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
+    @StatementAttributes(executionProfileName = "read")
     PagingIterable<AttributeToUserSessionMapping> findByAttribute(String attributeName, String attributeValue);
 
     @Delete
+    @StatementAttributes(executionProfileName = "write")
     boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
 
     @Delete(entityClass = AttributeToUserSessionMapping.class)
+    @StatementAttributes(executionProfileName = "write")
     boolean deleteAttributeToUserSessionMapping(String attributeName, String attributeValue, String userSessionId);
 
     @Delete(entityClass = UserSessionToAttributeMapping.class)
+    @StatementAttributes(executionProfileName = "write")
     boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
 
     @Delete(entityClass = UserSessionToAttributeMapping.class)
+    @StatementAttributes(executionProfileName = "write")
     boolean deleteAttribute(String userSessionId, String attributeName);
 }
