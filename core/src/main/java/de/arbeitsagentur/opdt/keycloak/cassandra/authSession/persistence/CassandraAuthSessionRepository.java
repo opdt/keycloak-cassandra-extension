@@ -17,23 +17,26 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;
 
 @RequiredArgsConstructor
-public class CassandraAuthSessionRepository implements AuthSessionRepository {
+public class CassandraAuthSessionRepository extends TransactionalRepository implements AuthSessionRepository {
+    private final boolean transactional;
+    private final RootAuthSessionDao rootDao;
     private final AuthSessionDao dao;
 
     @Override
     public void insertOrUpdate(RootAuthenticationSession session) {
         if (session.getExpiration() == null) {
-            dao.insertOrUpdate(session);
+            insertOrUpdateInternal(session);
         } else {
             int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
                     TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
-            dao.insertOrUpdate(session, ttl);
+            insertOrUpdateInternal(session, ttl);
         }
 
         // Update TTL
@@ -43,34 +46,58 @@ public class CassandraAuthSessionRepository implements AuthSessionRepository {
     @Override
     public void insertOrUpdate(AuthenticationSession session, RootAuthenticationSession parent) {
         if (parent.getExpiration() == null) {
-            dao.insertOrUpdate(session);
+            insertOrUpdateInternal(session);
         } else {
             int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
                     TimeAdapter.fromMilliSecondsToSeconds(parent.getExpiration() - Time.currentTimeMillis()));
-            dao.insertOrUpdate(session, ttl);
+            insertOrUpdateInternal(session, ttl);
         }
     }
 
     @Override
     public void deleteRootAuthSession(String sessionId) {
-        dao.deleteRootAuthSession(sessionId);
+        RootAuthenticationSession rootAuthenticationSession = rootDao.findById(sessionId);
+
+        if (rootAuthenticationSession != null) {
+            if (transactional) {
+
+                rootDao.deleteLwt(rootAuthenticationSession);
+            } else {
+                rootDao.delete(rootAuthenticationSession);
+            }
+        }
+
         deleteAuthSessions(sessionId);
     }
 
     @Override
     public void deleteRootAuthSession(RootAuthenticationSession session) {
-        dao.delete(session);
-        deleteAuthSessions(session.getId());
+        if (transactional) {
+            rootDao.deleteLwt(session);
+            deleteAuthSessions(session.getId());
+        } else {
+            rootDao.delete(session);
+            deleteAuthSessions(session.getId());
+        }
     }
 
     @Override
     public void deleteAuthSession(AuthenticationSession session) {
-        dao.delete(session);
+        if (transactional) {
+            dao.deleteLwt(session);
+        } else {
+            dao.delete(session);
+        }
     }
 
     @Override
     public void deleteAuthSessions(String parentSessionId) {
-        dao.deleteAuthSessions(parentSessionId);
+        if (transactional) {
+            // LWTs need all primary keys in where clause, so cannot use simpler method
+            findAuthSessionsByParentSessionId(parentSessionId).forEach(this::deleteAuthSession);
+        } else {
+            dao.deleteAuthSessions(parentSessionId);
+        }
     }
 
     @Override
@@ -80,6 +107,39 @@ public class CassandraAuthSessionRepository implements AuthSessionRepository {
 
     @Override
     public RootAuthenticationSession findRootAuthSessionById(String id) {
-        return dao.findById(id);
+        return rootDao.findById(id);
+    }
+
+    // Non-strict LWT updates because writes to session are single user / not conflicting
+    private void insertOrUpdateInternal(AuthenticationSession authSession) {
+        if (transactional) {
+            insertOrUpdateLwt(dao, authSession, false);
+        } else {
+            dao.insertOrUpdate(authSession);
+        }
+    }
+
+    private void insertOrUpdateInternal(AuthenticationSession authSession, int ttl) {
+        if (transactional) {
+            insertOrUpdateLwt(dao, authSession, ttl, false);
+        } else {
+            dao.insertOrUpdate(authSession, ttl);
+        }
+    }
+
+    private void insertOrUpdateInternal(RootAuthenticationSession session) {
+        if (transactional) {
+            insertOrUpdateLwt(rootDao, session, false);
+        } else {
+            rootDao.insertOrUpdate(session);
+        }
+    }
+
+    private void insertOrUpdateInternal(RootAuthenticationSession session, int ttl) {
+        if (transactional) {
+            insertOrUpdateLwt(rootDao, session, ttl, false);
+        } else {
+            rootDao.insertOrUpdate(session, ttl);
+        }
     }
 }

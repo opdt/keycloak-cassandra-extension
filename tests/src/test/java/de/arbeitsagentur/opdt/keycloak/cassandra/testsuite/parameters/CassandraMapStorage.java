@@ -34,7 +34,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
     public static final Boolean START_CONTAINER =
-            Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
+            Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "false"));
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
             .add(CassandraConnectionSpi.class)
@@ -46,7 +46,6 @@ public class CassandraMapStorage extends KeycloakModelParameters {
                     .add(CassandraConnectionProviderFactory.class)
                     .add(CassandraDatastoreProviderFactory.class)
                     .build();
-
     private final GenericContainer cassandraContainer = createCassandraContainer();
 
     public CassandraMapStorage() {
@@ -60,12 +59,13 @@ public class CassandraMapStorage extends KeycloakModelParameters {
         cf.spi(CassandraConnectionSpi.NAME)
                 .provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
                 .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
-                .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
+                .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "50000")
                 .config("localDatacenter", "datacenter1")
                 .config("keyspace", "test")
                 .config("username", "cassandra")
                 .config("password", "cassandra")
-                .config("replicationFactor", "1");
+                .config("replicationFactor", "1")
+                .config("authSessionLwtEnabled", "true");
     }
 
     @Override

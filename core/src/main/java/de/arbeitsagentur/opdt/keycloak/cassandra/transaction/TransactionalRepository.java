@@ -18,29 +18,76 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.transaction;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import de.arbeitsagentur.opdt.keycloak.common.ModelIllegalStateException;
+import lombok.extern.jbosslog.JBossLog;
 
-public abstract class TransactionalRepository<
-        TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> {
-    protected final TDao dao;
-
-    public TransactionalRepository(TDao dao) {
-        this.dao = dao;
+@JBossLog
+public abstract class TransactionalRepository {
+    public <TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> void insertOrUpdateLwt(
+            TDao dao, TEntity entity) {
+        insertOrUpdateLwt(dao, entity, true);
     }
 
-    public void insertOrUpdate(TEntity entity) {
+    public <TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> void insertOrUpdateLwt(
+            TDao dao, TEntity entity, boolean strict) {
         if (entity.getVersion() == null) {
             entity.setVersion(1L);
-            dao.insert(entity);
+            dao.insertLwt(entity);
         } else {
             Long currentVersion = entity.getVersion();
             entity.incrementVersion();
 
-            ResultSet result = dao.update(entity, currentVersion);
+            ResultSet result = dao.updateLwt(entity, currentVersion);
 
             if (!result.wasApplied()) {
-                throw new ModelIllegalStateException("Entity couldn't be updated because its version "
-                        + currentVersion
-                        + " doesn't match the version in the database");
+                Long dbVersion = result.one().getLong("version");
+                if (strict) {
+                    throw new ModelIllegalStateException("Entity couldn't be updated because its version "
+                            + currentVersion
+                            + " doesn't match the version in the database (" + dbVersion + ")");
+                } else {
+                    log.warn("Entity couldn't be updated because its version "
+                            + currentVersion
+                            + " doesn't match the version in the database (" + dbVersion + "). Strict == false -> Updating version.");
+
+                    entity.setVersion(dbVersion);
+
+                    insertOrUpdateLwt(dao, entity, true);
+                }
+            }
+        }
+    }
+
+    public <TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> void insertOrUpdateLwt(
+            TDao dao, TEntity entity, int ttl) {
+        insertOrUpdateLwt(dao, entity, ttl, true);
+    }
+
+    public <TEntity extends TransactionalEntity, TDao extends TransactionalDao<TEntity>> void insertOrUpdateLwt(
+            TDao dao, TEntity entity, int ttl, boolean strict) {
+        if (entity.getVersion() == null) {
+            entity.setVersion(1L);
+            dao.insertLwt(entity, ttl);
+        } else {
+            Long currentVersion = entity.getVersion();
+            entity.incrementVersion();
+
+            ResultSet result = dao.updateLwt(entity, ttl, currentVersion);
+
+            if (!result.wasApplied()) {
+                Long dbVersion = result.one().getLong("version");
+                if (strict) {
+                    throw new ModelIllegalStateException("Entity couldn't be updated because its version "
+                            + currentVersion
+                            + " doesn't match the version in the database (" + dbVersion + ")");
+                } else {
+                    log.warn("Entity couldn't be updated because its version "
+                            + currentVersion
+                            + " doesn't match the version in the database (" + dbVersion + "). Strict == false -> Updating version.");
+
+                    entity.setVersion(dbVersion);
+
+                    insertOrUpdateLwt(dao, entity, true);
+                }
             }
         }
     }

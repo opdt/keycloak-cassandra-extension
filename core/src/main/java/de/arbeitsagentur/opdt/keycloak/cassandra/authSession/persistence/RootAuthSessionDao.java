@@ -15,30 +15,25 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence;
 
-import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 
 @Dao
-public interface AuthSessionDao extends TransactionalDao<AuthenticationSession> {
-    @Update
-    @StatementAttributes(executionProfileName = "write")
-    void insertOrUpdate(AuthenticationSession session);
-
+public interface RootAuthSessionDao extends TransactionalDao<RootAuthenticationSession> {
     @Update(ttl = ":ttl")
     @StatementAttributes(executionProfileName = "write")
-    void insertOrUpdate(AuthenticationSession session, int ttl);
+    void insertOrUpdate(RootAuthenticationSession session, int ttl);
+
+    @Update
+    @StatementAttributes(executionProfileName = "write")
+    void insertOrUpdate(RootAuthenticationSession session);
 
     @Delete
     @StatementAttributes(executionProfileName = "write")
-    void delete(AuthenticationSession session);
+    void delete(RootAuthenticationSession session);
 
-    @Delete(entityClass = AuthenticationSession.class, customWhereClause = "parent_session_id = :parentSessionId")
-    @StatementAttributes(executionProfileName = "write")
-    void deleteAuthSessions(String parentSessionId);
-
-    @Select(customWhereClause = "parent_session_id = :parentSessionId")
+    @Select(customWhereClause = "id = :id")
     @StatementAttributes(executionProfileName = "read")
-    PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
+    RootAuthenticationSession findById(String id);
 }

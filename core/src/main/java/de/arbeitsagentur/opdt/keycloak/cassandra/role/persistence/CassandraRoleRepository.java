@@ -17,11 +17,16 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.role.persistence.entities.Roles;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
+import lombok.RequiredArgsConstructor;
 
-public class CassandraRoleRepository extends TransactionalRepository<Roles, RoleDao> implements RoleRepository {
+@RequiredArgsConstructor
+public class CassandraRoleRepository extends TransactionalRepository implements RoleRepository {
 
-    public CassandraRoleRepository(RoleDao dao) {
-        super(dao);
+    private final RoleDao dao;
+
+    @Override
+    public void insertOrUpdate(Roles role) {
+        super.insertOrUpdateLwt(dao, role);
     }
 
     @Override

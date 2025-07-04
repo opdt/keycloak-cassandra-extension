@@ -26,13 +26,21 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 public interface TransactionalDao<T extends TransactionalEntity> extends BaseDao {
     @Insert(ifNotExists = true)
     @StatementAttributes(executionProfileName = "write")
-    void insert(T entity);
+    void insertLwt(T entity);
+
+    @Insert(ifNotExists = true, ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
+    void insertLwt(T entity, int ttl);
 
     @Update(customIfClause = "version = :expectedVersion")
     @StatementAttributes(executionProfileName = "write")
-    ResultSet update(T entity, long expectedVersion);
+    ResultSet updateLwt(T entity, long expectedVersion);
+
+    @Update(customIfClause = "version = :expectedVersion", ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
+    ResultSet updateLwt(T entity, int ttl, long expectedVersion);
 
     @Delete(ifExists = true)
     @StatementAttributes(executionProfileName = "write")
-    void delete(T entity);
+    void deleteLwt(T entity);
 }

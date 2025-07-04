@@ -16,6 +16,7 @@
 package de.arbeitsagentur.opdt.keycloak.cassandra.connection;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
@@ -136,6 +137,7 @@ public class DefaultCassandraConnectionProviderFactory
         String username = scope.get("username");
         String password = scope.get("password");
         int replicationFactor = Integer.parseInt(scope.get("replicationFactor"));
+        boolean authSessionLwtEnabled = scope.getBoolean("authSessionLwtEnabled", false);
 
         List<InetSocketAddress> contactPointsList = Arrays.stream(contactPoints.split(","))
                 .map(cp -> InetSocketAddress.createUnresolved(cp, port))
@@ -181,7 +183,7 @@ public class DefaultCassandraConnectionProviderFactory
                 .addTypeCodecs(new JsonCodec<>(ClientScopeValue.class, CassandraJsonSerialization.getMapper()))
                 .build();
 
-        repository = createRepository(cqlSession);
+        repository = createRepository(cqlSession, authSessionLwtEnabled);
     }
 
     private void createDbIfNotExists(
@@ -236,7 +238,7 @@ public class DefaultCassandraConnectionProviderFactory
         migration.migrate();
     }
 
-    private CompositeRepository createRepository(CqlSession cqlSession) {
+    private CompositeRepository createRepository(CqlSession cqlSession, boolean authSessionLwtEnabled) {
         UserMapper userMapper = new UserMapperBuilder(cqlSession)
                 .withSchemaValidationEnabled(false)
                 .build();
@@ -266,8 +268,15 @@ public class DefaultCassandraConnectionProviderFactory
         AuthSessionMapper authSessionMapper = new AuthSessionMapperBuilder(cqlSession)
                 .withSchemaValidationEnabled(false)
                 .build();
-        AuthSessionRepository authSessionRepository =
-                new CassandraAuthSessionRepository(authSessionMapper.authSessionDao());
+        AuthSessionRepository authSessionRepository = authSessionLwtEnabled
+                ? new CassandraAuthSessionRepository(
+                        true,
+                        authSessionMapper.rootAuthSessionDao(CqlIdentifier.fromCql("root_authentication_sessions_lwt")),
+                        authSessionMapper.authSessionDao(CqlIdentifier.fromCql("authentication_sessions_lwt")))
+                : new CassandraAuthSessionRepository(
+                        false,
+                        authSessionMapper.rootAuthSessionDao(CqlIdentifier.fromCql("root_authentication_sessions")),
+                        authSessionMapper.authSessionDao(CqlIdentifier.fromCql("authentication_sessions")));
 
         LoginFailureMapper loginFailureMapper = new LoginFailureMapperBuilder(cqlSession)
                 .withSchemaValidationEnabled(false)
