@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +34,7 @@ import org.keycloak.sessions.CommonClientSessionModel;
 @AllArgsConstructor
 @Entity
 @CqlName("authentication_sessions")
-public class AuthenticationSession {
+public class AuthenticationSession implements TransactionalEntity {
     @PartitionKey
     private String parentSessionId;
 
@@ -44,6 +45,7 @@ public class AuthenticationSession {
     private Map<String, CommonClientSessionModel.ExecutionStatus> executionStatus = new HashMap<>();
 
     private Long timestamp;
+    private Long version;
 
     private String userId;
     private String clientId;
@@ -106,5 +108,9 @@ public class AuthenticationSession {
             clientNotes = new HashMap<>();
         }
         return clientNotes;
+    }
+
+    public String getId() {
+        return tabId;
     }
 }

@@ -17,12 +17,16 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entities.ClientScopes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
+import lombok.RequiredArgsConstructor;
 
-public class CassandraClientScopeRepository extends TransactionalRepository<ClientScopes, ClientScopeDao>
-        implements ClientScopeRepository {
+@RequiredArgsConstructor
+public class CassandraClientScopeRepository extends TransactionalRepository implements ClientScopeRepository {
 
-    public CassandraClientScopeRepository(ClientScopeDao dao) {
-        super(dao);
+    private final ClientScopeDao dao;
+
+    @Override
+    public void insertOrUpdate(ClientScopes clientScopes) {
+        super.insertOrUpdateLwt(dao, clientScopes);
     }
 
     @Override
