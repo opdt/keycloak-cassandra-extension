@@ -11,6 +11,7 @@
 
   <artifactId>keycloak-cassandra-extension</artifactId>
   <packaging>jar</packaging>
+  <name>keycloak-extension-cassandra (core)</name>
 
   <dependencies>
     <dependency>

@@ -11,6 +11,7 @@
 
   <artifactId>keycloak-cassandra-extension-metrics</artifactId>
   <packaging>jar</packaging>
+  <name>keycloak-extension-cassandra (metrics)</name>
 
   <dependencies>
     <dependency>
