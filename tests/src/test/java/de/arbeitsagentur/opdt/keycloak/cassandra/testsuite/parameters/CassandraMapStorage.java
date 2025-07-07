@@ -34,7 +34,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 public class CassandraMapStorage extends KeycloakModelParameters {
     public static final Boolean START_CONTAINER =
-            Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "false"));
+            Boolean.valueOf(System.getProperty("keycloak.testsuite.start-cassandra-container", "true"));
 
     static final Set<Class<? extends Spi>> ALLOWED_SPIS = ImmutableSet.<Class<? extends Spi>>builder()
             .add(CassandraConnectionSpi.class)

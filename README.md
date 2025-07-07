@@ -5,7 +5,7 @@
 # Cassandra storage extension for Keycloak
 
 Uses Apache Cassandra to store and retrieve entities of all storage areas except authorization and events.
-Requires Keycloak >= 26.0.0 (older versions may be supported by older versions of this extension).
+Requires Keycloak >= 26.2.0 (older versions may be supported by older versions of this extension).
 
 ## How to use
 
@@ -20,10 +20,10 @@ If "cache mode" is active (`KC_COMMUNITY_DATASTORE_CASSANDRA_CACHE_ENABLED=true`
 
 The following parameters might be needed in addition to the configuration options of this extension (see below):
 
-| CLI-Parameter                                      | Description                                                                                                            |
-|----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| --features-disabled=authorization                  | Disable authorization (this is essential as otherwise Keycloak tries to use InfinispanStoreFactory at a lot of places) |
-| --spi-connections-jpa-legacy-enabled=false         | Deactivate automatic JPA schema migration                                                                              |
+| CLI-Parameter                                                              | Description                               |
+|----------------------------------------------------------------------------|-------------------------------------------|
+| --features-disabled=authorization,admin-fine-grained-authz,organization | Disable unsupported features              |
+| --spi-connections-jpa-legacy-enabled=false                                 | Deactivate automatic JPA schema migration |
 
 ## Configuration options
 

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.extern.jbosslog.JBossLog;
 import org.keycloak.Config;
 import org.keycloak.authorization.model.*;
@@ -230,6 +231,18 @@ public class NullCachedStoreProviderFactory
                     @Override
                     public List<Policy> findDependentPolicies(ResourceServer resourceServer, String id) {
                         return Collections.emptyList();
+                    }
+
+                    @Override
+                    public Stream<Policy> findDependentPolicies(
+                            ResourceServer resourceServer, String s, String s1, String s2, String s3) {
+                        return Stream.empty();
+                    }
+
+                    @Override
+                    public Stream<Policy> findDependentPolicies(
+                            ResourceServer resourceServer, String s, String s1, String s2, List<String> list) {
+                        return Stream.empty();
                     }
                 };
             }

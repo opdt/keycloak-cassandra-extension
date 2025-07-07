@@ -47,7 +47,8 @@ public abstract class TransactionalRepository {
                 } else {
                     log.warn("Entity couldn't be updated because its version "
                             + currentVersion
-                            + " doesn't match the version in the database (" + dbVersion + "). Strict == false -> Updating version.");
+                            + " doesn't match the version in the database (" + dbVersion
+                            + "). Strict == false -> Updating version.");
 
                     entity.setVersion(dbVersion);
 
@@ -82,7 +83,8 @@ public abstract class TransactionalRepository {
                 } else {
                     log.warn("Entity couldn't be updated because its version "
                             + currentVersion
-                            + " doesn't match the version in the database (" + dbVersion + "). Strict == false -> Updating version.");
+                            + " doesn't match the version in the database (" + dbVersion
+                            + "). Strict == false -> Updating version.");
 
                     entity.setVersion(dbVersion);
 
