@@ -17,14 +17,12 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
-import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
-import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSessionToAttributeMapping;
 import java.util.List;
 
 @Dao
-public interface UserSessionDao extends BaseDao {
+public interface UserSessionDao extends TransactionalDao<UserSession> {
     @Update
     @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(UserSession session);
@@ -52,50 +50,4 @@ public interface UserSessionDao extends BaseDao {
     @Delete(entityClass = UserSession.class)
     @StatementAttributes(executionProfileName = "write")
     void deleteUserSession(String id);
-
-    // Attributes
-    // Tabelle hat keine Non-PK-Columns -> Update nicht möglich, stattdessen Delete + Insert
-    @Insert
-    @StatementAttributes(executionProfileName = "write")
-    void insert(AttributeToUserSessionMapping mapping);
-
-    @Insert(ttl = ":ttl")
-    @StatementAttributes(executionProfileName = "write")
-    void insert(AttributeToUserSessionMapping mapping, int ttl);
-
-    @Update
-    @StatementAttributes(executionProfileName = "write")
-    void insertOrUpdate(UserSessionToAttributeMapping mapping);
-
-    @Update(ttl = ":ttl")
-    @StatementAttributes(executionProfileName = "write")
-    void insertOrUpdate(UserSessionToAttributeMapping mapping, int ttl);
-
-    @Select(customWhereClause = "user_session_id = :userSessionId AND attribute_name = :attributeName")
-    @StatementAttributes(executionProfileName = "read")
-    UserSessionToAttributeMapping findAttribute(String userSessionId, String attributeName);
-
-    @Select(customWhereClause = "user_session_id = :userSessionId")
-    @StatementAttributes(executionProfileName = "read")
-    PagingIterable<UserSessionToAttributeMapping> findAllAttributes(String userSessionId);
-
-    @Select(customWhereClause = "attribute_name = :attributeName AND attribute_value = :attributeValue")
-    @StatementAttributes(executionProfileName = "read")
-    PagingIterable<AttributeToUserSessionMapping> findByAttribute(String attributeName, String attributeValue);
-
-    @Delete
-    @StatementAttributes(executionProfileName = "write")
-    boolean deleteAttributeToUserSessionMapping(AttributeToUserSessionMapping mapping);
-
-    @Delete(entityClass = AttributeToUserSessionMapping.class)
-    @StatementAttributes(executionProfileName = "write")
-    boolean deleteAttributeToUserSessionMapping(String attributeName, String attributeValue, String userSessionId);
-
-    @Delete(entityClass = UserSessionToAttributeMapping.class)
-    @StatementAttributes(executionProfileName = "write")
-    boolean deleteAllUserSessionToAttributeMappings(String userSessionId);
-
-    @Delete(entityClass = UserSessionToAttributeMapping.class)
-    @StatementAttributes(executionProfileName = "write")
-    boolean deleteAttribute(String userSessionId, String attributeName);
 }

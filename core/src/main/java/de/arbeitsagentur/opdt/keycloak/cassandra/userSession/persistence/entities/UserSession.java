@@ -20,6 +20,7 @@ import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import de.arbeitsagentur.opdt.keycloak.common.ExpirableEntity;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,7 @@ import org.keycloak.models.UserSessionModel;
 @AllArgsConstructor
 @Entity
 @CqlName("user_sessions")
-public class UserSession implements ExpirableEntity {
+public class UserSession implements TransactionalEntity, ExpirableEntity {
     @PartitionKey
     private String id;
 
@@ -51,6 +52,8 @@ public class UserSession implements ExpirableEntity {
     private Long lastSessionRefresh;
 
     private UserSessionModel.State state;
+
+    private Long version;
 
     @Builder.Default
     private Map<String, String> notes = new HashMap<>();

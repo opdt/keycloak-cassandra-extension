@@ -65,7 +65,8 @@ public class CassandraMapStorage extends KeycloakModelParameters {
                 .config("username", "cassandra")
                 .config("password", "cassandra")
                 .config("replicationFactor", "1")
-                .config("authSessionLwtEnabled", "true");
+                .config("authSessionLwtEnabled", "true")
+                .config("userSessionLwtEnabled", "true");
     }
 
     @Override

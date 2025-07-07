@@ -19,6 +19,7 @@ import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.PERSISTENT;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.StreamExtensions;
+import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AttributeToUserSessionMapping;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.AuthenticatedClientSessionValue;
 import de.arbeitsagentur.opdt.keycloak.cassandra.userSession.persistence.entities.UserSession;
@@ -34,25 +35,28 @@ import org.keycloak.models.RealmModel;
 
 @JBossLog
 @RequiredArgsConstructor
-public class CassandraUserSessionRepository implements UserSessionRepository {
+public class CassandraUserSessionRepository extends TransactionalRepository implements UserSessionRepository {
     private static final String CLIENT_IDS = "clientIds";
     private static final String USER_ID = "userId";
     private static final String BROKER_USER_ID = "brokerUserId";
     private static final String BROKER_SESSION_ID = "brokerSessionId";
+
+    private final boolean transactional;
     private final UserSessionDao dao;
+    private final UserSessionAuxiliaryDao auxiliaryDao;
 
     @Override
     public void update(UserSession session) {
-        insertOrUpdate(session);
+        insertOrUpdateInternal(session);
     }
 
     @Override
     public void insert(RealmModel realm, UserSession session) {
-        insertOrUpdate(session);
+        insertOrUpdateInternal(session);
 
         // all these attributes cannot be changed afterwards so they are only set during "insert"
         if (session.getNotes().containsKey(CORRESPONDING_SESSION_ID)) {
-            insertOrUpdate(
+            insertOrUpdateInternal(
                     realm,
                     session,
                     new UserSessionToAttributeMapping(
@@ -63,14 +67,14 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
         }
 
         if (session.getUserId() != null) {
-            insertOrUpdate(
+            insertOrUpdateInternal(
                     realm,
                     session,
                     new UserSessionToAttributeMapping(session.getId(), USER_ID, Arrays.asList(session.getUserId())));
         }
 
         if (session.getBrokerUserId() != null) {
-            insertOrUpdate(
+            insertOrUpdateInternal(
                     realm,
                     session,
                     new UserSessionToAttributeMapping(
@@ -78,7 +82,7 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
         }
 
         if (session.getBrokerSessionId() != null) {
-            insertOrUpdate(
+            insertOrUpdateInternal(
                     realm,
                     session,
                     new UserSessionToAttributeMapping(
@@ -98,10 +102,10 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
         }
 
         if (!clientIdsAttribute.getAttributeValues().isEmpty()) {
-            insertOrUpdate(realm, session, clientIdsAttribute);
+            insertOrUpdateInternal(realm, session, clientIdsAttribute);
         }
 
-        insertOrUpdate(session);
+        insertOrUpdateInternal(session);
     }
 
     @Override
@@ -140,39 +144,43 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
             return;
         }
 
-        dao.deleteUserSession(session);
+        if (transactional) {
+            dao.deleteLwt(session);
+        } else {
+            dao.deleteUserSession(session);
+        }
 
         // Attributes
         if (session.getOffline() != null && session.getOffline()) {
-            for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(session.getId())) {
+            for (UserSessionToAttributeMapping attribute : auxiliaryDao.findAllAttributes(session.getId())) {
                 if (!attribute
                         .getAttributeName()
                         .equals(CORRESPONDING_SESSION_ID)) { // enabled cross-session lookups even after deletion
                     for (String attributeValue : attribute.getAttributeValues()) {
-                        dao.deleteAttributeToUserSessionMapping(
+                        auxiliaryDao.deleteAttributeToUserSessionMapping(
                                 attribute.getAttributeName(), attributeValue, session.getId());
                     }
                 }
             }
 
-            dao.findAllAttributes(session.getId()).all().stream()
+            auxiliaryDao.findAllAttributes(session.getId()).all().stream()
                     .filter(s -> !s.getAttributeName().equals(CORRESPONDING_SESSION_ID))
-                    .forEach(s -> dao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
+                    .forEach(s -> auxiliaryDao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
         } else {
-            for (UserSessionToAttributeMapping attribute : dao.findAllAttributes(session.getId())) {
+            for (UserSessionToAttributeMapping attribute : auxiliaryDao.findAllAttributes(session.getId())) {
                 for (String attributeValue : attribute.getAttributeValues()) {
                     if (!attribute
                             .getAttributeName()
                             .equals(CORRESPONDING_SESSION_ID)) { // enabled cross-session lookups even after deletion
-                        dao.deleteAttributeToUserSessionMapping(
+                        auxiliaryDao.deleteAttributeToUserSessionMapping(
                                 attribute.getAttributeName(), attributeValue, session.getId());
                     }
                 }
             }
 
-            dao.findAllAttributes(session.getId()).all().stream()
+            auxiliaryDao.findAllAttributes(session.getId()).all().stream()
                     .filter(s -> !s.getAttributeName().equals(CORRESPONDING_SESSION_ID))
-                    .forEach(s -> dao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
+                    .forEach(s -> auxiliaryDao.deleteAttribute(s.getUserSessionId(), s.getAttributeName()));
         }
     }
 
@@ -193,14 +201,14 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     // Attributes
     @Override
     public Set<String> findUserSessionIdsByAttribute(String name, String value, int firstResult, int maxResult) {
-        return StreamExtensions.paginated(dao.findByAttribute(name, value), firstResult, maxResult)
+        return StreamExtensions.paginated(auxiliaryDao.findByAttribute(name, value), firstResult, maxResult)
                 .map(AttributeToUserSessionMapping::getUserSessionId)
                 .collect(Collectors.toSet());
     }
 
     @Override
     public List<UserSession> findUserSessionsByAttribute(String name, String value) {
-        List<String> sessionIds = dao.findByAttribute(name, value).all().stream()
+        List<String> sessionIds = auxiliaryDao.findByAttribute(name, value).all().stream()
                 .map(AttributeToUserSessionMapping::getUserSessionId)
                 .collect(Collectors.toList());
 
@@ -227,7 +235,7 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
     @Override
     public MultivaluedHashMap<String, String> findAllUserSessionAttributes(String userSessionId) {
         List<UserSessionToAttributeMapping> attributeMappings =
-                dao.findAllAttributes(userSessionId).all();
+                auxiliaryDao.findAllAttributes(userSessionId).all();
         MultivaluedHashMap<String, String> result = new MultivaluedHashMap<>();
 
         attributeMappings.forEach(mapping -> result.addAll(mapping.getAttributeName(), mapping.getAttributeValues()));
@@ -237,23 +245,31 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
 
     @Override
     public UserSessionToAttributeMapping findUserSessionAttribute(String userSessionId, String attributeName) {
-        return dao.findAttribute(userSessionId, attributeName);
+        return auxiliaryDao.findAttribute(userSessionId, attributeName);
     }
 
-    private void insertOrUpdate(UserSession session) {
+    private void insertOrUpdateInternal(UserSession session) {
         if ((session.getOffline() != null && session.getOffline())
                 || PERSISTENT.equals(session.getPersistenceState())) {
             if (session.getExpiration() == null) {
-                dao.insertOrUpdate(session);
+                if (transactional) {
+                    insertOrUpdateLwt(dao, session, false);
+                } else {
+                    dao.insertOrUpdate(session);
+                }
             } else {
                 int ttl = TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
                         TimeAdapter.fromMilliSecondsToSeconds(session.getExpiration() - Time.currentTimeMillis()));
-                dao.insertOrUpdate(session, ttl);
+                if (transactional) {
+                    insertOrUpdateLwt(dao, session, ttl, false);
+                } else {
+                    dao.insertOrUpdate(session, ttl);
+                }
             }
         }
     }
 
-    private void insertOrUpdate(RealmModel realm, UserSession session, UserSessionToAttributeMapping mapping) {
+    private void insertOrUpdateInternal(RealmModel realm, UserSession session, UserSessionToAttributeMapping mapping) {
         Integer calculatedTtl = session.getExpiration() == null
                 ? null
                 : TimeAdapter.fromLongWithTimeInSecondsToIntegerWithTimeInSeconds(
@@ -266,12 +282,12 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
         final Integer ttl = calculatedTtl;
 
         UserSessionToAttributeMapping oldAttribute =
-                dao.findAttribute(mapping.getUserSessionId(), mapping.getAttributeName());
+                auxiliaryDao.findAttribute(mapping.getUserSessionId(), mapping.getAttributeName());
 
         if (ttl == null) {
-            dao.insertOrUpdate(mapping);
+            auxiliaryDao.insertOrUpdate(mapping);
         } else {
-            dao.insertOrUpdate(mapping, ttl);
+            auxiliaryDao.insertOrUpdate(mapping, ttl);
         }
 
         if (oldAttribute != null) {
@@ -279,7 +295,7 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
             // geändert werden können
             oldAttribute
                     .getAttributeValues()
-                    .forEach(value -> dao.deleteAttributeToUserSessionMapping(
+                    .forEach(value -> auxiliaryDao.deleteAttributeToUserSessionMapping(
                             oldAttribute.getAttributeName(), value, oldAttribute.getUserSessionId()));
         }
 
@@ -288,9 +304,9 @@ public class CassandraUserSessionRepository implements UserSessionRepository {
                     new AttributeToUserSessionMapping(mapping.getAttributeName(), value, mapping.getUserSessionId());
 
             if (ttl == null) {
-                dao.insert(attributeToUserSessionMapping);
+                auxiliaryDao.insert(attributeToUserSessionMapping);
             } else {
-                dao.insert(attributeToUserSessionMapping, ttl);
+                auxiliaryDao.insert(attributeToUserSessionMapping, ttl);
             }
         });
     }
