@@ -4,7 +4,7 @@
 
   <groupId>de.arbeitsagentur.opdt</groupId>
   <artifactId>keycloak-cassandra-extension-parent</artifactId>
-  <version>5.3.3-26.2-SNAPSHOT</version>
+  <version>5.3.2-26.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>keycloak-extension-cassandra</name>
@@ -268,7 +268,7 @@
           <extensions>true</extensions>
           <configuration>
             <serverId>ossrh</serverId>
-            <nexusUrl>https://ossrh-staging-api.central.sonatype.com/service/local/</nexusUrl>
+            <nexusUrl>https://ossrh-staging-api.central.sonatype.com/</nexusUrl>
             <autoReleaseAfterClose>true</autoReleaseAfterClose>
           </configuration>
         </plugin>
