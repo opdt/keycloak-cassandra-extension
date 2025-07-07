@@ -160,6 +160,7 @@
             <!-- for the logging to properly work with tests in the 'other' module -->
             <keycloak.profile.feature.authorization>disabled</keycloak.profile.feature.authorization>
             <keycloak.profile.feature.organization>disabled</keycloak.profile.feature.organization>
+            <keycloak.profile.feature.admin_fine_grained_authz>disabled</keycloak.profile.feature.admin_fine_grained_authz>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <org.jboss.logging.provider>log4j</org.jboss.logging.provider>
             <argLine>-Djava.awt.headless=true ${surefire.memory.settings} ${surefire.system.args}

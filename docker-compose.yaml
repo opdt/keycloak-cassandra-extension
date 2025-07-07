@@ -44,7 +44,7 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - JAVA_OPTS_APPEND="-Ddatastax-java-driver.advanced.ssl-engine-factory=none"
     entrypoint: /opt/keycloak/bin/kc.sh
-    command: -v start-dev --cache=local --features-disabled=authorization
+    command: -v start-dev --cache=local --features-disabled=authorization,organization,admin-fine-grained-authz
     ports:
       - 8080:8080
     networks:
