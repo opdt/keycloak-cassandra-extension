@@ -21,15 +21,17 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.realm.persistence.entities.Real
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import de.arbeitsagentur.opdt.keycloak.common.TimeAdapter;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.keycloak.common.util.Time;
 
-@RequiredArgsConstructor
-public class CassandraRealmRepository extends TransactionalRepository implements RealmRepository {
-    private final RealmDao dao;
+public class CassandraRealmRepository extends TransactionalRepository<Realm, RealmDao> implements RealmRepository {
 
+    public CassandraRealmRepository(RealmDao dao) {
+        super(dao);
+    }
+
+    @Override
     public void insertOrUpdate(Realm realm) {
-        super.insertOrUpdateLwt(dao, realm);
+        super.insertOrUpdate(realm);
         dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
     }
 
@@ -56,13 +58,13 @@ public class CassandraRealmRepository extends TransactionalRepository implements
     @Override
     public void createRealm(Realm realm) {
         realm.setVersion(1L);
-        dao.insertLwt(realm);
+        dao.insert(realm);
         dao.insertOrUpdate(new NameToRealm(realm.getName(), realm.getId()));
     }
 
     @Override
     public void deleteRealm(Realm realm) {
-        dao.deleteLwt(realm);
+        dao.delete(realm);
         dao.deleteAllClientInitialAccessModels(realm.getId());
         dao.deleteNameToRealm(realm.getName());
     }

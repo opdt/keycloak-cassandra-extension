@@ -17,11 +17,20 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence;
 
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.mapper.annotations.*;
+import de.arbeitsagentur.opdt.keycloak.cassandra.BaseDao;
 import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.AuthenticationSession;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalDao;
+import de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entities.RootAuthenticationSession;
 
 @Dao
-public interface AuthSessionDao extends TransactionalDao<AuthenticationSession> {
+public interface AuthSessionDao extends BaseDao {
+    @Update(ttl = ":ttl")
+    @StatementAttributes(executionProfileName = "write")
+    void insertOrUpdate(RootAuthenticationSession session, int ttl);
+
+    @Update
+    @StatementAttributes(executionProfileName = "write")
+    void insertOrUpdate(RootAuthenticationSession session);
+
     @Update
     @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(AuthenticationSession session);
@@ -29,6 +38,14 @@ public interface AuthSessionDao extends TransactionalDao<AuthenticationSession> 
     @Update(ttl = ":ttl")
     @StatementAttributes(executionProfileName = "write")
     void insertOrUpdate(AuthenticationSession session, int ttl);
+
+    @Delete(entityClass = RootAuthenticationSession.class)
+    @StatementAttributes(executionProfileName = "write")
+    void deleteRootAuthSession(String id);
+
+    @Delete
+    @StatementAttributes(executionProfileName = "write")
+    void delete(RootAuthenticationSession session);
 
     @Delete
     @StatementAttributes(executionProfileName = "write")
@@ -41,4 +58,8 @@ public interface AuthSessionDao extends TransactionalDao<AuthenticationSession> 
     @Select(customWhereClause = "parent_session_id = :parentSessionId")
     @StatementAttributes(executionProfileName = "read")
     PagingIterable<AuthenticationSession> findByParentSessionId(String parentSessionId);
+
+    @Select(customWhereClause = "id = :id")
+    @StatementAttributes(executionProfileName = "read")
+    RootAuthenticationSession findById(String id);
 }

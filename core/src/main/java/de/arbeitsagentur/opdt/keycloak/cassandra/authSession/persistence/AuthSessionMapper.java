@@ -15,16 +15,11 @@
  */
 package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
-import com.datastax.oss.driver.api.mapper.annotations.DaoTable;
 import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface AuthSessionMapper {
     @DaoFactory
-    AuthSessionDao authSessionDao(@DaoTable CqlIdentifier table);
-
-    @DaoFactory
-    RootAuthSessionDao rootAuthSessionDao(@DaoTable CqlIdentifier table);
+    AuthSessionDao authSessionDao();
 }

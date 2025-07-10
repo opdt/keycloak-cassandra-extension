@@ -18,7 +18,6 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.authSession.persistence.entiti
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
-import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import de.arbeitsagentur.opdt.keycloak.common.ExpirableEntity;
 import lombok.*;
 
@@ -29,7 +28,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @CqlName("root_authentication_sessions")
-public class RootAuthenticationSession implements TransactionalEntity, ExpirableEntity {
+public class RootAuthenticationSession implements ExpirableEntity {
     @PartitionKey
     private String id;
 
@@ -37,6 +36,4 @@ public class RootAuthenticationSession implements TransactionalEntity, Expirable
 
     private Long timestamp;
     private Long expiration;
-
-    private Long version;
 }

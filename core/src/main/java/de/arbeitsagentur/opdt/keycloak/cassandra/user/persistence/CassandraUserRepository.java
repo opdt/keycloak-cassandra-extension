@@ -26,19 +26,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-@RequiredArgsConstructor
-public class CassandraUserRepository extends TransactionalRepository implements UserRepository {
+public class CassandraUserRepository extends TransactionalRepository<User, UserDao> implements UserRepository {
     private static final String USERNAME = "username";
     private static final String USERNAME_CASE_INSENSITIVE = "usernameCaseInsensitive";
     private static final String EMAIL = "email";
     private static final String SERVICE_ACCOUNT_LINK = "serviceAccountLink";
     private static final String FEDERATION_LINK = "federationLink";
 
-    private final UserDao dao;
+    public CassandraUserRepository(UserDao dao) {
+        super(dao);
+    }
 
     @Override
     public Stream<User> findAllUsers() {
@@ -203,8 +203,9 @@ public class CassandraUserRepository extends TransactionalRepository implements 
         }
     }
 
+    @Override
     public void insertOrUpdate(User user) {
-        super.insertOrUpdateLwt(dao, user);
+        super.insertOrUpdate(user);
 
         dao.insert(new RealmToUserMapping(user.getRealmId(), user.isServiceAccount(), user.getId()));
 
@@ -246,7 +247,7 @@ public class CassandraUserRepository extends TransactionalRepository implements 
             return false;
         }
 
-        dao.deleteLwt(user);
+        dao.delete(user);
         dao.deleteRealmToUserMapping(realmId, user.isServiceAccount(), user.getId());
 
         deleteUsernameSearchIndex(realmId, user);
@@ -264,7 +265,7 @@ public class CassandraUserRepository extends TransactionalRepository implements 
     @Override
     public void makeUserServiceAccount(User user, String realmId) {
         user.setServiceAccount(true);
-        super.insertOrUpdateLwt(dao, user);
+        super.insertOrUpdate(user);
 
         dao.deleteRealmToUserMapping(realmId, false, user.getId());
         dao.insert(new RealmToUserMapping(realmId, user.isServiceAccount(), user.getId()));

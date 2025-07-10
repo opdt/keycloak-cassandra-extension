@@ -46,6 +46,7 @@ public class CassandraMapStorage extends KeycloakModelParameters {
                     .add(CassandraConnectionProviderFactory.class)
                     .add(CassandraDatastoreProviderFactory.class)
                     .build();
+
     private final GenericContainer cassandraContainer = createCassandraContainer();
 
     public CassandraMapStorage() {
@@ -59,13 +60,12 @@ public class CassandraMapStorage extends KeycloakModelParameters {
         cf.spi(CassandraConnectionSpi.NAME)
                 .provider(DefaultCassandraConnectionProviderFactory.PROVIDER_ID)
                 .config("contactPoints", START_CONTAINER ? cassandraContainer.getHost() : "localhost")
-                .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "50000")
+                .config("port", START_CONTAINER ? String.valueOf(cassandraContainer.getMappedPort(9042)) : "9042")
                 .config("localDatacenter", "datacenter1")
                 .config("keyspace", "test")
                 .config("username", "cassandra")
                 .config("password", "cassandra")
-                .config("replicationFactor", "1")
-                .config("authSessionLwtEnabled", "true");
+                .config("replicationFactor", "1");
     }
 
     @Override

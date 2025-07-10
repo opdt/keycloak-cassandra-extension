@@ -2,16 +2,10 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.group.persistence.entities.Groups;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public class CassandraGroupRepository extends TransactionalRepository implements GroupRepository {
-
-    private final GroupDao dao;
-
-    @Override
-    public void insertOrUpdate(Groups groups) {
-        super.insertOrUpdateLwt(dao, groups);
+public class CassandraGroupRepository extends TransactionalRepository<Groups, GroupDao> implements GroupRepository {
+    public CassandraGroupRepository(GroupDao dao) {
+        super(dao);
     }
 
     @Override

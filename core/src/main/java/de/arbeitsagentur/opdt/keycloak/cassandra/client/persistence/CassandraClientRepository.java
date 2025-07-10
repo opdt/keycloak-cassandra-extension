@@ -20,15 +20,16 @@ import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.Cli
 import de.arbeitsagentur.opdt.keycloak.cassandra.client.persistence.entities.ClientSearchIndex;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalRepository;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
-public class CassandraClientRepository extends TransactionalRepository implements ClientRepository {
+public class CassandraClientRepository extends TransactionalRepository<Client, ClientDao> implements ClientRepository {
 
     private static final String CLIENT_ID = "clientId";
 
-    private final ClientDao dao;
+    public CassandraClientRepository(ClientDao dao) {
+        super(dao);
+    }
 
+    @Override
     public void insertOrUpdate(Client entity) {
         if (entity.getAttributes().containsKey(CassandraClientAdapter.CLIENT_ID)) {
             dao.insertOrUpdate(new ClientSearchIndex(
@@ -38,7 +39,7 @@ public class CassandraClientRepository extends TransactionalRepository implement
                     entity.getId()));
         }
 
-        super.insertOrUpdateLwt(dao, entity);
+        super.insertOrUpdate(entity);
     }
 
     @Override
@@ -50,7 +51,7 @@ public class CassandraClientRepository extends TransactionalRepository implement
                     client.getAttribute(CassandraClientAdapter.CLIENT_ID).get(0),
                     client.getId());
         }
-        dao.deleteLwt(client);
+        dao.delete(client);
     }
 
     @Override
