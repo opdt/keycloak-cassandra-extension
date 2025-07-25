@@ -28,12 +28,15 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.jbosslog.JBossLog;
+import org.keycloak.common.constants.ServiceAccountConstants;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
+import org.keycloak.utils.StringUtil;
 
 @JBossLog
 public class CassandraUserProvider extends TransactionalProvider<User, CassandraUserAdapter> implements UserProvider {
@@ -92,20 +95,21 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
         log.debugv("addUser realm={0} id={1} username={2}", realm, id, username);
 
         UserModel existingUser = getUserByUsername(realm, username);
+        boolean isServiceAccount = username.startsWith(ServiceAccountConstants.SERVICE_ACCOUNT_USER_PREFIX);
 
-        if (existingUser != null) {
+        if (existingUser != null && !isServiceAccount) {
             throw new ModelDuplicateException(
                     "User with username '" + username + "' in realm " + realm.getName() + " already exists");
         }
 
-        if (usernameEqualsExistingEmail(realm, username)) {
+        if (usernameEqualsExistingEmail(realm, username) && !isServiceAccount) {
             throw new ModelDuplicateException("User using username '"
                     + username
                     + "' as email-address already exists in realm "
                     + realm.getName());
         }
 
-        if (id != null && userRepository.findUserById(realm.getId(), id) != null) {
+        if (id != null && userRepository.findUserById(realm.getId(), id) != null && !isServiceAccount) {
             throw new ModelDuplicateException("User exists: " + id);
         }
 
@@ -136,7 +140,43 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                     .forEach(userModel::addRequiredAction);
         }
 
-        userModel.commit(); // initial save
+        if (existingUser == null) {
+            userModel.commit(); // initial save
+        } else {
+            userModel = (CassandraUserAdapter) getUserById(realm, existingUser.getId());
+        }
+
+        if (username.startsWith(ServiceAccountConstants.SERVICE_ACCOUNT_USER_PREFIX)) {
+            String clientId = username.replace(ServiceAccountConstants.SERVICE_ACCOUNT_USER_PREFIX, "");
+            ClientModel client = session.clients().getClientByClientId(realm, clientId);
+
+            if (client != null && client.getAttribute("initialServiceAccountRoles") != null) {
+                List<String> initialServiceAccountRoles = Arrays.stream(
+                                client.getAttribute("initialServiceAccountRoles")
+                                        .split(","))
+                        .map(String::trim)
+                        .toList();
+
+                for (String roleId : initialServiceAccountRoles) {
+                    RoleModel role = session.roles().getRoleById(realm, roleId);
+
+                    if (role != null
+                            && "true"
+                                    .equalsIgnoreCase(
+                                            role.getFirstAttribute("unattendedServiceAccountAssignment.enabled"))) {
+                        String allowedClientIdPattern =
+                                role.getFirstAttribute("unattendedServiceAccountAssignment.clientIdPattern");
+                        if (!StringUtil.isNullOrEmpty(allowedClientIdPattern)) {
+                            if (!Pattern.matches(allowedClientIdPattern, clientId)) {
+                                continue;
+                            }
+                        }
+
+                        userModel.grantRole(role);
+                    }
+                }
+            }
+        }
         return userModel;
     }
 

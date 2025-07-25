@@ -66,6 +66,13 @@ To enable these checks for a realm, set its attribute `enableCheckForDuplicatesA
 ### Multi-Tab Refresh Token Rotation
 This extension adds support for a grace period when checking for reuses. It can be set via `refreshTokenReuseInterval` realm attribute. Refresh token reuses during this grace period are allowed, which can be useful in case of retries / network problems.
 
+### Unattended service account role assignment
+Keycloak creates a service account user for each client with `serviceAccountEnabled` set to `true`.
+This extension allows to dynamically assign roles to this service account. This needs to be enabled per role by setting an attribute `unattendedServiceAccountAssignment.enabled` to true.
+It can further be restricted by setting the role attribute `unattendedServiceAccountAssignment.clientIdPattern` to a regex matching all client-ids where this role can be dynamically assigned.
+
+To assign a role to a service account, a client attribute `initialServiceAccountRoles` needs to contain a comma-separated list of all role ids to set (which need to have the aforementioned attributes set).
+
 ## Contributing
 
 Before contributing to Keycloak Cassandra, please read our [contributing guidelines](CONTRIBUTING.md).
