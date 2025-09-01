@@ -292,7 +292,7 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setSingleAttribute(String name, String value) {
-        if (Objects.equals(entity.getAttribute(name), List.of(value))) {
+        if (value != null && Objects.equals(entity.getAttribute(name), List.of(value))) {
             return;
         }
 
