@@ -188,6 +188,9 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setFirstName(String firstName) {
+        if (Objects.equals(entity.getFirstName(), firstName)) {
+            return;
+        }
         entity.setFirstName(firstName);
         markUpdated();
     }
@@ -199,6 +202,9 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setLastName(String lastName) {
+        if (Objects.equals(entity.getLastName(), lastName)) {
+            return;
+        }
         entity.setLastName(lastName);
         markUpdated();
     }
@@ -212,6 +218,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setCreatedTimestamp(Long timestamp) {
+        if (Objects.equals(entity.getCreatedTimestamp(), timestamp)) {
+            return;
+        }
+
         if (timestamp != null && timestamp <= Time.currentTimeMillis()) {
             entity.setCreatedTimestamp(Instant.ofEpochMilli(timestamp));
             markUpdated();
@@ -232,12 +242,20 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setEmailVerified(boolean verified) {
+        if (Objects.equals(entity.getEmailVerified(), verified)) {
+            return;
+        }
+
         entity.setEmailVerified(verified);
         markUpdated();
     }
 
     @Override
     public void setEnabled(boolean enabled) {
+        if (Objects.equals(entity.getEnabled(), enabled)) {
+            return;
+        }
+
         entity.setEnabled(enabled);
         markUpdated();
     }
@@ -259,6 +277,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setAttribute(String name, List<String> values) {
+        if (Objects.equals(entity.getAttribute(name), values)) {
+            return;
+        }
+
         String valueToSet = values != null && !values.isEmpty() ? values.get(0) : null;
         if (setSpecialAttributeValue(name, valueToSet)) return;
 
@@ -270,6 +292,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void setSingleAttribute(String name, String value) {
+        if (Objects.equals(entity.getAttribute(name), List.of(value))) {
+            return;
+        }
+
         if (setSpecialAttributeValue(name, value)) return;
 
         User userCopy = entity.toBuilder().build();
@@ -295,6 +321,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
     public void grantRole(RoleModel role) {
         log.debugv("grant role mapping: realm={0} userId={1} role={2}", realm.getId(), entity.getId(), role.getName());
 
+        if (hasDirectRole(role)) {
+            return;
+        }
+
         if (role.isClientRole()) {
             Set<String> clientRoles = entity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
             clientRoles.add(role.getId());
@@ -310,6 +340,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
     public void deleteRoleMapping(RoleModel role) {
         log.debugv("delete role mapping: realm={0} userId={1} role={2}", realm.getId(), entity.getId(), role.getName());
 
+        if (!hasDirectRole(role)) {
+            return;
+        }
+
         if (role.isClientRole()) {
             Set<String> clientRoles = entity.getClientRoles().getOrDefault(role.getContainerId(), new HashSet<>());
             clientRoles.remove(role.getId());
@@ -323,24 +357,40 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void addRequiredAction(RequiredAction action) {
+        if (entity.getRequiredActions().contains(action.name())) {
+            return;
+        }
+
         entity.getRequiredActions().add(action.name());
         markUpdated();
     }
 
     @Override
     public void addRequiredAction(String action) {
+        if (entity.getRequiredActions().contains(action)) {
+            return;
+        }
+
         entity.getRequiredActions().add(action);
         markUpdated();
     }
 
     @Override
     public void removeRequiredAction(RequiredAction action) {
+        if (!entity.getRequiredActions().contains(action.name())) {
+            return;
+        }
+
         entity.getRequiredActions().remove(action.name());
         markUpdated();
     }
 
     @Override
     public void removeRequiredAction(String action) {
+        if (!entity.getRequiredActions().contains(action)) {
+            return;
+        }
+
         entity.getRequiredActions().remove(action);
         markUpdated();
     }
@@ -409,6 +459,10 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
 
     @Override
     public void leaveGroup(GroupModel group) {
+        if (!RoleUtils.isDirectMember(getGroupsStream(), group)) {
+            return;
+        }
+
         entity.removeGroupsMembership(group.getId());
 
         markUpdated();
