@@ -421,24 +421,7 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
 
     @Override
     public void onClientRemoved(RealmModel realm, ClientModel client) {
-        List<UserSession> relevantSessions = userSessionRepository.findAll().stream()
-                .filter(s -> s.getClientSessions().containsKey(client.getId()))
-                .collect(Collectors.toList());
-
-        for (UserSession session : relevantSessions) {
-            session.getClientSessions().remove(client.getId());
-            if (session.getClientSessions().isEmpty()) {
-                userSessionRepository.deleteUserSession(session);
-                CassandraUserSessionAdapter model = sessionModels.get(session.getId());
-                if (model != null) {
-                    model.markAsDeleted();
-                }
-
-                sessionModels.remove(session.getId());
-            } else {
-                userSessionRepository.update(session);
-            }
-        }
+        // Sessions time out eventually... Looking for relevant client sessions can be very slow
     }
 
     @Override
