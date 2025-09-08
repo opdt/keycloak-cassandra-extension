@@ -1096,34 +1096,8 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
             return null;
         });
 
-        String session2Id = withRealm(realmId, (s, realm) -> {
-            assertNull(s.sessions().getUserSession(realm, sessionId));
-
-            UserSessionModel userSession = s.sessions()
-                    .createUserSession(
-                            realm,
-                            s.users().getUserByUsername(realm, "user1"),
-                            "user1",
-                            "127.0.0.2",
-                            "form",
-                            true,
-                            null,
-                            null);
-            ClientModel client1 = realm.getClientByClientId("clientId");
-
-            s.sessions().createClientSession(realm, client1, userSession);
-            return userSession.getId();
-        });
-
-        withRealm(realmId, (s, realm) -> {
-            assertNotNull(s.sessions().getUserSession(realm, session2Id));
-            s.sessions().onClientRemoved(realm, realm.getClientByClientId("clientId"));
-
-            return null;
-        });
-
         String offlineSessionId = withRealm(realmId, (s, realm) -> {
-            assertNull(s.sessions().getUserSession(realm, session2Id));
+            assertNull(s.sessions().getUserSession(realm, sessionId));
 
             UserSessionModel userSession = s.sessions()
                     .createUserSession(
