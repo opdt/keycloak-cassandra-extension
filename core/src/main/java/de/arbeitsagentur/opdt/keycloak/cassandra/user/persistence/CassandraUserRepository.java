@@ -59,7 +59,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
         List<User> users = dao.findUsers(realmId, EMAIL, email).all().stream()
                 .map(idx -> findUserById(realmId, idx.getUserId()))
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toList());
 
         if (users.size() > 1) {
             log.warn("Found multiple users with email: " + email);
@@ -82,7 +82,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
         List<User> users = dao.findUsers(realmId, USERNAME, username).all().stream()
                 .map(idx -> findUserById(realmId, idx.getUserId()))
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toList());
 
         if (users.size() > 1) {
             log.warn("Found multiple users with username: " + username);
@@ -105,7 +105,7 @@ public class CassandraUserRepository extends TransactionalRepository<User, UserD
         List<User> users = dao.findUsers(realmId, USERNAME_CASE_INSENSITIVE, username).all().stream()
                 .map(idx -> findUserById(realmId, idx.getUserId()))
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toList());
 
         if (users.size() > 1) {
             log.warn("Found multiple users with username (case insensitive): " + username);

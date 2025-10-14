@@ -15,6 +15,7 @@ public class GroupValue {
     private String name;
     private String parentId;
     private String realmId;
+    private String description;
 
     @Builder.Default
     private GroupModel.Type type = GroupModel.Type.REALM;

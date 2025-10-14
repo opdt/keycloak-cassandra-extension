@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.*;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
+import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters.ProfileTestUtils;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -32,7 +33,6 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -337,15 +337,8 @@ public class UserSessionProviderModelTest extends KeycloakModelTest {
 
     @Test
     public void testCreateSessionsTransientUser() {
-        Profile.init(
-                Profile.ProfileName.DEFAULT,
-                Map.of(
-                        Profile.Feature.TRANSIENT_USERS,
-                        true,
-                        Profile.Feature.AUTHORIZATION,
-                        false,
-                        Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ,
-                        false));
+        ProfileTestUtils.enableTransientUsers();
+
         int started = Time.currentTime();
 
         withRealm(realmId, (s, r) -> {

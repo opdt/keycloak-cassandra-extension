@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.keycloak.common.constants.KerberosConstants;
@@ -46,7 +47,7 @@ public class ClientScopeModelTest extends KeycloakModelTest {
     }
 
     @Test
-    public void testBasicAttributes() {
+    public void testSearch() {
         withRealm(realmId, (session, realm) -> {
             ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");
 
@@ -55,6 +56,7 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             clientScope.setIsDynamicScope(false);
             clientScope.setProtocol("openid-connect");
             clientScope.setAttribute("testKey", "testVal");
+            clientScope.setAttribute("testKey2", "testVal2");
 
             return null;
         });
@@ -65,6 +67,70 @@ public class ClientScopeModelTest extends KeycloakModelTest {
                     .map(ClientScopeModel::getId)
                     .collect(Collectors.toList());
             assertThat(clientScopes, hasSize(1));
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            Map<String, String> searchMap = Map.of("testKey", "testVal", "testKey2", "testVal2");
+            Map<String, String> searchMap2 = Map.of("testKey3", "testVal", "testKey2", "testVal2");
+            List<String> clientScopes = session.clientScopes()
+                    .getClientScopesByAttributes(realm, searchMap, false)
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(1));
+
+            clientScopes = session.clientScopes()
+                    .getClientScopesByAttributes(realm, searchMap2, true)
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(1));
+
+            clientScopes = session.clientScopes()
+                    .getClientScopesByAttributes(realm, searchMap2, false)
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(0));
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            List<String> clientScopes = session.clientScopes()
+                    .getClientScopesByProtocol(realm, "openid-connect")
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(1));
+
+            clientScopes = session.clientScopes()
+                    .getClientScopesByProtocol(realm, "openid-connect1")
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
+            assertThat(clientScopes, hasSize(0));
+
+            return null;
+        });
+    }
+
+    @Test
+    public void testBasicAttributes() {
+        withRealm(realmId, (session, realm) -> {
+            ClientScopeModel clientScope = session.clientScopes().addClientScope(realm, "myClientScope1");
+
+            clientScope.setName("Testscope");
+            clientScope.setDescription("Desc");
+            clientScope.setIsDynamicScope(false);
+            clientScope.setProtocol("openid-connect");
+            clientScope.setAttribute("testKey", "testVal");
+            clientScope.setAttribute("testKey2", "testVal2");
+
+            return null;
+        });
+
+        withRealm(realmId, (session, realm) -> {
+            List<String> clientScopes = session.clientScopes()
+                    .getClientScopesStream(realm)
+                    .map(ClientScopeModel::getId)
+                    .collect(Collectors.toList());
 
             ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
             assertThat(clientScope.getName(), is("Testscope"));
@@ -73,6 +139,8 @@ public class ClientScopeModelTest extends KeycloakModelTest {
             assertThat(clientScope.getProtocol(), is("openid-connect"));
             assertThat(clientScope.getAttribute("testKey"), is("testVal"));
             assertThat(clientScope.getAttributes().get("testKey"), is("testVal"));
+            assertThat(clientScope.getAttribute("testKey2"), is("testVal2"));
+            assertThat(clientScope.getAttributes().get("testKey2"), is("testVal2"));
 
             clientScope.removeAttribute("testKey");
 
@@ -84,11 +152,10 @@ public class ClientScopeModelTest extends KeycloakModelTest {
                     .getClientScopesStream(realm)
                     .map(ClientScopeModel::getId)
                     .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
 
             ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
             assertNull(clientScope.getAttribute("testKey"));
-            assertThat(clientScope.getAttributes().entrySet(), hasSize(1)); // entityVersion
+            assertThat(clientScope.getAttributes().entrySet(), hasSize(2)); // includes entityVersion
 
             session.clientScopes().removeClientScope(realm, clientScopes.get(0));
 
@@ -123,7 +190,6 @@ public class ClientScopeModelTest extends KeycloakModelTest {
                     .getClientScopesStream(realm)
                     .map(ClientScopeModel::getId)
                     .collect(Collectors.toList());
-            assertThat(clientScopes, hasSize(1));
 
             ClientScopeModel clientScope = session.clientScopes().getClientScopeById(realm, clientScopes.get(0));
 

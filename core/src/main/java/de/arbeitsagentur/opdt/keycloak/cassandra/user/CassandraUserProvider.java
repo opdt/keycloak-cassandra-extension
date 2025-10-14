@@ -155,7 +155,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                                 client.getAttribute("initialServiceAccountRoles")
                                         .split(","))
                         .map(String::trim)
-                        .toList();
+                        .collect(Collectors.toList());
 
                 for (String roleId : initialServiceAccountRoles) {
                     RoleModel role = session.roles().getRoleById(realm, roleId);
@@ -535,7 +535,7 @@ public class CassandraUserProvider extends TransactionalProvider<User, Cassandra
                         default -> makeAttributeComparator.apply(entry.getKey(), entry.getValue());
                     };
                 })
-                .toList();
+                .collect(Collectors.toList());
 
         return userModelStream
                 .filter(user -> filtersList.stream().allMatch(predicate -> predicate.test(user)))

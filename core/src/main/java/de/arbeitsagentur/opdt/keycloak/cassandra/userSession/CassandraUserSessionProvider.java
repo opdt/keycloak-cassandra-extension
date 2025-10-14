@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
+import org.apache.commons.lang3.StringUtils;
 import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.device.DeviceActivityManager;
@@ -137,6 +138,14 @@ public class CassandraUserSessionProvider implements UserSessionProvider {
         userSessionRepository.addClientSession(realm, userSessionEntity, entity);
 
         return userSession.getAuthenticatedClientSessionByClient(client.getId());
+    }
+
+    @Override
+    public AuthenticatedClientSessionModel getClientSession(
+            UserSessionModel userSession, ClientModel client, boolean offline) {
+        log.tracef("getClientSession(%s, %s, %s)%s", userSession, client, offline, getShortStackTrace());
+
+        return getClientSession(userSession, client, StringUtils.EMPTY, offline);
     }
 
     @Override

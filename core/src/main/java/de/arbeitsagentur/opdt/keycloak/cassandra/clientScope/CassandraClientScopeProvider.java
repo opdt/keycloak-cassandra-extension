@@ -137,6 +137,53 @@ public class CassandraClientScopeProvider implements ClientScopeProvider {
     }
 
     @Override
+    public Stream<ClientScopeModel> getClientScopesByProtocol(RealmModel realm, String protocol) {
+        if (protocol == null) {
+            return null;
+        }
+
+        log.tracef("getClientScopesByProtocol(%s, %s)%s", realm, protocol, getShortStackTrace());
+        return getScopes(realm.getId()).getClientScopesByProtocol(protocol).stream()
+                .map(s -> entityToAdapterFunc(realm).apply(s));
+    }
+
+    @Override
+    public Stream<ClientScopeModel> getClientScopesByAttributes(
+            RealmModel realm, Map<String, String> searchMap, boolean useOr) {
+        if (searchMap == null || searchMap.isEmpty()) {
+            return Stream.empty();
+        }
+
+        log.tracef("getClientScopesByAttributes(%s, %s, %s)%s", realm, searchMap, useOr, getShortStackTrace());
+        List<ClientScopeModel> result = new ArrayList<>();
+        Set<ClientScopeValue> clientScopes = getScopes(realm.getId()).getClientScopes();
+
+        for (ClientScopeValue clientScope : clientScopes) {
+            Map<String, List<String>> attrs = clientScope.getAttributes();
+            if (attrs == null || attrs.isEmpty()) {
+                continue;
+            }
+
+            boolean matches;
+            if (useOr) {
+                matches = searchMap.entrySet().stream()
+                        .anyMatch(e -> attrs.containsKey(e.getKey())
+                                && attrs.get(e.getKey()).contains(e.getValue()));
+            } else {
+                matches = searchMap.entrySet().stream()
+                        .allMatch(e -> attrs.containsKey(e.getKey())
+                                && attrs.get(e.getKey()).contains(e.getValue()));
+            }
+
+            if (matches) {
+                result.add(entityToAdapterFunc(realm).apply(clientScope));
+            }
+        }
+
+        return result.stream();
+    }
+
+    @Override
     public ClientScopeModel getClientScopeById(RealmModel realm, String id) {
         if (id == null) {
             return null;

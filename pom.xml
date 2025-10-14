@@ -4,7 +4,7 @@
 
   <groupId>de.arbeitsagentur.opdt</groupId>
   <artifactId>keycloak-cassandra-extension-parent</artifactId>
-  <version>5.4.4-26.2-SNAPSHOT</version>
+  <version>5.4.4-26.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>keycloak-extension-cassandra</name>
@@ -56,7 +56,7 @@
     <maven.compiler.target>${java.version}</maven.compiler.target>
 
     <!-- keycloak -->
-    <keycloak.version>26.2.5</keycloak.version>
+    <keycloak.version>26.4.0</keycloak.version>
 
     <!-- testing -->
     <assertj-core.version>3.27.3</assertj-core.version>
@@ -164,7 +164,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.119.Final</version>
+        <version>4.1.127.Final</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
