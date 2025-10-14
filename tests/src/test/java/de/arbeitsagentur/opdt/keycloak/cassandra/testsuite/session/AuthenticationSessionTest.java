@@ -25,8 +25,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertNull;
 
 import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.KeycloakModelTest;
+import de.arbeitsagentur.opdt.keycloak.cassandra.testsuite.parameters.ProfileTestUtils;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -34,7 +34,6 @@ import java.util.stream.IntStream;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.*;
 import org.keycloak.models.light.LightweightUserAdapter;
@@ -430,15 +429,8 @@ public class AuthenticationSessionTest extends KeycloakModelTest {
 
     @Test
     public void testAuthSessionPropertiesTransientUsers() {
-        Profile.init(
-                Profile.ProfileName.DEFAULT,
-                Map.of(
-                        Profile.Feature.TRANSIENT_USERS,
-                        true,
-                        Profile.Feature.AUTHORIZATION,
-                        false,
-                        Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ,
-                        false));
+        ProfileTestUtils.enableTransientUsers();
+
         String rootSessionId = withRealm(realmId, (session, realm) -> {
             LightweightUserAdapter lightweightUserAdapter = new LightweightUserAdapter(session, null);
             lightweightUserAdapter.setUsername("testuser");

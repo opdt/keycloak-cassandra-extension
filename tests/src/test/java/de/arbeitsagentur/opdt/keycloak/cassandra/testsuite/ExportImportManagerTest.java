@@ -264,7 +264,7 @@ public class ExportImportManagerTest extends KeycloakModelTest {
 
             ExportImportManager exportImportManager =
                     session.getProvider(DatastoreProvider.class).getExportImportManager();
-            exportImportManager.importRealm(rep, newRealm, false);
+            exportImportManager.importRealm(rep, newRealm, () -> {});
         });
 
         inComittedTransaction(session -> {

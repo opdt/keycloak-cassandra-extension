@@ -3,9 +3,11 @@ package de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.persistence.entiti
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import de.arbeitsagentur.opdt.keycloak.cassandra.clientScope.CassandraClientScopeAdapter;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.HasAttributes;
 import de.arbeitsagentur.opdt.keycloak.cassandra.transaction.TransactionalEntity;
 import java.util.*;
+import java.util.stream.Collectors;
 import lombok.*;
 
 @EqualsAndHashCode(of = "realmId")
@@ -48,6 +50,12 @@ public class ClientScopes implements TransactionalEntity, HasAttributes {
                     .orElse(null);
         }
         return clientScope;
+    }
+
+    public List<ClientScopeValue> getClientScopesByProtocol(String protocol) {
+        return clientScopes.stream()
+                .filter(s -> Objects.equals(s.getFirstAttribute(CassandraClientScopeAdapter.PROTOCOL), protocol))
+                .collect(Collectors.toList());
     }
 
     public void addClientScope(ClientScopeValue clientScopeValue) {

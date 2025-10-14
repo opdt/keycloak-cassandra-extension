@@ -155,4 +155,15 @@ public class CassandraGroupAdapter implements GroupModel {
         groupValue.removeGrantedRole(role.getId());
         provider.markChanged(realm.getId());
     }
+
+    @Override
+    public String getDescription() {
+        return groupValue.getDescription();
+    }
+
+    @Override
+    public void setDescription(String description) {
+        groupValue.setDescription(description);
+        provider.markChanged(realm.getId());
+    }
 }

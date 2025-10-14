@@ -24,4 +24,17 @@ public class ClientScopeValue {
 
         return attributes;
     }
+
+    public String getFirstAttribute(String name) {
+        if (attributes == null) {
+            return null;
+        }
+
+        List<String> result = attributes.get(name);
+        if (result == null || result.isEmpty()) {
+            return null;
+        }
+
+        return result.getFirst();
+    }
 }

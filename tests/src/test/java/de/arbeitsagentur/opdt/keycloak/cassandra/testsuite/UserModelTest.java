@@ -1575,7 +1575,7 @@ public class UserModelTest extends KeycloakModelTest {
 
             // Verify federated identities are present
             List<FederatedIdentityModel> federatedIdentities =
-                    session.users().getFederatedIdentitiesStream(realm, user).toList();
+                    session.users().getFederatedIdentitiesStream(realm, user).collect(Collectors.toList());
             assertThat(federatedIdentities, hasSize(3));
 
             // Delete the user
