@@ -1012,6 +1012,9 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(realm1RealmId, (currentSession, realm1) -> {
             realm1.addRole("role1");
+            realm1.addRole("defaultRole");
+            RoleModel defaultRole = realm1.getRole("defaultRole");
+            realm1.setDefaultRole(defaultRole);
             currentSession.users().addUser(realm1, "user1");
             currentSession.users().addUser(realm1, "user2");
 
@@ -1028,24 +1031,31 @@ public class UserModelTest extends KeycloakModelTest {
 
         withRealm(realm1RealmId, (currentSession, realm1) -> {
             RoleModel role1 = realm1.getRole("role1");
+            RoleModel defaultRole = realm1.getRole("defaultRole");
             UserModel user1 = currentSession.users().getUserByUsername(realm1, "user1");
             UserModel user2 = currentSession.users().getUserByUsername(realm1, "user2");
             assertTrue(user1.hasRole(role1));
+            assertTrue(user1.hasRole(defaultRole));
             assertTrue(user2.hasRole(role1));
+            assertTrue(user2.hasRole(defaultRole));
 
             RealmModel realm2 = currentSession.realms().getRealmByName("realm2");
             UserModel realm2User1 = currentSession.users().getUserByUsername(realm2, "user1");
             assertFalse(realm2User1.hasRole(role1));
+            assertFalse(realm2User1.hasRole(defaultRole));
 
             user1.deleteRoleMapping(role1);
+            user1.deleteRoleMapping(defaultRole);
             return null;
         });
 
         withRealm(realm1RealmId, (currentSession, realm1) -> {
             RealmModel realm2 = currentSession.realms().getRealmByName("realm2");
             RoleModel role1 = realm1.getRole("role1");
+            RoleModel defaultRole = realm1.getRole("defaultRole");
             UserModel user1 = currentSession.users().getUserByUsername(realm1, "user1");
             assertFalse(user1.hasRole(role1));
+            assertTrue(user1.hasRole(defaultRole)); // Still has default role even if mapping has been removed
 
             currentSession.realms().removeRealm(realm1.getId());
             currentSession.realms().removeRealm(realm2.getId());
