@@ -499,6 +499,11 @@ public abstract class CassandraUserAdapter extends TransactionalModelAdapter<Use
         log.debugv("get role mappings: realm={0} userId={1}", realm.getId(), entity.getId());
 
         List<String> roleIds = new ArrayList<>();
+
+        if (realm.getDefaultRole() != null) {
+            roleIds.add(realm.getDefaultRole().getId());
+        }
+
         roleIds.addAll(entity.getRealmRoles());
         roleIds.addAll(entity.getClientRoles().entrySet().stream()
                 .flatMap(e -> e.getValue().stream())
